@@ -71,7 +71,34 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
-### 2026-08-13 — Fixed the four pre-existing TypeScript errors; production build now passes
+### 2026-08-13 — Created `main` so a second person can work in this repo
+
+- **Branch:** `main` (created), from `claude/change-log-documentation-mr4x5v`
+- **Requested by:** sashaknyshjr@gmail.com — needs a collaborator to have access,
+  which is the reason this work is happening in a shared repo at all.
+- **Status:** Complete, with one manual step left to Sasha
+
+**What changed**
+
+`main` was created from the current branch and pushed. The repo previously had
+no `main` at all — the Claude task branch was the default, which is not a
+sensible thing for a second person to clone.
+
+**Left to Sasha (cannot be done from here)**
+
+1. Set `main` as the default branch: GitHub → Settings → General → Default branch.
+2. Add the collaborator: GitHub → Settings → Collaborators.
+
+**Unresolved: whose history is canonical**
+
+Sasha said his local repo's commit history should be canonical. The zip carried
+no `.git`, so `main` currently holds a single snapshot commit and none of that
+history. These two facts are in tension and the reconciliation has not happened
+yet. Until it does, treat `main` as "the code, correct; the history, incomplete".
+
+The intended path is: push the local history to a branch, then replay this
+repo's three commits (change-log system, hooks, type fix) on top of it, rather
+than the reverse. Nothing here should be force-pushed over until that is decided.
 
 - **Branch:** `claude/change-log-documentation-mr4x5v`
 - **Requested by:** sashaknyshjr@gmail.com — explicitly asked for these, which
