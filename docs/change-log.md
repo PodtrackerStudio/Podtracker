@@ -118,11 +118,49 @@ pre-existing errors `CLAUDE.md` documents (`added` implicitly `any[]` in
 `EpisodeListClient.tsx` and `TopRatedClient.tsx`) and nothing else, confirming
 the transfer did not break anything. Those were left unfixed, as instructed.
 
+**Running it in a fresh container**
+
+Later in the same session the app was brought up successfully. Postgres is not
+running by default but the server binary is present, so no install is needed:
+
+```bash
+service postgresql start
+su - postgres -c "psql -c \"CREATE USER podtracker WITH PASSWORD 'podtracker' SUPERUSER;\""
+su - postgres -c "psql -c 'CREATE DATABASE podtracker OWNER podtracker;'"
+# write .env with DATABASE_URL + a generated SESSION_SECRET (see .env.example)
+npx prisma migrate deploy && npx prisma generate
+npm run dev
+```
+
+All routes then return 200 — `/`, `/explore`, `/following`, `/login`, `/signup`,
+`/genres`, `/user/sasha` and its sub-pages — with `/home` correctly 307ing when
+signed out, and no JavaScript errors on any page.
+
+**What does NOT work in this container, and is not a bug**
+
+Outbound requests to `itunes.apple.com` and `picsum.photos` are blocked by the
+environment's network policy. Consequences: the landing page's Popular podcasts
+grid renders empty, and some avatars are missing. Both work on a normal machine.
+`getPopularPodcasts` degrades correctly — `Promise.allSettled` plus a filter, so
+an unreachable API yields an empty list rather than an exception. Do not "fix"
+either symptom here.
+
+**Published preview**
+
+<https://claude.ai/code/artifact/914224ae-4a60-4436-a55d-b7c08e344e3f> — a
+static snapshot of landing / explore / profile / following with a tab switcher.
+Point-in-time, not live; links are inert. Regenerate by rendering each route and
+inlining CSS, fonts and same-origin images. Two traps: `next/font` declares
+`--font-*` on classes that sit on `<html>` (== `:root`), so those variables must
+be re-declared on `:root` or the page silently falls back to system fonts; and
+images pointing at external placeholder hosts must be swapped for an inline
+swatch, since the artifact sandbox blocks them and broken-image icons read as
+defects.
+
 **Follow-ups**
 
-- The app cannot be run in this container: no `.env`, so no `DATABASE_URL`, and
-  Postgres is not provisioned here. Only `.env.example` was shipped, correctly.
-  Static checks work; anything touching auth, sessions, or the database does not.
+- `npm run build` still fails on the four documented TypeScript errors, so the
+  project cannot be deployed until they are typed. Left alone per `CLAUDE.md`.
 - The zip carried no `.git`, so none of Sasha's own commit history came across.
   What is on this branch is a single snapshot commit, not his real history.
 
