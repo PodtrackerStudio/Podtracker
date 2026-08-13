@@ -92,7 +92,7 @@ Most pages render from hardcoded constants, not the database. Auth and follows a
 
 All of these are deliberate or already known. Fixing them unasked wastes a turn and can destroy working code.
 
-- **Four pre-existing TypeScript errors** in `podcast/[id]/episodes/EpisodeListClient.tsx` and `podcast/[id]/top-rated/TopRatedClient.tsx` (untyped `added` array). They predate the current work and will fail a production build. Fix only if asked.
+- ~~Four pre-existing TypeScript errors in `EpisodeListClient.tsx` / `TopRatedClient.tsx`~~ — **fixed** in commit `8283d58` ("Type the added array so the production build passes"). `npx tsc --noEmit` is clean as of 2026-08-13.
 - **`AddFavoriteButton.tsx` and `FavoriteCard.tsx` in `src/components/` are unused.** They are **not** dead code. They hold the working search-and-add and remove logic, preserved for when `/following` gets wired to the `favorite` table. Do not delete.
 - **`src/app/api/favorites/route.ts` is unused** for the same reason. Keep it.
 - **The old `/user/[username]/favorites` page was deleted on purpose.** Favorites in the profile sub-nav points at `/following` — they're the same feature. Consequence: there is currently no way to add or remove a favorite anywhere in the UI.
