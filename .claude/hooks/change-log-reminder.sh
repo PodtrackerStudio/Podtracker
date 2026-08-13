@@ -12,7 +12,9 @@ LOG_PATH="docs/change-log.md"
 payload=$(cat)
 
 # Already blocked once this turn — let the stop through so we cannot loop.
-if [[ "$(printf '%s' "$payload" | jq -r '.stop_hook_active // false' 2>/dev/null)" == "true" ]]; then
+# Matched with grep rather than jq: jq is not installed on Sasha's Windows
+# machine, and depending on it made this hook fail silently and enforce nothing.
+if printf '%s' "$payload" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; then
   exit 0
 fi
 
@@ -59,16 +61,16 @@ substantive=$(printf '%s\n' "$changed" | grep -v '^\.claude/' || true)
 
 file_list=$(printf '%s\n' "$substantive" | head -20 | sed 's/^/  - /')
 
-jq -n --arg files "$file_list" --arg log "$LOG_PATH" '{
-  decision: "block",
-  reason: (
-    "This session changed files but did not update \($log).\n\n" +
-    "Files touched:\n\($files)\n\n" +
-    "Append an entry to \($log) now, using the template in that file. " +
-    "Newest entry goes at the top of the \"## Entries\" section. Record what " +
-    "actually happened, including anything abandoned, incomplete, or left " +
-    "failing. Then commit it alongside the work."
-  )
-}'
+reason="This session changed files but did not update ${LOG_PATH}."$'\n\n'"Files touched:"$'\n'"${file_list}"$'\n\n'"Append an entry to ${LOG_PATH} now, using the template in that file. Newest entry goes at the top of the \"## Entries\" section. Record what actually happened, including anything abandoned, incomplete, or left failing. Then commit it alongside the work."
+
+# Minimal JSON string escaping: backslash, double quote, then control chars.
+escaped=$reason
+escaped=${escaped//\\/\\\\}
+escaped=${escaped//\"/\\\"}
+escaped=${escaped//$'\r'/}
+escaped=${escaped//$'\t'/\\t}
+escaped=${escaped//$'\n'/\\n}
+
+printf '{"decision":"block","reason":"%s"}\n' "$escaped"
 
 exit 0

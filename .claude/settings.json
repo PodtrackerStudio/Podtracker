@@ -21,6 +21,16 @@
             "statusMessage": "Checking change log..."
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/unpushed-work.sh\"",
+            "timeout": 15,
+            "statusMessage": "Checking for unpushed work..."
+          }
+        ]
       }
     ]
   }

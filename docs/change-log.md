@@ -71,6 +71,55 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-13 — Connected Sasha's local machine to this repo; enforced pushing
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — wanted every change from his local
+  Claude Code sessions to reach this repo automatically, so his collaborator sees it.
+- **Status:** Complete
+
+**What changed**
+
+- `C:\Users\sasha\Documents\podcast-website` was **not a git repository at all**.
+  It is now a working copy tracking `origin/main`. This settles the "whose history
+  is canonical" question left open in the entry below: there was no local history
+  to preserve, so this repo's history is the only history. Nothing was lost — the
+  remote was already ahead on 7 files and local had nothing unique.
+- `CLAUDE.md` gained a **Committing and pushing** section recording Sasha's
+  standing instruction, and a stale note claiming four TypeScript errors were
+  outstanding was corrected — commit `8283d58` had already fixed them.
+- Added `.claude/hooks/unpushed-work.sh`, a Stop hook that blocks the session
+  ending when commits exist on no remote, or the working tree is dirty.
+
+**Fixed a real bug: the change-log hook never worked on Windows**
+
+`change-log-reminder.sh` called `jq` twice. **`jq` is not installed on Sasha's
+machine** and is not on PATH. The `jq -n` that emits the block verdict therefore
+failed with "command not found", the hook produced no output, and the stop was
+never blocked. Change-log enforcement has been silently inert on this machine
+since it was written. Both `jq` calls are replaced with `grep` and hand-rolled
+JSON. The new hook avoids `jq` for the same reason.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `CLAUDE.md` | Modified — added committing/pushing agreement; corrected stale TS-error note |
+| `.claude/hooks/unpushed-work.sh` | Added — Stop hook blocking unpushed/uncommitted work |
+| `.claude/hooks/change-log-reminder.sh` | Modified — removed the `jq` dependency that made it a no-op |
+| `.claude/settings.json` | Modified — registered the new Stop hook alongside the existing one |
+| `docs/change-log.md` | Modified — this entry |
+
+**Follow-ups**
+
+- `main` is **still not GitHub's default branch** — `origin/HEAD` points at
+  `claude/change-log-documentation-mr4x5v`. Sasha cannot change it: he is not an
+  admin on this repo; his collaborator is. Same blocker for making the repo
+  private, which it currently is not.
+- Hooks were verified by piping payloads directly and parsing the JSON. They were
+  **not** observed firing at a real session stop, which happens outside the turn
+  that wrote them.
+
 ### 2026-08-13 — Created `main` so a second person can work in this repo
 
 - **Branch:** `main` (created), from `claude/change-log-documentation-mr4x5v`
