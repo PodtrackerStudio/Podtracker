@@ -157,6 +157,17 @@ titles beginning with a number produced initials of "#A" instead of "AW", and
 overlapping list-collage tiles repeated identical initials, which read as a
 rendering fault. The collage now uses a bare `plain` variant.
 
+**Published preview**
+
+A static snapshot of the rendered page is published at
+<https://claude.ai/code/artifact/914224ae-4a60-4436-a55d-b7c08e344e3f> — useful
+for showing the page to someone without a checkout. It is a point-in-time
+snapshot, not the live app: it does not update when the code changes, and its
+links do not navigate. Regenerate it by rendering `/` and inlining the assets;
+note that `next/font` declares `--font-*` on classes that sit on `<html>`, so
+those variables must be re-declared on `:root` or the page silently falls back
+to system fonts.
+
 **Follow-ups**
 
 - Every nav and card link points at a route that does not exist yet
