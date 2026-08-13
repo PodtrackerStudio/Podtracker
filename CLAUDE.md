@@ -106,6 +106,20 @@ All of these are deliberate or already known. Fixing them unasked wastes a turn 
 - Explore will use **Spotify charts** for popularity until there's a real user base. Credentials aren't available yet; `src/lib/popularPodcasts.ts` currently uses the iTunes Search API as a stand-in.
 - Swap in landing v1 once there are roughly 5–10 users generating data.
 
+## Committing and pushing
+
+**Sasha's standing instruction (2026-08-13): every change made in a session goes to the repo.** He does not want to ask for it each time, and he does not want work sitting only on his machine — a collaborator works in this repo and needs to see it.
+
+So: after each self-contained unit of work, commit and push to `main` without being asked. Don't batch a whole session into one commit, and don't leave a session with unpushed work.
+
+- `git fetch` at the **start** of a session. Others push here; local is not automatically the truth.
+- One commit per coherent change, with a message saying what changed and why.
+- Never commit `.env` — it's gitignored, keep it that way.
+- Update `docs/change-log.md` in the same commit as the work it describes.
+- If a push is rejected because the remote moved, pull and rebase — **never force-push**.
+
+The one exception: if a change is left broken or half-finished, say so rather than pushing it silently. Broken work reaching a collaborator is worse than work that hasn't arrived yet.
+
 ## Session change log
 
 This repo keeps a work log at [`docs/change-log.md`](docs/change-log.md) recording
