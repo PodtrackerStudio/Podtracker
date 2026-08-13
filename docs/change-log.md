@@ -71,6 +71,101 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-13 — Applied Sasha's real Figma design system across the site
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio, across a long working session. He
+  supplied the brand palette, font roles, and Figma frame exports for the landing,
+  homepage, following, explore, and profile pages.
+- **Status:** Complete for what was asked. Several designed states remain unbuilt —
+  see Follow-ups.
+
+**Read this first if you are picking up the design work.** `CLAUDE.md` records the
+*current rules*. This entry records *what changed and why*, including decisions
+that look like mistakes if you only read the code.
+
+**Typography — the rule changed twice, so don't trust older code as precedent**
+
+1. Roboto was never actually installed. PT Serif Caption was the global body font,
+   so every paragraph rendered serif. Added Roboto via `next/font/google` and split
+   the roles into `--font-display` / `--font-body` / `--font-rating`.
+2. First rule was "small text → Roboto". **Sasha corrected this**: PT Serif Caption
+   is the default for everything, and Roboto is for **reviews**. Don't generalise
+   Roboto to small text.
+3. One explicit exception he asked for: `/explore` trending-user names and follower
+   counts are Roboto, while the other ~86 text elements on that page are serif.
+
+Auth pages and `/following` are entirely PT Serif Caption via `font-family` on
+their `.main`. **Caveat:** that page-wide serif would override the reviews rule if
+a review card is ever added to either page.
+
+**Colour**
+
+- Page background went from `#EBEDF0` to **`#9E9E9E` at 25%** (`rgba(158,158,158,0.25)`).
+  Applied to `html` **only** — putting a translucent colour on both `html` and
+  `body` composites it twice and comes out darker. `--page-bg-alt: #e7e7e7` is the
+  flattened opaque equivalent, for surfaces sitting on another colour (the nav
+  search pill).
+- Auth submit buttons and the profile Edit button are `#7BBAFF`.
+- Profile rating-distribution bars are `#C3DBFF` — all five tiers share one colour;
+  the tier is conveyed by the coloured label beside the bar, not the bar itself.
+
+**Nav**
+
+- Height is now an explicit **100px**, matching the Figma. It was previously
+  content-driven and landed at 64px — a byproduct of the 24px wordmark plus 14px
+  padding, never a decision.
+- **Genres was cut from MVP** and removed from both branches of `SiteNav`. The
+  `/genres` route still exists but is intentionally unlinked.
+
+**Pages**
+
+| Page | Change |
+| --- | --- |
+| Landing | Hero buttons to PT Serif Caption; removed the border-radius on the "What is Podtracker?" box (square in the frame, unlike the four rounded feature boxes) |
+| Login / Signup | Nav removed entirely, matching the landing page; buttons `#7BBAFF`; every word PT Serif Caption; "Podcast Website" → "Podtracker"; fixed "Email adress" typo |
+| Home | Review cards no longer print the podcast/episode name — that moved to a hover popup on the artwork. Added the new-user empty state, branched on `PodcastFollow` count |
+| Following | All text PT Serif Caption; Favorites in the profile sub-nav now points here |
+| Explore | Trending-user names/followers to Roboto |
+| Profile | Edit profile + external link moved from the left column to under the avatar |
+
+**Deletions and why they are not mistakes**
+
+- `src/app/user/[username]/favorites/` was **deleted on purpose** — Sasha decided
+  Favorites and Following are one feature. `AddFavoriteButton.tsx` and
+  `FavoriteCard.tsx` were **moved to `src/components/`, not deleted**: they hold the
+  working search-and-add and remove logic and are needed when `/following` gets
+  wired to the `favorite` table. `src/app/api/favorites/route.ts` kept for the same
+  reason. **Consequence: there is currently no way to add or remove a favorite
+  anywhere in the UI.**
+- Review cards omitting the podcast/episode name is deliberate. Don't add it back.
+
+**Default avatar**
+
+`public/default-avatar.webp` replaced three separate `picsum.photos` random-photo
+fallbacks (profile page, settings, profile sub-header).
+
+**Logo**
+
+Sasha supplied `public/logo.png` (also `src/app/icon.png` as the favicon). Measured:
+561×561, but the artwork occupies only 375×325 — **38.7% of the canvas is empty
+padding**, so it renders ~40% smaller than its box. Edge transitions average 3.5px
+against 1–2px for a clean vector export, meaning it was upscaled or lossily
+recompressed somewhere. It is **not** currently in the nav, though recent Figma
+frames show it there on a black tile. Sasha is sourcing a better original.
+
+**Follow-ups**
+
+- **Designed but never built:** landing v1 (post-launch — Popular reviews, Popular
+  Lists, footer), and the `/following` empty state ("No Favorites… / Add Favorites").
+  The latter cannot render at all while `FollowingGrid` is a hardcoded constant.
+- **Diverges from Figma, undecided:** "See more" buttons are blue pills in the
+  frames but transparent with a grey border in code; the 24px wordmark looks small
+  in the now-100px nav; the nav logo tile is absent.
+- Most pages still render from hardcoded constants. Sasha has said the placeholder
+  podcasts and images don't matter — they go when the API work happens. Explore is
+  intended to use **Spotify charts** until there is a real user base.
+
 ### 2026-08-13 — Connected Sasha's local machine to this repo; enforced pushing
 
 - **Branch:** `main`
