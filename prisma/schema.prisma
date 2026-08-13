@@ -1,0 +1,293 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── ENUMS ──────────────────────────────────────────────
+
+// The 5-tier rating scale from the landing page's "Ratings explained" section.
+// DIDNT_FINISH is excluded from average-rating math per that same section.
+enum RatingTier {
+  HIGHLY_RECOMMEND
+  RECOMMEND
+  OK
+  DONT_RECOMMEND
+  DIDNT_FINISH
+}
+
+enum PersonRole {
+  HOST
+  GUEST
+}
+
+// ── USERS & SOCIAL GRAPH ───────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  avatarUrl    String?
+  bio          String? // short bio shown under avatar on profile
+  longBio      String? // longer bio shown top-right on profile
+  externalLink String? // e.g. "Youtube.com" link on profile
+  createdAt    DateTime @default(now())
+
+  sessions       Session[]
+  podcastRatings PodcastRating[]
+  episodeRatings EpisodeRating[]
+  logEntries     LogEntry[]
+  lists          List[]
+  podcastFollows PodcastFollow[]
+  favorites      Favorite[]
+
+  followedBy Follow[] @relation("following")
+  following  Follow[] @relation("follower")
+
+  @@index([username])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// User-follows-user (profile "Followers"/"Following"/"Friends")
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+}
+
+// User-follows-podcast (the green Follow/Following button on podcast.html)
+model PodcastFollow {
+  userId    String
+  podcastId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  podcast Podcast @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+
+  @@id([userId, podcastId])
+  @@index([podcastId])
+}
+
+// Starred/favorited podcasts (profile's "Favorites" tab) — distinct from
+// PodcastFollow: following affects your home feed, favoriting is just a
+// personal highlight reel shown on your profile.
+model Favorite {
+  userId    String
+  podcastId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  podcast Podcast @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+
+  @@id([userId, podcastId])
+  @@index([podcastId])
+}
+
+// ── PODCASTS & EPISODES ────────────────────────────────
+
+model Genre {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  podcasts Podcast[]
+}
+
+model Person {
+  id         String   @id @default(cuid())
+  externalId String?  @unique // Podcast Index person id, if known
+  slug       String   @unique // URL slug for /person/[slug], e.g. "joe-rogan"
+  name       String
+  avatarUrl  String?
+  bio        String? // long-form bio shown on the person profile page
+
+  podcastCredits PodcastPerson[]
+  episodeCredits EpisodePerson[]
+}
+
+model Podcast {
+  id                String   @id @default(cuid())
+  externalId        String?  @unique // Podcast Index feed id
+  title             String
+  author            String
+  description       String
+  coverUrl          String?
+  bannerUrl         String?
+  startYear         Int?
+  spotifyUrl        String?
+  youtubeUrl        String?
+  applePodcastsUrl  String?
+  createdAt         DateTime @default(now())
+
+  genres    Genre[]
+  episodes  Episode[]
+  people    PodcastPerson[]
+  ratings   PodcastRating[]
+  logEntries LogEntry[]
+  followers PodcastFollow[]
+  favoritedBy Favorite[]
+  listItems ListItem[]
+
+  @@index([title])
+}
+
+model PodcastPerson {
+  podcastId String
+  personId  String
+  role      PersonRole
+
+  podcast Podcast @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+  person  Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([podcastId, personId])
+}
+
+model Episode {
+  id               String    @id @default(cuid())
+  podcastId        String
+  externalId       String?   @unique // Podcast Index episode id
+  episodeNumber    Int?
+  title            String
+  description      String
+  coverUrl         String?
+  bannerUrl        String?
+  audioUrl         String?
+  durationSeconds  Int?
+  publishedAt      DateTime
+  spotifyUrl       String? // falls back to Podcast.spotifyUrl if null
+  youtubeUrl       String?
+  applePodcastsUrl String?
+  createdAt        DateTime  @default(now())
+
+  podcast    Podcast         @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+  people     EpisodePerson[]
+  ratings    EpisodeRating[]
+  logEntries LogEntry[]
+  listItems  ListItem[]
+
+  @@index([podcastId, publishedAt])
+}
+
+model EpisodePerson {
+  episodeId String
+  personId  String
+  role      PersonRole
+
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  person  Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([episodeId, personId])
+}
+
+// ── RATINGS ─────────────────────────────────────────────
+// One current rating tier per (user, target) — this is the mic-icon "Rate" action.
+// Split into two models (rather than one Rating with nullable podcastId/episodeId)
+// so Prisma/Postgres can enforce true one-per-user-per-target uniqueness.
+
+model PodcastRating {
+  id        String     @id @default(cuid())
+  userId    String
+  podcastId String
+  tier      RatingTier
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  podcast Podcast @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, podcastId])
+  @@index([podcastId])
+}
+
+model EpisodeRating {
+  id        String     @id @default(cuid())
+  userId    String
+  episodeId String
+  tier      RatingTier
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, episodeId])
+  @@index([episodeId])
+}
+
+// ── LOG ENTRIES (diary / "Add Log or Review") ──────────
+// Decoupled from Rating: the review popup only captures a date + text, no rating.
+// Many allowed per (user, target) since relistens/rewatches happen (profile calendar
+// shows multiple entries on the same day). Exactly one of podcastId/episodeId is set,
+// enforced in the application layer.
+
+model LogEntry {
+  id           String   @id @default(cuid())
+  userId       String
+  podcastId    String?
+  episodeId    String?
+  listenedDate DateTime
+  reviewText   String?
+  createdAt    DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  podcast Podcast? @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+  episode Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@index([userId, listenedDate])
+  @@index([podcastId])
+  @@index([episodeId])
+}
+
+// ── LISTS ───────────────────────────────────────────────
+
+model List {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  isRanked    Boolean  @default(false) // if true, list detail page shows position numbers (e.g. a "top 10" list)
+  createdAt   DateTime @default(now())
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items ListItem[]
+
+  @@index([userId])
+}
+
+model ListItem {
+  id        String  @id @default(cuid())
+  listId    String
+  position  Int
+  podcastId String?
+  episodeId String?
+
+  list    List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  podcast Podcast? @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+  episode Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@index([listId, position])
+  @@index([podcastId])
+  @@index([episodeId])
+}

@@ -1,0 +1,455 @@
+.main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 24px 56px;
+}
+
+.profileHeader {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  padding-top: 32px;
+}
+
+.profileLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.profileStats {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: var(--text);
+}
+.profileStats strong {
+  font-weight: 700;
+}
+.profileName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 26px;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+.verifiedBadge {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--highly-recommend);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.btnEdit {
+  background: var(--btn-primary-blue);
+  border: none;
+  border-radius: 4px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  color: #fff;
+  text-decoration: none;
+}
+.btnEdit:hover {
+  opacity: 0.85;
+}
+.profileLink {
+  font-size: 13px;
+  color: var(--text);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.profileLink:hover {
+  text-decoration: underline;
+}
+
+.profileCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  /* Edit profile + external link now stack under the avatar. */
+  gap: 8px;
+}
+.profileAvatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ccc;
+  margin-bottom: 10px;
+}
+.profileBio {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 220px;
+  line-height: 1.5;
+}
+
+.profileRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  text-align: right;
+}
+.profileSubnav {
+  display: flex;
+  gap: 20px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.profileSubnav a {
+  text-decoration: none;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+.profileSubnav a.active {
+  border-bottom: 2px solid var(--text);
+  padding-bottom: 2px;
+}
+.profileLongbio {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  text-align: right;
+  max-width: 240px;
+}
+
+.listeningHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.listeningTitle {
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+}
+.btnSeeMore {
+  background: #f0f0f0;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 7px 20px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--text);
+}
+.btnSeeMore:hover {
+  background: #e6e6e6;
+}
+
+.listeningGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 48px;
+}
+.listeningThumb {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 4px;
+  background: #ccc;
+  display: block;
+  margin-bottom: 8px;
+}
+.listeningMeta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ratingTag {
+  font-size: 13px;
+  font-weight: 700;
+}
+.ratingTag.highly {
+  color: var(--highly-recommend);
+}
+.ratingTag.recommend {
+  color: var(--recommend);
+}
+.ratingTag.ok {
+  color: var(--ok);
+}
+.ratingTag.dont {
+  color: var(--dont);
+}
+.ratingTag.didnt {
+  color: var(--didnt-finish);
+}
+.readReview {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.readReview:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.bottomGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 60px 0;
+}
+.emptyStateText {
+  font-size: 15px;
+  color: var(--text);
+}
+.emptyStateAction {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  color: var(--text);
+  text-decoration: none;
+}
+.emptyStateAction:hover {
+  opacity: 0.75;
+}
+.bottomColTitle {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.tooltipWrap {
+  position: relative;
+}
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 12px;
+  font-family: Georgia, serif;
+  padding: 6px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 50;
+}
+.tooltipWrap:hover .tooltip {
+  opacity: 1;
+}
+.dayCell.listened:hover .tooltip {
+  opacity: 1;
+}
+
+.distRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.distTrack {
+  flex: 1;
+  height: 9px;
+  background: #ececec;
+  border-radius: 5px;
+  position: relative;
+}
+.distFill {
+  height: 100%;
+  border-radius: 5px;
+  overflow: hidden;
+}
+/* All five bars share one colour — the tier is conveyed by the coloured label
+   beside each bar, not by the bar itself. The per-tier selectors are kept so
+   the `styles[tier]` lookup in the JSX still resolves to a real class. */
+.distFill.highly,
+.distFill.recommend,
+.distFill.ok,
+.distFill.dont,
+.distFill.didnt {
+  background: var(--accent-blue);
+}
+.distName {
+  font-size: 13px;
+  font-weight: 600;
+  width: 130px;
+  flex-shrink: 0;
+}
+.distName.highly {
+  color: var(--highly-recommend);
+}
+.distName.recommend {
+  color: var(--recommend);
+}
+.distName.ok {
+  color: var(--ok);
+}
+.distName.dont {
+  color: var(--dont);
+}
+.distName.didnt {
+  color: var(--didnt-finish);
+}
+
+.listGallery {
+  display: flex;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+.listGalleryImg,
+.listGalleryMore {
+  width: 64px;
+  height: 64px;
+  border-radius: 5px;
+  object-fit: cover;
+  display: block;
+  border: 2px solid #fff;
+  margin-left: -12px;
+  flex-shrink: 0;
+}
+.listGalleryImg:first-child,
+.listGalleryMore:first-child {
+  margin-left: 0;
+}
+.listGalleryMore {
+  background: #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  letter-spacing: -0.3px;
+}
+.listTitle {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.calendar {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.calendarMonth {
+  font-size: 14px;
+  font-weight: 700;
+}
+.calendarNav {
+  display: flex;
+  gap: 10px;
+}
+.calendarNav button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted);
+  font-family: inherit;
+  padding: 0 4px;
+}
+.calendarNav button:hover {
+  color: var(--text);
+}
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+.dayLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding-bottom: 4px;
+}
+.dayCell {
+  font-size: 12px;
+  padding: 5px 0;
+  border-radius: 50%;
+  color: var(--text);
+  position: relative;
+}
+.dayCell.muted {
+  color: #cccccc;
+}
+.dayCell.listened {
+  border: 1.5px solid var(--text);
+  position: relative;
+  cursor: pointer;
+}
+.dayCell.listened.multi {
+  box-shadow: 0 0 0 3px #fff, 0 0 0 4.5px var(--text);
+}
+.dayCell.listened .tooltip {
+  white-space: normal;
+  width: 150px;
+  line-height: 1.4;
+  text-align: left;
+}
+.tooltipEpisodeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tooltipEpisodeList li {
+  padding: 2px 0;
+}
+.tooltipEpisodeList li + li {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 3px;
+  padding-top: 4px;
+}
+.dayCell.today {
+  background: var(--highly-recommend);
+  color: #fff;
+  font-weight: 700;
+}
+
+.friendsTitle {
+  font-size: 22px;
+  font-weight: 400;
+  margin-bottom: 18px;
+}
+.friendsRow {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.friendAvatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e0e0e0;
+  display: block;
+}

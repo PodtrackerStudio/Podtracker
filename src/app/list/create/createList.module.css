@@ -1,0 +1,196 @@
+.main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.heading {
+  font-size: 32px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.field {
+  margin-bottom: 24px;
+}
+.field label {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+.field input[type="text"],
+.field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fafafa;
+  color: var(--text);
+}
+.field input[type="text"]:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: #999;
+  background: #fff;
+}
+.field textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.checkboxRow input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--text);
+  cursor: pointer;
+}
+.checkboxRow label {
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.addWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+  position: relative;
+}
+.addButton {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  width: 260px;
+  text-align: center;
+}
+.addInput {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  width: 260px;
+  text-align: center;
+  outline: none;
+}
+.addDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.13);
+  overflow: hidden;
+  z-index: 50;
+}
+.addDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+}
+.addDropdownItem:last-child {
+  border-bottom: none;
+}
+.addDropdownItem:hover {
+  background: #f4f4f4;
+}
+.addDropdownThumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: #ccc;
+  flex-shrink: 0;
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 60px;
+}
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  font-size: 16px;
+  position: relative;
+}
+.itemRemove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+}
+.itemRemove:hover {
+  color: var(--dont);
+}
+.emptyState {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 20px 0;
+}
+
+.submitRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+.submitButton {
+  background: #06b6d4;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 32px;
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.submitButton:hover {
+  opacity: 0.9;
+}
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

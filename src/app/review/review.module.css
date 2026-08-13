@@ -1,0 +1,66 @@
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.cover {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #ccc;
+  display: block;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.episodeTitle {
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+.podcastTitle {
+  font-size: 20px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.metaRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+.reviewerName {
+  color: var(--text);
+}
+.date {
+  color: var(--text-muted);
+}
+
+.ratingTag {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.ratingTag.highly {
+  color: var(--highly-recommend);
+}
+.ratingTag.recommend {
+  color: var(--recommend);
+}
+.ratingTag.ok {
+  color: var(--ok);
+}
+.ratingTag.dont {
+  color: var(--dont);
+}
+
+.reviewText {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #222;
+}

@@ -1,0 +1,333 @@
+.main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+.sectionTitle {
+  font-size: 32px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+.subsectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.hero {
+  padding: 52px 0 36px;
+  text-align: center;
+}
+.hero h1 {
+  font-size: 42px;
+  font-weight: 400;
+  letter-spacing: -1px;
+  margin-bottom: 10px;
+}
+.hero p {
+  font-size: 18px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.episodeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.episodeThumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: visible;
+  border-radius: 4px;
+  background: #222;
+  cursor: pointer;
+}
+.episodeThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 4px;
+  transition: transform 0.2s ease;
+}
+.episodeThumb:hover img {
+  transform: scale(1.02);
+}
+.playOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  pointer-events: none;
+}
+.episodeThumb:hover .playOverlay {
+  opacity: 1;
+}
+.playOverlay svg {
+  width: 40px;
+  height: 40px;
+  color: white;
+}
+
+.hoverCard {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.13);
+  padding: 12px 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+  z-index: 100;
+}
+.episodeThumb:hover .hoverCard {
+  opacity: 1;
+}
+.episodeThumb:nth-child(3n) .hoverCard {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.episodeThumb:nth-child(3n + 1) .hoverCard {
+  left: 0;
+  transform: none;
+}
+.hoverCardTitle {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  line-height: 1.3;
+  color: var(--text);
+}
+.hoverCardDate {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.hoverCardRating {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.hoverCardScore {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.hoverCardLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.hoverCardLabel.highly {
+  color: var(--highly-recommend);
+}
+.hoverCardLabel.recommend {
+  color: var(--recommend);
+}
+.hoverCardLabel.ok {
+  color: var(--ok);
+}
+.hoverCardLabel.dont {
+  color: var(--dont);
+}
+.hoverCardLabel.didnt {
+  color: var(--didnt-finish);
+}
+
+.nextPageRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+.btnGhost {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s;
+}
+.btnGhost:hover {
+  background: #f4f4f4;
+}
+
+.reviewsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.reviewCard {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.reviewThumb {
+  width: 80px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 3px;
+  background: #ccc;
+  display: block;
+}
+.reviewHeader {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 2px;
+}
+.avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #bbb;
+  display: block;
+  flex-shrink: 0;
+}
+.reviewerName {
+  font-size: 13px;
+  font-weight: 600;
+}
+.ratingTag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.ratingTag.highly {
+  color: var(--highly-recommend);
+}
+.ratingTag.recommend {
+  color: var(--recommend);
+}
+.ratingTag.ok {
+  color: var(--ok);
+}
+.ratingTag.dont {
+  color: var(--dont);
+}
+.ratingTag.didnt {
+  color: var(--didnt-finish);
+}
+.episodeLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  line-height: 1.3;
+  font-style: italic;
+}
+.reviewText {
+  font-size: 13px;
+  color: #333;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.moreLink {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-top: 3px;
+  display: inline-block;
+}
+.moreLink:hover {
+  color: var(--text);
+}
+
+.seeMoreRow {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.btnSeeMore {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 7px 28px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s;
+}
+.btnSeeMore:hover {
+  background: #f4f4f4;
+}
+
+.listsGrid,
+.popularListsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.popularListsGrid {
+  margin-bottom: 48px;
+}
+.listCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.listGallery {
+  display: flex;
+  flex-shrink: 0;
+}
+.listGalleryImg,
+.listGalleryMore {
+  width: 58px;
+  height: 58px;
+  border-radius: 5px;
+  object-fit: cover;
+  display: block;
+  border: 2px solid #fff;
+  margin-left: -12px;
+  flex-shrink: 0;
+}
+.listGalleryImg:first-child,
+.listGalleryMore:first-child {
+  margin-left: 0;
+}
+.listGalleryMore {
+  background: #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #374151;
+  letter-spacing: -0.3px;
+}
+.listAuthor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+.listTitle {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}

@@ -71,7 +71,76 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-13 — Imported Sasha's existing codebase; removed the scaffold built earlier
+
+- **Branch:** `claude/change-log-documentation-mr4x5v`
+- **Requested by:** sashaknyshjr@gmail.com — supplied `podtrackercode.zip`, the
+  real project, after the session had wrongly assumed the project was greenfield.
+- **Status:** Complete
+
+**What changed**
+
+- The repository now contains Sasha's actual Podtracker codebase, verbatim: 21
+  routes, 97 source files, Prisma schema, auth, and its own `CLAUDE.md`.
+- The Next.js scaffold and landing page built earlier this session were removed
+  from the working tree. They remain in history at commit `92b3ddb` if ever
+  wanted.
+- The change log system was preserved across the swap: `docs/change-log.md`,
+  `.claude/hooks/`, `.claude/settings.json`. The change-log section was appended
+  to the end of Sasha's `CLAUDE.md`; nothing he wrote was altered.
+- His `.claude/skills/` (the Prisma skill set) sits alongside the hooks.
+
+**Why the earlier work was discarded rather than merged**
+
+It was superseded on every axis, and reading `CLAUDE.md` made that unambiguous:
+
+| | Built earlier | Actual project |
+|---|---|---|
+| Styling | Tailwind v4 | CSS Modules + CSS variables (16 modules) |
+| Next | 16.3.0 | 16.2.11 |
+| Display font | Lora (a guess) | PT Serif Caption |
+| Rating font | Roboto 900 | Londrina Solid |
+| Nav | included Genres | Genres deliberately cut from MVP |
+| Artwork | generated placeholders | real, from the iTunes API |
+
+**The most important finding:** the landing page built earlier was *Landing v1
+(post-launch)* — the version with Popular reviews and Popular Lists. Per
+`CLAUDE.md` that version is designed but deliberately **not** built, held back
+until there are roughly 5-10 users generating data, so those sections don't
+render empty. Building it was not just redundant; it produced the variant that
+was intentionally deferred. The live `/` is the pre-launch version and is
+correct as it stands.
+
+**Verified**
+
+`npm install` clean (380 packages). `tsc --noEmit` reports exactly the four
+pre-existing errors `CLAUDE.md` documents (`added` implicitly `any[]` in
+`EpisodeListClient.tsx` and `TopRatedClient.tsx`) and nothing else, confirming
+the transfer did not break anything. Those were left unfixed, as instructed.
+
+**Follow-ups**
+
+- The app cannot be run in this container: no `.env`, so no `DATABASE_URL`, and
+  Postgres is not provisioned here. Only `.env.example` was shipped, correctly.
+  Static checks work; anything touching auth, sessions, or the database does not.
+- The zip carried no `.git`, so none of Sasha's own commit history came across.
+  What is on this branch is a single snapshot commit, not his real history.
+
+**Process note**
+
+The empty repo was read as greenfield. The phrasing "remind you of the project"
+was a signal that prior work existed, and the right move was to ask whether
+there was an existing codebase before scaffolding anything. Roughly an hour of
+work went into a landing page that was already built, in the wrong stack, in a
+variant that was deliberately on hold.
+
+---
+
 ### 2026-08-13 — Scaffolded Next.js and built the landing page
+
+> **Superseded** by the entry above. The code described here was removed from
+> the working tree the same day; it survives only in commit `92b3ddb`. Do not
+> treat any of it as the current state of the project.
 
 - **Branch:** `claude/change-log-documentation-mr4x5v`
 - **Requested by:** sashaknyshjr@gmail.com — supplied the project spec

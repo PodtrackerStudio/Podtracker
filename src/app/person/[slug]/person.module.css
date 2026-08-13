@@ -1,0 +1,128 @@
+.main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+}
+.photo {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #ccc;
+  display: block;
+}
+.bio {
+  margin-top: 20px;
+  font-size: 13.5px;
+  color: #333;
+  line-height: 1.65;
+}
+
+.right {
+  padding-top: 4px;
+}
+.name {
+  font-size: 52px;
+  font-weight: 400;
+  letter-spacing: -1px;
+  margin-bottom: 8px;
+}
+
+.hostedShowLabel {
+  font-size: 20px;
+  font-weight: 400;
+  margin-bottom: 12px;
+}
+.hostedShowLink {
+  display: inline-block;
+  text-decoration: none;
+}
+.hostedShowCover {
+  width: 170px;
+  height: 170px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #ccc;
+  display: block;
+  transition: transform 0.15s;
+}
+.hostedShowLink:hover .hostedShowCover {
+  transform: scale(1.03);
+}
+
+.appearancesHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 56px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.appearancesTitle {
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+}
+.sortLinks {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.sortLinks button {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  text-align: right;
+}
+.sortLinks button.active {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.appearancesGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.appearanceCard {
+  width: 240px;
+  text-decoration: none;
+  color: var(--text);
+  display: block;
+}
+.appearanceCover {
+  width: 240px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #ccc;
+  display: block;
+  transition: transform 0.15s;
+}
+.appearanceCard:hover .appearanceCover {
+  transform: scale(1.02);
+}
+.appearanceTitle {
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 8px;
+  line-height: 1.35;
+}

@@ -1,0 +1,176 @@
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.heading {
+  font-size: 40px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 40px;
+}
+.tabs button {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 22px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+.tabs button.active {
+  color: var(--text);
+}
+
+.avatarWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.avatarButton {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  background: #ccc;
+}
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.avatarOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.avatarButton:hover .avatarOverlay {
+  opacity: 1;
+}
+.avatarLabel {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 10px;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.field label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.field input {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fafafa;
+  color: var(--text);
+}
+.field input:focus {
+  outline: none;
+  border-color: #999;
+  background: #fff;
+}
+.field input:disabled {
+  background: #eee;
+  color: var(--text-muted);
+}
+
+.bioField {
+  margin-bottom: 24px;
+}
+.bioField label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+.bioField textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 14px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #f7f7f7;
+  color: var(--text);
+  resize: vertical;
+}
+.bioField textarea:focus {
+  outline: none;
+  border-color: #999;
+  background: #fff;
+}
+
+.saveRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+.saveButton {
+  background: var(--text);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 32px;
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.saveButton:hover {
+  opacity: 0.85;
+}
+.saveButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.statusMsg {
+  text-align: center;
+  font-size: 13px;
+  margin-top: 12px;
+}
+.statusMsg.error {
+  color: var(--dont);
+}
+.statusMsg.success {
+  color: var(--recommend);
+}
+
+.placeholder {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 60px 0;
+}
