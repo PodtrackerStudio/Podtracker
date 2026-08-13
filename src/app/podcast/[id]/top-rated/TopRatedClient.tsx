@@ -41,7 +41,7 @@ export function TopRatedClient({ podcastId, podcastTitle }: { podcastId: string;
   const [dateCursor] = useState(() => new Date("2022-10-01"));
 
   function loadMore() {
-    const added = [];
+    const added: ReturnType<typeof randomEpisode>[] = [];
     let c = counter;
     for (let i = 0; i < 6; i++) {
       added.push(randomEpisode(c, dateCursor));

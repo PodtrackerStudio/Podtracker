@@ -71,6 +71,59 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-13 — Fixed the four pre-existing TypeScript errors; production build now passes
+
+- **Branch:** `claude/change-log-documentation-mr4x5v`
+- **Requested by:** sashaknyshjr@gmail.com — explicitly asked for these, which
+  `CLAUDE.md` requires before touching them.
+- **Status:** Complete
+
+**What changed**
+
+Two lines, one in each file:
+
+```ts
+const added = [];                                    // was: implicitly any[]
+const added: ReturnType<typeof randomEpisode>[] = []; // now
+```
+
+- `src/app/podcast/[id]/episodes/EpisodeListClient.tsx`
+- `src/app/podcast/[id]/top-rated/TopRatedClient.tsx`
+
+**Why this annotation**
+
+`ReturnType<typeof randomEpisode>[]` rather than spelling out
+`{ title: string; date: string }[]`, so the type follows `randomEpisode` if its
+shape ever changes instead of silently drifting out of date. Both files define
+their own local `randomEpisode`, so each resolves to its own type. Types are
+erased at compile time, so this cannot alter runtime behaviour.
+
+**Verified**
+
+- `tsc --noEmit`: clean (was 4 errors).
+- `npm run build`: succeeds, all 21 routes compile. It failed before this change,
+  so the project is now deployable.
+- Behaviour unchanged, checked in a browser against the production build: on
+  `/podcast/jre/episodes` "Load more" takes the list 6 → 12, on
+  `/podcast/jre/top-rated` 7 → 13, and the Newest/Oldest toggle reorders. No
+  JavaScript errors on either page.
+- `eslint`: 3 warnings, all pre-existing and in files not touched here
+  (`ReviewWidget.tsx` and similar), 0 errors.
+
+**Trap worth knowing: `npm run dev` does not hydrate in this container**
+
+The dev server's HMR websocket (`ws://127.0.0.1:3000/_next/webpack-hmr`) cannot
+connect here, and without it the client components never finish hydrating —
+buttons render but do nothing. This looks exactly like a broken feature and
+nearly got reported as one. It is an environment limitation, not an app bug:
+the same interactions work correctly under `npm run build && npm run start`.
+
+**To test anything interactive in this container, use the production server, not
+`npm run dev`.** Also do not run `npm run build` while `npm run dev` is running —
+they share `.next` and the build corrupts the running dev server's state.
+
+---
+
 ### 2026-08-13 — Imported Sasha's existing codebase; removed the scaffold built earlier
 
 - **Branch:** `claude/change-log-documentation-mr4x5v`

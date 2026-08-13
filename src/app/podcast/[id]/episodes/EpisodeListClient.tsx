@@ -44,7 +44,7 @@ export function EpisodeListClient({ podcastId, podcastTitle }: { podcastId: stri
   const displayed = sort === "newest" ? episodes : [...episodes].reverse();
 
   function loadMore() {
-    const added = [];
+    const added: ReturnType<typeof randomEpisode>[] = [];
     let c = counter;
     for (let i = 0; i < 6; i++) {
       added.push(randomEpisode(c, dateCursor));
