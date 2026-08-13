@@ -71,6 +71,78 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-13 — Made change log updates automatic via hooks
+
+- **Branch:** `claude/change-log-documentation-mr4x5v`
+- **Requested by:** sashaknyshjr@gmail.com — asked that this log be appended to
+  every time they ask for something or after a session of work, so the record is
+  reliably there for future sessions rather than depending on memory.
+- **Status:** Complete
+
+**What changed**
+
+- Added `.claude/hooks/session-base.sh` (SessionStart): records the commit the
+  session began at, into `.git/claude-session-base`.
+- Added `.claude/hooks/change-log-reminder.sh` (Stop): compares the files the
+  session touched against `docs/change-log.md`, and blocks the session from
+  ending with `decision: "block"` if work happened but the log went untouched.
+- Added `.claude/settings.json` wiring both hooks up. Project-scoped and
+  committed, so it applies to everyone who clones the repo.
+- Expanded `CLAUDE.md` with a section documenting the enforcement and its
+  limits.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `.claude/hooks/session-base.sh` | Added — records session start commit |
+| `.claude/hooks/change-log-reminder.sh` | Added — Stop hook that blocks on an unrecorded session |
+| `.claude/settings.json` | Added — hook wiring |
+| `CLAUDE.md` | Modified — documented the hooks and entry granularity |
+| `docs/change-log.md` | Modified — this entry |
+
+**Why**
+
+The previous setup relied only on a `CLAUDE.md` instruction, which is a request
+a session can silently skip. The hook is executed by the harness, so it does not
+depend on the model noticing. Blocking was chosen over a passive notice because
+a message that appears after the work is done is easy to ignore.
+
+The baseline-commit approach exists because the obvious check — "is the working
+tree dirty?" — reports nothing after a commit-and-push, which is exactly when a
+session is ending and the log matters most. Comparing against the session's
+starting commit catches that case.
+
+Two deliberate exemptions keep the hook from crying wolf: changes confined to
+`.claude/` don't trigger it, and `stop_hook_active` short-circuits it so a
+blocked stop cannot loop. Both failure modes — missing or corrupt baseline file
+— degrade to silence rather than blocking.
+
+Behavior was verified across eight cases before the hooks were wired up: silent
+on no changes / `.claude`-only / log-already-updated / `stop_hook_active`;
+blocking on an uncommitted source file and on a committed-with-clean-tree
+change; no crash on missing or garbage baseline.
+
+**Follow-ups**
+
+- The hooks were added *during* this session. Claude Code only watches settings
+  directories that existed at session start, so they may not take effect until
+  the next session in this repo. Not verified live — the assertion that they
+  work rests on the scripted tests above, not on an observed firing.
+- Per-request logging (an entry every single time the user asks something) was
+  deliberately not implemented; see the note below.
+
+**Rejected: one entry per request**
+
+The literal request was to append "every time I ask something." That was
+implemented as per-session-of-work instead, because an entry per message would
+bury the decisions worth reading under routine back-and-forth, making the log
+slower to read at exactly the moment it is needed. The hook fires per session,
+which achieves the actual goal — nothing gets lost — without the noise. If the
+finer granularity is wanted after all, the Stop hook is the place to change it.
+
+---
+
 ### 2026-08-13 — Established the change log
 
 - **Branch:** `claude/change-log-documentation-mr4x5v`
