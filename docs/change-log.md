@@ -71,6 +71,42 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-14 — Typing caret changed from vertical bar to horizontal underscore
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — wanted the blinking caret on the
+  landing page hero to be horizontal rather than a vertical line.
+- **Status:** Complete
+
+**What changed**
+
+`.typedCaret` in `src/app/landing.module.css` went from `width: 2px; height:
+0.95em` (vertical bar) to `width: 0.5em; height: 3px` (underscore), with
+`vertical-align: baseline` so it sits on the text baseline instead of straddling
+it. Sized in `em` so it scales with the heading — at the hero's 46px that is a
+23px-wide, 3px-tall bar. `.typedCaretBlinking` composes `.typedCaret`, so the
+1.06s blink and the `prefers-reduced-motion` opt-out are unchanged.
+
+**Also verified this session** — the iTunes work from the previous entry, run for
+the first time on a machine with **open egress** (the authoring container had
+`itunes.apple.com` blocked, and that entry flagged the first open-egress run as
+the real test):
+
+- `itunes.apple.com` reachable: HTTP 200.
+- `/podcast/360084272` renders genuinely live data — "The Joe Rogan Experience",
+  2,736 episodes, `2009–`, genres, description, and recent episodes including
+  **#2539 dated August 13 2026**, i.e. the day before this run. Not the fallback.
+- `/`, `/podcast/1434243584`, `/podcast/jre` (legacy slug → placeholder
+  fallback), `/explore`, `/following` all HTTP 200.
+- `tsc --noEmit` clean.
+
+So the field-name risk that entry raised — that a fixture could mask a real-API
+mismatch — did not materialise.
+
+**Follow-ups**
+
+- None for the caret. The follow-ups in the iTunes entry below still stand.
+
 ### 2026-08-14 — Podcast pages now render live iTunes + RSS data
 
 - **Branch:** `claude/page-update-earlier-changes-6nvxia`

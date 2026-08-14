@@ -45,12 +45,14 @@
   white-space: nowrap;
   border: 0;
 }
+/* Horizontal underscore-style caret (Sasha's call, 2026-08-14) rather than the
+   vertical bar it started as. Sized in em so it tracks the heading's font-size. */
 .typedCaret {
   display: inline-block;
-  width: 2px;
-  height: 0.95em;
+  width: 0.5em;
+  height: 3px;
   margin-left: 3px;
-  vertical-align: -0.12em;
+  vertical-align: baseline;
   background: currentColor;
 }
 .typedCaretBlinking {
