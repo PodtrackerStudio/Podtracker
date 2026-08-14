@@ -71,6 +71,95 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-14 — Podcast pages now render live iTunes + RSS data
+
+- **Branch:** `claude/page-update-earlier-changes-6nvxia`
+- **Requested by:** phillipn@podtracker.studio — wanted the site connected to a
+  real podcast API (iTunes and/or Spotify) so it shows real shows, with the
+  podcast page keeping its existing layout when you click through to one.
+- **Status:** Complete for iTunes. **Spotify was not built** — see below.
+
+**Why iTunes only**
+
+The iTunes Search API needs no signup, key, or token, so it works the moment
+anyone clones this repo. Spotify's Web API requires a client id and secret, and
+`CLAUDE.md` already records that those credentials aren't available yet. Adding
+a Spotify path now would mean shipping a code path nobody can run or test. The
+iTunes layer is where a Spotify one would slot in later — `getPodcastDetail`
+is the only thing the page calls.
+
+**What changed**
+
+- `src/lib/podcastApi.ts` — added `lookupPodcast(itunesId)` (the iTunes Lookup
+  endpoint) and replaced the unused `fetchFeedEpisodes` with `fetchPodcastFeed`,
+  which returns the feed's description and *all* its episodes rather than a
+  slice, so the episode count and start year are real rather than guessed.
+  Both now go through `fetch` with `next: { revalidate: 3600 }`.
+- `src/lib/podcastDetail.ts` — **new.** Assembles what the podcast page needs
+  from iTunes (identity, artwork, genres) plus the show's own RSS feed
+  (description, episodes). Never throws.
+- `src/app/podcast/[id]/page.tsx` — `getMockPodcast` is gone; the page awaits
+  `getPodcastDetail(id)`. **The layout and markup are untouched.**
+
+**The split that matters: show data vs community data**
+
+Only the show's own facts come from the API. Ratings, the distribution bars,
+listens, likes, friends' activity, reviews and lists are *this app's* data, and
+there is no user base generating them — they stay mock, now grouped in a
+`community` constant at the top of the page so the boundary is obvious. Don't
+"finish the job" by inventing an API source for them; there isn't one.
+
+**Why `fetch` instead of rss-parser's `parseURL`**
+
+`parseURL` uses its own HTTP client, which bypasses Next's cache entirely. The
+feed XML is now fetched with `fetch` and handed to `parseString`, so a busy
+page makes one request an hour instead of one per visitor.
+
+**Fallbacks — all deliberate**
+
+`getPodcastDetail` never throws. A non-numeric id (the legacy `jre`,
+`huberman`, … slugs still hardcoded in the Similar podcasts strip), a failed
+lookup, or an unknown id all fall back to the built-in placeholder, so those
+links keep landing on a rendered page. A podcast that resolves but whose feed
+is unreachable still renders the iTunes half. Verified: with iTunes blocked
+entirely, `/podcast/360084272` returns 200 with the placeholder rather than a
+500.
+
+**Verified**
+
+`tsc --noEmit` clean, `eslint` clean, `npm run build` compiles.
+
+Because this container's egress policy **blocks `itunes.apple.com` (403 at the
+proxy)**, the API could not be exercised against Apple directly. Instead a local
+fixture server served iTunes-shaped JSON and a real-shaped RSS feed, with the
+new `ITUNES_API_BASE` env var pointing the client at it. Against that, the page
+rendered live values end to end: title "The Joe Rogan Experience", author, years
+`2009–` derived from the oldest feed item, episode count from the feed, genres
+joined from the `genres` array, the feed's description, and four episodes with
+formatted dates. Clicking a landing-page tile navigates to
+`/podcast/360084272` and renders it.
+
+**This means the field names are only as trustworthy as the existing code** —
+the fixture mirrors what `searchPodcasts` already assumed, so a real-API
+mismatch in `lookup`-only fields would not have been caught here. First run on
+a machine with open egress is the real test.
+
+**Known divergence to raise with Sasha, not fix**
+
+The design has a wide banner behind the podcast header. No public podcast API
+returns one, so the square cover art is being stretched across it, which reads
+as a heavy zoomed crop. Options are a blur, a gradient, or a designed default —
+that's a design call, so it's flagged rather than picked.
+
+**Follow-ups**
+
+- `/explore` and the episode pages are still hardcoded.
+- Episode links use the item's position in the feed (`1`, `2`, …) rather than
+  its guid, because guids are arbitrary strings and frequently URLs. Positions
+  shift when a new episode publishes. The episode page is entirely mock, so
+  nothing reads the value yet, but it needs a stable key before it does.
+- `ITUNES_API_BASE` is undocumented in `.env.example`; it exists for testing.
+
 ### 2026-08-14 — Typewriter effect on the landing page hero heading
 
 - **Branch:** `claude/page-update-earlier-changes-6nvxia`

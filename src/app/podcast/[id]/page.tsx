@@ -7,47 +7,31 @@ import { ReviewWidget } from "@/components/ReviewWidget";
 import { FollowButton } from "@/components/FollowButton";
 import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { tierFromScore } from "@/lib/ratingTier";
+import { getPodcastDetail } from "@/lib/podcastDetail";
 import styles from "./podcast.module.css";
 
-// Mock data standing in for the database + Podcast Index lookup until those are wired up.
-// `id` is threaded through now so swapping this stub for a real fetch later is a one-line change.
-function getMockPodcast(id: string) {
-  return {
-    id,
-    title: "Modern Wisdom",
-    author: "Chris Williamson",
-    years: "2018–",
-    episodesCount: "1,111",
-    listens: "980k",
-    likes: "405k",
-    genres: "Self-help, Society & Culture",
-    description:
-      "Life is hard. This podcast will help. Lessons from the greatest thinkers on the planet with Chris Williamson. Including guests like David Goggins, Dr Jordan Peterson, Naval Ravikant, Sam Harris, Jocko Willink, Dr Andrew Huberman, Dr Julie Smith, Steven Bartlett, Ryan Holiday, Robert Greene, Matthew McConaughey, Alain de Botton, Alex Hormozi, Tony Robbins, Chris Bumstead, Mark Manson and more.",
-    coverUrl: "https://picsum.photos/seed/mwcover/360/360",
-    bannerUrl: "https://picsum.photos/seed/mwbanner/1600/640",
-    avgScore: "3.6",
-    distribution: [
-      { tier: "highly", label: "Highly Recommend", pct: 38, count: 412 },
-      { tier: "recommend", label: "Recommend", pct: 29, count: 314 },
-      { tier: "ok", label: "OK", pct: 18, count: 195 },
-      { tier: "dont", label: "Don't Recommend", pct: 11, count: 119 },
-      { tier: "didnt", label: "Didn't Finish", pct: 4, count: 43 },
-    ],
-  };
-}
+// Community data — ratings, listens, likes, the distribution bars. None of this
+// comes from a podcast API; it is this app's own data and there is no user base
+// generating it yet, so it stays mock while the show's own details come live
+// from `getPodcastDetail`.
+const community = {
+  listens: "980k",
+  likes: "405k",
+  avgScore: "3.6",
+  distribution: [
+    { tier: "highly", label: "Highly Recommend", pct: 38, count: 412 },
+    { tier: "recommend", label: "Recommend", pct: 29, count: 314 },
+    { tier: "ok", label: "OK", pct: 18, count: 195 },
+    { tier: "dont", label: "Don't Recommend", pct: 11, count: 119 },
+    { tier: "didnt", label: "Didn't Finish", pct: 4, count: 43 },
+  ],
+};
 
 const friendsActivity = [
   { id: "fa1", avatar: "https://picsum.photos/seed/fa1/88/88", tier: "highly", tierLabel: "Highly Recommend", hasReview: false },
   { id: "fa2", avatar: "https://picsum.photos/seed/fa2/88/88", tier: "recommend", tierLabel: "Recommend", hasReview: true },
   { id: "fa3", avatar: "https://picsum.photos/seed/fa3/88/88", tier: "ok", tierLabel: "OK", hasReview: true },
   { id: "fa4", avatar: "https://picsum.photos/seed/fa4/88/88", tier: "highly", tierLabel: "Highly Recommend", hasReview: false },
-];
-
-const recentEpisodes = [
-  { id: "1111", title: "The Hidden Cost Of Overthinking Everything – George Mack #1111", guest: "George Mack", date: "June 15, 2026", img: "https://picsum.photos/seed/ep1111/120/120" },
-  { id: "1110", title: "Why Most People Never Reach Their Potential – Suzanne Venker #1110", guest: "Suzanne Venker", date: "June 8, 2026", img: "https://picsum.photos/seed/ep1110/120/120" },
-  { id: "1109", title: "Inside Modern Politics – Ezra Klein #1109", guest: "Ezra Klein", date: "June 1, 2026", img: "https://picsum.photos/seed/ep1109/120/120" },
-  { id: "1108", title: "How To Rebuild Your Confidence From Zero – DJ Shipley #1108", guest: "DJ Shipley", date: "May 25, 2026", img: "https://picsum.photos/seed/ep1108/120/120" },
 ];
 
 const reviews = [
@@ -72,7 +56,8 @@ const similarPodcasts = [
 
 export default async function PodcastPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const podcast = getMockPodcast(id);
+  const podcast = await getPodcastDetail(id);
+  const recentEpisodes = podcast.recentEpisodes;
 
   return (
     <>
@@ -92,12 +77,12 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
             <div className={styles.avgMic}>
               <MicIcon />
             </div>
-            <div className={styles.scoreDisplay}>{podcast.avgScore}</div>
+            <div className={styles.scoreDisplay}>{community.avgScore}</div>
             <div className={styles.avgLabel}>Average rating</div>
 
             <div className={styles.distSection}>
               <div className={styles.distSectionTitle}>Ratings distribution</div>
-              {podcast.distribution.map((d) => (
+              {community.distribution.map((d) => (
                 <div className={styles.distRow} key={d.tier}>
                   <div className={styles.distTrack}>
                     <div className={`${styles.distFill} ${styles[d.tier]}`} style={{ width: `${d.pct}%` }} />
@@ -121,11 +106,11 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                 <span>Episodes</span>
               </div>
               <div className={styles.podcastStat}>
-                <strong>{podcast.listens}</strong>
+                <strong>{community.listens}</strong>
                 <span>Listens</span>
               </div>
               <div className={styles.podcastStat}>
-                <strong>{podcast.likes}</strong>
+                <strong>{community.likes}</strong>
                 <span>Likes</span>
               </div>
             </div>
