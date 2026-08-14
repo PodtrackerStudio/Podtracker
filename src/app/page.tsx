@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getCurrentUser } from "@/lib/auth";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
+import { TypedText } from "./TypedText";
 import styles from "./landing.module.css";
 
 const features = [
@@ -30,7 +31,9 @@ export default async function LandingPage() {
     <main className={styles.page}>
       {/* HERO */}
       <section className={styles.hero}>
-        <h1>Welcome to Podtracker!</h1>
+        <h1>
+          <TypedText text="Welcome to Podtracker!" />
+        </h1>
         <div className={styles.heroCta}>
           <Link href="/signup" className={styles.btnPrimary}>
             Create account

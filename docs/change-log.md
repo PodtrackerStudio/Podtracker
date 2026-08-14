@@ -71,6 +71,81 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-14 — Typewriter effect on the landing page hero heading
+
+- **Branch:** `claude/page-update-earlier-changes-6nvxia`
+- **Requested by:** phillipn@podtracker.studio — asked for the "Welcome to
+  Podtracker!" heading to type itself out and then be left with a flashing
+  typing bar at the end.
+- **Status:** Complete
+
+**What changed**
+
+- Added `src/app/TypedText.tsx`, a client component that types a string one
+  character at a time and leaves a caret at the end. Co-located in the route
+  folder, following `AppearancesGrid.tsx` / `FollowingGrid.tsx`.
+- `src/app/page.tsx` wraps the `<h1>` text in it. The string still lives in
+  `page.tsx`; the component is generic and takes `text`, `speedMs` (default 70)
+  and `startDelayMs` (default 350).
+- Styles went into `landing.module.css` next to the existing `.hero h1` rules
+  rather than a new stylesheet — `src/components/` has no CSS-module convention
+  of its own (the two components that need one import a page's module).
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/TypedText.tsx` | Added — the typing client component |
+| `src/app/page.tsx` | Modified — hero `<h1>` renders `<TypedText>` |
+| `src/app/landing.module.css` | Modified — `.typed*` classes and the caret keyframes |
+| `docs/change-log.md` | Modified — this entry |
+
+**Why it is built this way**
+
+The caret is **solid while typing and only blinks once the text is finished**,
+which is how a real cursor behaves — a caret that blinks while characters are
+still arriving reads as two competing animations.
+
+The heading reserves its final width up front, via a `visibility: hidden` copy
+of the full string sitting in the layout with the typed text absolutely
+positioned over it. Without that, a centre-aligned 46px heading slides
+sideways on every keystroke. `white-space: pre-wrap` keeps the trailing space
+of a half-typed word from collapsing while still allowing the heading to wrap
+on narrow screens.
+
+**A bug worth knowing about if you touch this again**
+
+The first version reserved the width of the *text only*, so when the last
+character landed the caret had nowhere to go and **wrapped onto a second line**
+under the heading, pushing the hero taller. It is only visible in the finished
+state, so it survived a mid-animation check. The hidden copy now carries a
+caret of its own, so the reservation always includes it. Verified at 1440px and
+390px: heading height is identical before and after typing (69px / 138px), and
+the caret's bottom edge stays within the last text line.
+
+**Accessibility**
+
+The animation is decorative and `aria-hidden`; a visually-hidden copy of the
+full string carries the accessible name. Playwright's aria snapshot reports
+`heading "Welcome to Podtracker!" [level=1]` — announced once, not per
+character. `prefers-reduced-motion: reduce` skips the animation entirely
+(full text immediately, `animation: none` on the caret), read via
+`useSyncExternalStore` rather than `useState` + effect, because
+`react-hooks/set-state-in-effect` is an **error** in this repo's ESLint config
+and rejected the obvious version.
+
+**Verified**
+
+`tsc --noEmit` clean, `eslint` clean on both touched files, `npm run build`
+compiles. Driven in headless Chromium against the production server: the
+heading samples as `""` → `"W"` → `"We"` → … → `"Welcome to Podtracker!"`, the
+caret picks up the blink class only at the end, and its computed opacity
+samples both `0` and `1`. No console or page errors.
+
+**Follow-ups**
+
+- Not viewed on a real device or in a non-Chromium browser.
+
 ### 2026-08-13 — Applied Sasha's real Figma design system across the site
 
 - **Branch:** `main`
