@@ -71,6 +71,69 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-16 — Podcast page title no longer renders on top of the banner
+
+- **Branch:** `claude/website-setup-local-4ydg75`
+- **Requested by:** phillipn@podtracker.studio — reported the podcast page looked
+  "really weird", with the podcast name too close to the banner.
+- **Status:** Complete for the podcast page. A worse, separate banner problem on
+  the **episode** page was found and deliberately left alone — see Follow-ups.
+
+**What changed**
+
+`.podcastRight` in `src/app/podcast/[id]/podcast.module.css` went from
+`padding-top: 64px` to `104px`.
+
+**Why**
+
+Arithmetic bug, not a taste call. `.podcastInfo` carries `margin-top: -80px` so
+the block rides up over the banner and the cover art overlaps it. The right-hand
+column then has to push the title back *down* by at least that same 80px. It only
+pushed 64px — 16px short — so the `<h1>` rendered inside the banner's dark
+gradient. Measured at 1440px: the title box started at y=444 against a banner
+bottom edge of y=420, i.e. a **gap of −16px**. The visible result was the banner
+edge slicing through the middle of the letterforms, with near-black title text
+sitting on the dark half of the gradient.
+
+80px would land the title exactly on the seam, so the value is 80 + 24 = 104,
+where 24px is the spacing step already used throughout this stylesheet. Gap is
+now +24px.
+
+The title still sits beside the cover art as designed — cover spans y=340–520,
+title y=444–507 — so the overlap composition is preserved, the heading just
+clears the banner.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/podcast/[id]/podcast.module.css` | Modified — `.podcastRight` padding-top 64px → 104px, with a comment recording the 80px constraint |
+| `docs/change-log.md` | Modified — this entry |
+
+**Verified**
+
+Measured the rendered `banner-bottom → h1-top` gap in Chromium at 1920, 1440,
+1280, 1024, 768 and 390px: **24px at every width**. The file contains no media
+queries, so there is no breakpoint for the value to collide with. `tsc --noEmit`
+clean.
+
+**Follow-ups**
+
+- **The episode page banner is `height: 100vh`** in
+  `src/app/podcast/[id]/episode/[epId]/episode.module.css`, where the podcast
+  page's is `320px`. At a 1440×900 viewport this makes the banner 900px tall and
+  pushes the episode `<h1>` to y=1066 — **entirely below the fold**, so the page
+  opens as a full screen of artwork with no title visible until you scroll. This
+  is a real defect but the replacement height is a design decision, so it was
+  flagged rather than picked. Matching the podcast page at 320px is the obvious
+  candidate.
+- The podcast page has **no responsive breakpoints at all** — the header grid
+  stays `200px 1fr` down to 390px. Pre-existing, untouched here.
+- The wider question phillipn opened — that the content column width changes
+  between pages (1120 / 1040 / 960) and that the nav and footer are full-bleed
+  while content is not — is still undecided and was not touched. Every page's
+  `.main` already has `margin: 0 auto`; nothing is off-centre.
+
 ### 2026-08-14 — Typing caret changed from vertical bar to horizontal underscore
 
 - **Branch:** `main`
