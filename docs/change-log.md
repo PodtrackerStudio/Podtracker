@@ -204,6 +204,16 @@ add follow/rate/log routes, wire the three widgets.
   which currently claims LogEntry is "decoupled from Rating… no rating". Fix that
   comment when building, and note `ReviewWidget` captures only a date and text
   today, so it needs a tier control added.
+- **The diary is a time capsule — decided by Sasha 2026-08-17.** A diary entry
+  must always show the rating as it was *when logged*; re-rating later must never
+  change an old entry, because the point of the diary is understanding what you
+  thought at the time. This means **`LogEntry` needs a `tier` column** — the only
+  schema migration in the write-layer batch.
+  **Consequence:** there are then two sources of rating truth — the current
+  rating (one per user per item) and the historical log tier (many per item).
+  **Averages and the distribution bars must read the current rating, never the
+  logs**, or someone who relistens and logs three times counts three times and
+  skews the distribution.
 - `Add to list` and `Add to next listening` remain handler-less buttons, and are
   absent from these Figma frames entirely. Left alone — Sasha is building those
   flows himself.
