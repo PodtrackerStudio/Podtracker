@@ -135,6 +135,50 @@ present, and all six community sections gone. `tsc --noEmit` and `eslint` clean.
   design's data and should not be deleted.
 - The episode page's `height: 100vh` banner (previous entry) is still open.
 
+### 2026-08-17 — Logo added to the nav, on the blue rather than on a black tile
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio
+- **Status:** Complete.
+
+**What changed**
+
+`SiteNav` now renders `/logo.png` at 88×88 as the first item, left of the
+wordmark. No tile behind it — the PNG is transparent (86.4% of its pixels), so it
+sits directly on the nav blue.
+
+**Why not the black tile the Figma shows**
+
+Built it that way first and it looked wrong, so the backdrops were measured. The
+logo contains a very dark element (charcoal `#333333` headphones) and a light one
+(green `#8BC53D` thumb), and **no flat backdrop serves both**:
+
+| Backdrop | headphones | green thumb | red thumb |
+| --- | --- | --- | --- |
+| Black (the Figma's tile) | **1.66** | 10.15 | 4.22 |
+| Nav blue `#C3DBFF` | 8.96 | **1.47** | 3.53 |
+| White | 12.63 | **2.07** | 4.98 |
+| Page grey | 10.22 | **1.67** | 4.03 |
+
+3:1 is the usual floor for a graphic to be distinguishable. On black the
+headphones — the main shape — measured **1.66:1** and effectively disappeared,
+leaving a black square with a coloured squiggle. Sasha's call was to drop the
+tile and put it straight on the blue, where the headphones hit **8.96:1** and
+carry the same weight as the wordmark. The green thumb washes out at that size;
+that's the accepted trade.
+
+**Do not "fix" this by re-adding a tile.** Any flat backdrop fails one element or
+the other. The real fix is to the artwork: darken the green (toward the brand's
+`#28BA60`) so it survives on light, or lighten the headphones so they survive on
+dark. That's Sasha's to decide, and it also affects the favicon.
+
+**Still outstanding on the asset itself** — `public/logo.png` is 561×561 but the
+artwork occupies only 375×325, so **38.7% of the canvas is empty padding** and the
+mark renders ~40% smaller than its box. Edge transitions average 3.5px against
+1–2px for a clean vector export, so it was upscaled or lossily recompressed at
+some point. Sasha is sourcing a better original; cropping the padding is the
+cheap win in the meantime.
+
 ### 2026-08-17 — Search results page brought in line with the rest of the site
 
 - **Branch:** `main`

@@ -13,6 +13,12 @@ export async function SiteNav({ active }: SiteNavProps) {
 
   return (
     <nav className="site-nav">
+      {/* Logo sits directly on the blue nav — the PNG is transparent, so no
+          tile behind it. See the contrast note in globals.css. */}
+      <Link className="nav-logo-tile" href="/" aria-label="Podtracker home">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="" />
+      </Link>
       <Link className="nav-logo" href="/">
         Podtracker
       </Link>

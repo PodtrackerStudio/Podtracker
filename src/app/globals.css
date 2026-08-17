@@ -83,6 +83,25 @@ nav.site-nav {
   /* Nav bar → PT Serif Caption */
   font-family: var(--font-display), Georgia, "Times New Roman", serif;
 }
+/* The logo sits directly on the blue nav — no tile. The PNG is transparent, and
+   its charcoal headphones hit ~9:1 against #C3DBFF, so they read as crisply as
+   the wordmark beside them. (On the black tile the Figma showed, the same
+   headphones measured 1.66:1 and effectively vanished.) */
+.nav-logo-tile {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-logo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
 .nav-logo {
   display: flex;
   align-items: center;
