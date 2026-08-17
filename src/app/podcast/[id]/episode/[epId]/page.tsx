@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SpotifyIcon, YouTubeIcon, ApplePodcastsIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon, MicIcon } from "@/components/icons";
 import { RatingWidget } from "@/components/RatingWidget";
 import { ReviewWidget } from "@/components/ReviewWidget";
+import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import styles from "./episode.module.css";
 
 // Mock data standing in for the database + Podcast Index lookup until those are wired up.
@@ -46,10 +47,8 @@ const featuredPeople = [
   { id: "ezra", slug: "ezra-klein", name: "Ezra Klein", role: "Guest", avatar: "https://picsum.photos/seed/ezraklein/120/120" },
 ];
 
-// Same switch as the podcast page. False renders Sasha's no-users episode
-// design (right-hand Figma frame); true restores the with-users one (left).
-// Rate and Log/Add review are never gated — they create the first data.
-const HAS_COMMUNITY_DATA = false;
+// `HAS_COMMUNITY_DATA` (imported above) renders Sasha's no-users episode design
+// when false — the right-hand Figma frame — and the with-users one when true.
 
 export default async function EpisodePage({ params }: { params: Promise<{ id: string; epId: string }> }) {
   const { id, epId } = await params;

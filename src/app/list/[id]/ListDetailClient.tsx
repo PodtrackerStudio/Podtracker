@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { tierFromScore } from "@/lib/ratingTier";
+import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import styles from "./list.module.css";
 
 export type ListEpisode = {
@@ -75,11 +76,15 @@ export function ListDetailClient({
             Sort by
           </label>
           <select id="list-sort" className={styles.sortSelect} value={sort} onChange={(e) => changeSort(e.target.value as SortMode)}>
-            {Object.entries(SORT_LABELS).map(([value, label]) => (
-              <option value={value} key={value}>
-                {label}
-              </option>
-            ))}
+            {Object.entries(SORT_LABELS)
+              // Sorting by average rating is meaningless with no ratings, so the
+              // option is hidden until there are some.
+              .filter(([value]) => value !== "rating" || HAS_COMMUNITY_DATA)
+              .map(([value, label]) => (
+                <option value={value} key={value}>
+                  {label}
+                </option>
+              ))}
           </select>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { tierFromScore } from "@/lib/ratingTier";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
+import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import styles from "./podcast.module.css";
 
 // Community data — ratings, listens, likes, the distribution bars. None of this
@@ -55,12 +56,9 @@ const similarPodcasts = [
   { id: "jre", name: "The Joe Rogan Experience", img: "https://picsum.photos/seed/jre/200/200", avgRating: 3.7 },
 ];
 
-// There is no user base yet, so nothing generates ratings, reviews, friend
-// activity, or lists. With this false the page renders Sasha's no-users design
-// (Figma Frames 11 + 13); flipping it to true restores the with-users design
-// (Frames 4 + 6). Rating and reviewing stay available in BOTH states — that is
-// how the first data ever gets created, so never gate them on this.
-const HAS_COMMUNITY_DATA = false;
+// `HAS_COMMUNITY_DATA` (imported above) gates everything needing a user base.
+// False renders Sasha's no-users design (Figma Frames 11 + 13); true restores
+// the with-users one (Frames 4 + 6).
 
 export default async function PodcastPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PlayIcon } from "@/components/icons";
+import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import styles from "./explore.module.css";
 
 const DEMO_EPISODE_HREF = "/podcast/modern-wisdom/episode/1109";
@@ -74,10 +75,12 @@ export default function ExplorePage() {
                 <div className={styles.hoverCard}>
                   <div className={styles.hoverCardTitle}>{p.title}</div>
                   <div className={styles.hoverCardDate}>{p.meta}</div>
-                  <div className={styles.hoverCardRating}>
-                    <span className={styles.hoverCardScore}>{p.score.toFixed(1)}</span>
-                    <span className={`${styles.hoverCardLabel} ${styles[p.tier]}`}>{p.tierLabel}</span>
-                  </div>
+                  {HAS_COMMUNITY_DATA && (
+                    <div className={styles.hoverCardRating}>
+                      <span className={styles.hoverCardScore}>{p.score.toFixed(1)}</span>
+                      <span className={`${styles.hoverCardLabel} ${styles[p.tier]}`}>{p.tierLabel}</span>
+                    </div>
+                  )}
                 </div>
               </Link>
             ))}
@@ -104,10 +107,12 @@ export default function ExplorePage() {
                 <div className={styles.hoverCard}>
                   <div className={styles.hoverCardTitle}>{ep.title}</div>
                   <div className={styles.hoverCardDate}>{ep.date}</div>
-                  <div className={styles.hoverCardRating}>
-                    <span className={styles.hoverCardScore}>{ep.score.toFixed(1)}</span>
-                    <span className={`${styles.hoverCardLabel} ${styles[ep.tier]}`}>{ep.tierLabel}</span>
-                  </div>
+                  {HAS_COMMUNITY_DATA && (
+                    <div className={styles.hoverCardRating}>
+                      <span className={styles.hoverCardScore}>{ep.score.toFixed(1)}</span>
+                      <span className={`${styles.hoverCardLabel} ${styles[ep.tier]}`}>{ep.tierLabel}</span>
+                    </div>
+                  )}
                 </div>
               </Link>
             ))}

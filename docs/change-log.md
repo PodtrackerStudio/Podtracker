@@ -135,6 +135,44 @@ present, and all six community sections gone. `tsc --noEmit` and `eslint` clean.
   design's data and should not be deleted.
 - The episode page's `height: 100vh` banner (previous entry) is still open.
 
+### 2026-08-17 — No average ratings anywhere; the flag is now one shared constant
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — remove the average rating from
+  episode hover cards and make sure no show or episode displays one anywhere,
+  since none exist yet. He plans to flip this back on shortly after he and his
+  partner publish and start logging.
+- **Status:** Complete.
+
+**One switch for the whole site**
+
+`src/lib/community.ts` — **new**, exporting a single `HAS_COMMUNITY_DATA`. The
+podcast and episode pages each had their own copy of this constant, which meant
+turning the site on later would have been a multi-file hunt. There is now
+**exactly one definition**; flipping that one line reveals every gated section
+at once.
+
+**Where the average rating was removed**
+
+| Place | How |
+| --- | --- |
+| `MediaThumbCard` hover popup | Gated inside the component, so **every** consumer is covered at once — list pages, Similar podcasts, anywhere else it gets used later. Callers may keep passing `rating`; it just doesn't render. |
+| `/explore` — podcast covers and episode thumbs | Both inline `hoverCardRating` rows gated |
+| `/home` — episode grid | Inline `hoverCardRating` row gated |
+| `/list/[id]` — "Average rating" **sort option** | Filtered out of the dropdown; sorting by a rating nothing has is meaningless |
+| Podcast + episode pages — consensus score and distribution | Already gated (earlier entries), now via the shared flag |
+
+Hover popups still show **title and date** — only the score and tier label are
+suppressed, so the hover feature keeps working.
+
+**Verified**
+
+`/explore`: 0 rating rows, 0 scores, 0 tier labels, with all 16 hover titles and
+dates intact. `/list/joe-rogan-mma-show`: sort options are now List order /
+Earliest first / Newest first, 0 `media-thumb-score` and 0 `media-thumb-tier`
+elements, 100 titles intact. All four pages HTTP 200, `tsc --noEmit` clean.
+`eslint` reports 3 pre-existing warnings in files not touched here.
+
 ### 2026-08-17 — Episode page ships the no-users design; banner removed entirely
 
 - **Branch:** `main`

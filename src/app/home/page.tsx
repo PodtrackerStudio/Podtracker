@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { PlayIcon } from "@/components/icons";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import styles from "./home.module.css";
 
 // Same escape hatch the profile page uses: `sasha` always sees the fully
@@ -145,10 +146,12 @@ export default async function HomePage() {
                 <div className={styles.hoverCard}>
                   <div className={styles.hoverCardTitle}>{ep.title}</div>
                   <div className={styles.hoverCardDate}>{ep.date}</div>
-                  <div className={styles.hoverCardRating}>
-                    <span className={styles.hoverCardScore}>{ep.score}</span>
-                    <span className={`${styles.hoverCardLabel} ${styles[ep.tier]}`}>{ep.tierLabel}</span>
-                  </div>
+                  {HAS_COMMUNITY_DATA && (
+                    <div className={styles.hoverCardRating}>
+                      <span className={styles.hoverCardScore}>{ep.score}</span>
+                      <span className={`${styles.hoverCardLabel} ${styles[ep.tier]}`}>{ep.tierLabel}</span>
+                    </div>
+                  )}
                 </div>
               </Link>
             ))}
