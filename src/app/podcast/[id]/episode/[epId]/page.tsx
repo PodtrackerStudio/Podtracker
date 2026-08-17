@@ -16,7 +16,6 @@ function getMockEpisode(podcastId: string, epId: string) {
     date: "June 1, 2026",
     duration: "2h 14m",
     coverUrl: "https://picsum.photos/seed/epcover/300/300",
-    bannerUrl: "https://picsum.photos/seed/epbanner/1600/900",
     description:
       "Chris Williamson sits down with Ezra Klein — journalist, author, and co-founder of Vox — to dig into the state of modern politics, the Democratic Party's identity crisis, media polarization, and what it actually takes to change someone's mind. One of the most substantive political conversations Chris has had on the show.",
     avgScore: "3.8",
@@ -47,6 +46,11 @@ const featuredPeople = [
   { id: "ezra", slug: "ezra-klein", name: "Ezra Klein", role: "Guest", avatar: "https://picsum.photos/seed/ezraklein/120/120" },
 ];
 
+// Same switch as the podcast page. False renders Sasha's no-users episode
+// design (right-hand Figma frame); true restores the with-users one (left).
+// Rate and Log/Add review are never gated — they create the first data.
+const HAS_COMMUNITY_DATA = false;
+
 export default async function EpisodePage({ params }: { params: Promise<{ id: string; epId: string }> }) {
   const { id, epId } = await params;
   const episode = getMockEpisode(id, epId);
@@ -55,35 +59,37 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
     <>
       <SiteNav />
 
-      <div className={styles.banner}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={episode.bannerUrl} alt={episode.title} />
-        <div className={styles.bannerOverlay} />
-      </div>
+      {/* No banner on episode pages — Sasha's call (2026-08-17): podcasts aren't
+          as visual as films or shows, and it read as clunky. The old one was
+          `height: 100vh`, which pushed the title entirely below the fold. */}
 
       <main className={styles.main}>
         <section className={styles.episodeInfoRow}>
           <div className={styles.episodeLeft}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className={styles.episodeCover} src={episode.coverUrl} alt="Episode cover" />
-            <div className={styles.avgMic}>
-              <MicIcon />
-            </div>
-            <div className={styles.scoreDisplay}>{episode.avgScore}</div>
-            <div className={styles.avgLabel}>Average rating</div>
-
-            <div className={styles.distSection}>
-              <div className={styles.distSectionTitle}>Ratings distribution</div>
-              {episode.distribution.map((d) => (
-                <div className={styles.distRow} key={d.tier}>
-                  <div className={styles.distTrack}>
-                    <div className={`${styles.distFill} ${styles[d.tier]}`} style={{ width: `${d.pct}%` }} />
-                    <span className={styles.distTooltip}>{d.count} ratings</span>
-                  </div>
-                  <span className={`${styles.distLabelText} ${styles[d.tier]}`}>{d.label}</span>
+            {HAS_COMMUNITY_DATA && (
+              <>
+                <div className={styles.avgMic}>
+                  <MicIcon />
                 </div>
-              ))}
-            </div>
+                <div className={styles.scoreDisplay}>{episode.avgScore}</div>
+                <div className={styles.avgLabel}>Average rating</div>
+
+                <div className={styles.distSection}>
+                  <div className={styles.distSectionTitle}>Ratings distribution</div>
+                  {episode.distribution.map((d) => (
+                    <div className={styles.distRow} key={d.tier}>
+                      <div className={styles.distTrack}>
+                        <div className={`${styles.distFill} ${styles[d.tier]}`} style={{ width: `${d.pct}%` }} />
+                        <span className={styles.distTooltip}>{d.count} ratings</span>
+                      </div>
+                      <span className={`${styles.distLabelText} ${styles[d.tier]}`}>{d.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           <div>
@@ -142,6 +148,8 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
           </div>
         </section>
 
+        {HAS_COMMUNITY_DATA && (
+          <>
         <hr className="divider" />
 
         <section>
@@ -197,6 +205,8 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
             <button className={styles.btnSeeMore}>See more</button>
           </div>
         </section>
+          </>
+        )}
 
         <hr className="divider" />
 

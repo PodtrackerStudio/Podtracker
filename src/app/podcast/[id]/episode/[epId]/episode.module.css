@@ -1,23 +1,6 @@
-.banner {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-  line-height: 0;
-}
-.banner img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
-  display: block;
-  filter: brightness(0.8);
-}
-.bannerOverlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.75) 100%);
-}
+/* The banner rules lived here and are gone deliberately — Sasha dropped banners
+   from episode pages entirely (2026-08-17). Don't reinstate one without asking;
+   the previous version was `height: 100vh` and hid the title below the fold. */
 
 .main {
   max-width: 960px;

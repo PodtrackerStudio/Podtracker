@@ -135,6 +135,55 @@ present, and all six community sections gone. `tsc --noEmit` and `eslint` clean.
   design's data and should not be deleted.
 - The episode page's `height: 100vh` banner (previous entry) is still open.
 
+### 2026-08-17 — Episode page ships the no-users design; banner removed entirely
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — sent both Figma variants and said
+  the right-hand (no-users) one ships now. Also decided episode pages get **no
+  banner at all**.
+- **Status:** Complete.
+
+**The banner is gone, deliberately**
+
+Sasha's reasoning: "podcasts arent as artistic obv as films or shows, so I don't
+really think they're necassary for now." The markup in `page.tsx` and the
+`.banner` / `.banner img` / `.bannerOverlay` rules in `episode.module.css` were
+**deleted, not hidden**, with a comment left in the stylesheet so nobody
+reinstates one. `bannerUrl` is out of the mock data too.
+
+This also closes the defect flagged in the 2026-08-16 entry: the banner was
+`height: 100vh`, which pushed the episode `<h1>` to y≈1066 and entirely below the
+fold. Measured after removal: **title top is now 166px**, well above the fold.
+
+Removing it was safe because `.episodeInfoRow` uses `margin-top: 40px` — a
+*positive* offset — rather than the negative pull-up the podcast page uses. No
+overlap bug of the kind fixed on 08-16.
+
+**He has NOT decided about the podcast page banner.** Leave that one alone.
+
+**What the flag gates**
+
+`HAS_COMMUNITY_DATA = false`, same pattern as the podcast page. Hidden: average
+rating, ratings distribution, Popular reviews, Popular Lists. Kept in both
+variants: header, description, Where to listen, Rate, Log/Add review, Add to
+list, Previous/Next episode, and **Featured people** — host and guest are show
+data, not community data, so they belong in both.
+
+**Verified**
+
+Rendered `/podcast/360084272/episode/1114`: no element matching `[class*=banner]`
+in the DOM, all four community sections absent, all seven keepers present, title
+above the fold. `tsc --noEmit` and `eslint` clean.
+
+**Follow-ups**
+
+- The episode page is still entirely mock data — it does not use the iTunes/RSS
+  layer the podcast page now has.
+- Episode ids are still the feed position (`1`, `2`, …). This blocks episode
+  ratings entirely: a rating attached to "position 3" points at a different
+  episode as soon as a new one publishes. **Fix identity before building the
+  write layer.**
+
 ### 2026-08-17 — Podcast page ships the no-users design; Listens/Likes made real
 
 - **Branch:** `main`
