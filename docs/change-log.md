@@ -71,6 +71,70 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-17 — Podcast page defaults to the no-users design; Listens/Likes are real
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — the podcast page should open in the
+  no-users state (his Figma Frames 11 + 13) since there is no user base, but must
+  keep rating and reviewing; the full episode list must stay in **both** states;
+  and Listens/Likes should read zero now and move as people use the site.
+- **Status:** Complete
+
+**What changed**
+
+- `src/app/podcast/[id]/page.tsx` — added `HAS_COMMUNITY_DATA = false`. With it
+  false the page renders the no-users design; flipping the one line restores the
+  with-users design (Frames 4 + 6). Gated behind it: the consensus average +
+  mic, the ratings distribution, Friends' activity, the "Top rated episodes"
+  link, Popular reviews, and Popular Lists.
+- `src/lib/podcastStats.ts` — **new.** `getPodcastCommunityStats` counts
+  `LogEntry` (listens) and `Favorite` (likes) for a podcast. `formatCount`
+  renders 0 → "0", 1_500 → "1.5k", 980_000 → "980k", 2_400_000 → "2.4M".
+- The Listens/Likes stats now use those counts instead of the hardcoded "980k" /
+  "405k".
+
+**Two things deliberately NOT gated**
+
+- **Rate and Log/Add review stay in both states.** Gating them would make the
+  first rating impossible to create — the state could never end. Never put them
+  behind `HAS_COMMUNITY_DATA`.
+- **"Full episode list" stays in both states.** Sasha's reasoning: the episode
+  list comes from the API, so it is real data that exists with zero users. Only
+  "Top rated episodes" is gated, because ranking needs ratings.
+
+**Why Listens/Likes read 0, and why that is correct**
+
+They are the community's numbers, not the show's — no podcast API exposes them.
+They now come from this app's database and are genuinely zero because nobody has
+used the site yet. They climb on their own; nothing needs changing later.
+
+**The caveat that matters:** the lookup goes through `Podcast.externalId`, but
+**nothing in the codebase ever writes a `Podcast` row** (verified — no
+`podcast.create` or `podcast.upsert` anywhere in `src/`), and the podcast pages
+route on **iTunes** ids while `externalId` is commented as a *Podcast Index* id.
+So no page currently has a local record to match, and every call returns zeros
+via the not-found path rather than by counting. The query is correct and will
+light up the moment podcasts are persisted under the id the route uses — but
+**that id-scheme mismatch is unresolved and needs a decision**, either persisting
+podcasts keyed by iTunes id or adding a dedicated `itunesId` column.
+
+`getPodcastCommunityStats` never throws; a database outage degrades to zeros
+rather than 500ing a page whose show data came from the API and renders fine.
+
+**Verified**
+
+`/podcast/360084272` renders Episodes 2,737 (API), Listens 0, Likes 0 (database).
+Full episode list present, Top rated absent, Rate and Log/Add review both
+present, and all six community sections gone. `tsc --noEmit` and `eslint` clean.
+
+**Follow-ups**
+
+- The id-scheme mismatch above.
+- `community.avgScore`, `distribution`, `friendsActivity`, `reviews` and `lists`
+  constants are retained, unused while the flag is false. They are the with-users
+  design's data and should not be deleted.
+- The episode page's `height: 100vh` banner (previous entry) is still open.
+
 ### 2026-08-16 — Podcast page title no longer renders on top of the banner
 
 - **Branch:** `claude/website-setup-local-4ydg75`

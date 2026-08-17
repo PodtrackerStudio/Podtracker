@@ -8,6 +8,7 @@ import { FollowButton } from "@/components/FollowButton";
 import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { tierFromScore } from "@/lib/ratingTier";
 import { getPodcastDetail } from "@/lib/podcastDetail";
+import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import styles from "./podcast.module.css";
 
 // Community data — ratings, listens, likes, the distribution bars. None of this
@@ -54,10 +55,20 @@ const similarPodcasts = [
   { id: "jre", name: "The Joe Rogan Experience", img: "https://picsum.photos/seed/jre/200/200", avgRating: 3.7 },
 ];
 
+// There is no user base yet, so nothing generates ratings, reviews, friend
+// activity, or lists. With this false the page renders Sasha's no-users design
+// (Figma Frames 11 + 13); flipping it to true restores the with-users design
+// (Frames 4 + 6). Rating and reviewing stay available in BOTH states — that is
+// how the first data ever gets created, so never gate them on this.
+const HAS_COMMUNITY_DATA = false;
+
 export default async function PodcastPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const podcast = await getPodcastDetail(id);
   const recentEpisodes = podcast.recentEpisodes;
+  // Listens and Likes are this app's own numbers, so they come from the
+  // database, not the API. Zero until people start using the site.
+  const stats = await getPodcastCommunityStats(id);
 
   return (
     <>
@@ -74,24 +85,28 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
           <div className={styles.podcastLeft}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className={styles.podcastCover} src={podcast.coverUrl} alt={`${podcast.title} cover`} />
-            <div className={styles.avgMic}>
-              <MicIcon />
-            </div>
-            <div className={styles.scoreDisplay}>{community.avgScore}</div>
-            <div className={styles.avgLabel}>Average rating</div>
-
-            <div className={styles.distSection}>
-              <div className={styles.distSectionTitle}>Ratings distribution</div>
-              {community.distribution.map((d) => (
-                <div className={styles.distRow} key={d.tier}>
-                  <div className={styles.distTrack}>
-                    <div className={`${styles.distFill} ${styles[d.tier]}`} style={{ width: `${d.pct}%` }} />
-                    <span className={styles.distTooltip}>{d.count} ratings</span>
-                  </div>
-                  <span className={`${styles.distLabelText} ${styles[d.tier]}`}>{d.label}</span>
+            {HAS_COMMUNITY_DATA && (
+              <>
+                <div className={styles.avgMic}>
+                  <MicIcon />
                 </div>
-              ))}
-            </div>
+                <div className={styles.scoreDisplay}>{community.avgScore}</div>
+                <div className={styles.avgLabel}>Average rating</div>
+
+                <div className={styles.distSection}>
+                  <div className={styles.distSectionTitle}>Ratings distribution</div>
+                  {community.distribution.map((d) => (
+                    <div className={styles.distRow} key={d.tier}>
+                      <div className={styles.distTrack}>
+                        <div className={`${styles.distFill} ${styles[d.tier]}`} style={{ width: `${d.pct}%` }} />
+                        <span className={styles.distTooltip}>{d.count} ratings</span>
+                      </div>
+                      <span className={`${styles.distLabelText} ${styles[d.tier]}`}>{d.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           <div className={styles.podcastRight}>
@@ -106,11 +121,11 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                 <span>Episodes</span>
               </div>
               <div className={styles.podcastStat}>
-                <strong>{community.listens}</strong>
+                <strong>{formatCount(stats.listens)}</strong>
                 <span>Listens</span>
               </div>
               <div className={styles.podcastStat}>
-                <strong>{community.likes}</strong>
+                <strong>{formatCount(stats.likes)}</strong>
                 <span>Likes</span>
               </div>
             </div>
@@ -153,25 +168,29 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
               </button>
             </div>
 
-            <hr className="divider" style={{ margin: "28px 0 20px" }} />
+            {HAS_COMMUNITY_DATA && (
+              <>
+                <hr className="divider" style={{ margin: "28px 0 20px" }} />
 
-            <h2 className={styles.sectionTitle} style={{ fontSize: 26, marginBottom: 16 }}>
-              Friends&apos; activity
-            </h2>
-            <div className={styles.friendsActivityGrid}>
-              {friendsActivity.map((f) => (
-                <div className={styles.friendActivityItem} key={f.id}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className={styles.friendActivityAvatar} src={f.avatar} alt="" />
-                  <span className={`${styles.friendRatingTag} ${styles[f.tier]}`}>{f.tierLabel}</span>
-                  {f.hasReview && (
-                    <Link href={`/podcast/${podcast.id}/episode/1109`} className={styles.friendReadReview}>
-                      Read review
-                    </Link>
-                  )}
+                <h2 className={styles.sectionTitle} style={{ fontSize: 26, marginBottom: 16 }}>
+                  Friends&apos; activity
+                </h2>
+                <div className={styles.friendsActivityGrid}>
+                  {friendsActivity.map((f) => (
+                    <div className={styles.friendActivityItem} key={f.id}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img className={styles.friendActivityAvatar} src={f.avatar} alt="" />
+                      <span className={`${styles.friendRatingTag} ${styles[f.tier]}`}>{f.tierLabel}</span>
+                      {f.hasReview && (
+                        <Link href={`/podcast/${podcast.id}/episode/1109`} className={styles.friendReadReview}>
+                          Read review
+                        </Link>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -184,9 +203,12 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
               <Link href={`/podcast/${podcast.id}/episodes`} className={styles.btnEpisodeNav}>
                 Full episode list
               </Link>
-              <Link href={`/podcast/${podcast.id}/top-rated`} className={styles.btnEpisodeNav}>
-                Top rated episodes
-              </Link>
+              {/* Ranking episodes needs ratings, which need users. */}
+              {HAS_COMMUNITY_DATA && (
+                <Link href={`/podcast/${podcast.id}/top-rated`} className={styles.btnEpisodeNav}>
+                  Top rated episodes
+                </Link>
+              )}
             </div>
           </div>
           <div className={styles.episodesList}>
@@ -207,6 +229,8 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
           </Link>
         </section>
 
+        {HAS_COMMUNITY_DATA && (
+          <>
         <hr className="divider" />
 
         <section>
@@ -262,6 +286,8 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
             <button className={styles.btnSeeMore}>See all lists</button>
           </div>
         </section>
+          </>
+        )}
 
         <hr className="divider" />
 
