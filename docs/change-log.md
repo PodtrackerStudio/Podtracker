@@ -195,9 +195,15 @@ add follow/rate/log routes, wire the three widgets.
 
 **Follow-ups**
 
-- **Unanswered design question:** is a "log" the same action as a rating, or
-  separate? The design shows one `Log/Add review` button beside a separate Rate
-  mic, which suggests separate. Confirm before building the write layer.
+- **Rate vs Log — answered by Sasha 2026-08-17.** *Rate* is the tier alone: it
+  counts toward averages and the distribution but creates no diary entry (for
+  rating something you heard a while ago). *Log* is a rating **plus** a diary
+  entry with the date you listened, and optionally a review. So a log writes two
+  records — a `LogEntry` and an upserted rating — while a rate writes one.
+  **This supersedes the comment above `model LogEntry` in `prisma/schema.prisma`**,
+  which currently claims LogEntry is "decoupled from Rating… no rating". Fix that
+  comment when building, and note `ReviewWidget` captures only a date and text
+  today, so it needs a tier control added.
 - `Add to list` and `Add to next listening` remain handler-less buttons, and are
   absent from these Figma frames entirely. Left alone — Sasha is building those
   flows himself.
