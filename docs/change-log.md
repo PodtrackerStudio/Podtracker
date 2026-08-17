@@ -214,6 +214,11 @@ add follow/rate/log routes, wire the three widgets.
   **Averages and the distribution bars must read the current rating, never the
   logs**, or someone who relistens and logs three times counts three times and
   skews the distribution.
+- **Show ratings vs episode ratings — decided by Sasha 2026-08-17.** They are
+  separate and independent, "just like IMDb": rating a show is its own act, not
+  an average of your episode ratings. The schema already models this with two
+  tables (`PodcastRating`, `EpisodeRating`) — don't collapse one into the other.
+  He plans to surface them as two separate sections on the profile later.
 - `Add to list` and `Add to next listening` remain handler-less buttons, and are
   absent from these Figma frames entirely. Left alone — Sasha is building those
   flows himself.
