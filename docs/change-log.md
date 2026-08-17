@@ -135,6 +135,43 @@ present, and all six community sections gone. `tsc --noEmit` and `eslint` clean.
   design's data and should not be deleted.
 - The episode page's `height: 100vh` banner (previous entry) is still open.
 
+### 2026-08-17 — Search results page brought in line with the rest of the site
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — sent the search-results Figma and
+  asked that it match the site's nav, font and background.
+- **Status:** Complete.
+
+**What changed**
+
+One line: `font-family: var(--font-display)` on `.main` in
+`src/app/search/search.module.css`. Result titles and subtitles were rendering
+in Roboto because only the two `<h2>`s picked up the global serif rule.
+
+Nothing else needed touching. The page already used the shared `SiteNav` and
+`SiteFooter`, `--text`/`--text-muted`, and inherited the page background, and its
+markup already matched the design: "Showing results for …", a **Top result**
+block with large cover + title + subtitle, then **Other results** rows.
+
+**Deliberately did NOT copy the mockup's nav.** The Figma still shows the old
+white bar with the "Podcast Website" wordmark and a Genres link. The live nav is
+the current one — `#C3DBFF`, 100px, "Podtracker", no Genres — which is what
+"match the rest of the site" means here. The mockup's nav is stale, not a spec.
+
+**Verified**
+
+`/search?q=Tucker Carlson`: page background `rgba(158,158,158,0.25)`, nav
+`rgb(195,219,255)` at 100px with no Genres, all 11 text elements PT Serif
+Caption, zero ratings displayed. HTTP 200, `tsc --noEmit` clean.
+
+**Follow-ups**
+
+- Search runs on the mock `src/lib/search` data, not the iTunes layer the
+  podcast page uses. Covers are placeholder photos rather than real artwork.
+- At viewports narrower than ~960px the page scrolls horizontally, driven by the
+  nav rather than this page. Pre-existing and site-wide — the app has no
+  responsive breakpoints at all, which phillipn also flagged on 08-16.
+
 ### 2026-08-17 — No average ratings anywhere; the flag is now one shared constant
 
 - **Branch:** `main`
