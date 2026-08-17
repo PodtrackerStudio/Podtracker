@@ -135,6 +135,75 @@ present, and all six community sections gone. `tsc --noEmit` and `eslint` clean.
   design's data and should not be deleted.
 - The episode page's `height: 100vh` banner (previous entry) is still open.
 
+### 2026-08-17 — Podcast page ships the no-users design; Listens/Likes made real
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — the podcast page should show his
+  no-users Figma variant by default since there is no user base, but rating and
+  reviewing must stay available. Also asked that Listens/Likes reflect actual
+  user activity rather than hardcoded numbers.
+- **Status:** Complete for the page. The write layer that would make those
+  numbers move is **deliberately deferred** — see below.
+
+**What changed**
+
+- `HAS_COMMUNITY_DATA = false` in `src/app/podcast/[id]/page.tsx` gates
+  everything that needs a user base: average/consensus rating, ratings
+  distribution, Friends' activity, Top rated episodes, Popular reviews, Popular
+  Lists. Flipping the one constant restores the with-users design.
+- `src/lib/podcastStats.ts` — **new.** `getPodcastCommunityStats` counts
+  `LogEntry` (Listens) and `Favorite` (Likes) for a podcast; `formatCount`
+  renders `0` / `950` / `1.5k` / `980k` / `2.4M`. Never throws — a database
+  outage degrades to zeros rather than 500ing a page whose show data came from
+  the API and renders fine.
+- The page now shows those real counts instead of the hardcoded `980k` / `405k`.
+
+**Two things Sasha was explicit about — do not "tidy" these**
+
+- **Rate and Log/Add review are never gated** on `HAS_COMMUNITY_DATA`. They are
+  how the first data ever gets created, so they appear in both variants.
+- **Full episode list stays in both variants.** The episode list comes from the
+  API and exists regardless of users. Only *Top rated* is gated, since ranking
+  episodes requires ratings.
+
+**The counts will read 0 until the write layer exists, and that is deferred**
+
+Investigating this surfaced that **no user action on the site persists at all**:
+
+- `FollowButton`, `RatingWidget`, and `ReviewWidget` are `useState` only, with
+  zero network calls. Click Follow or write a review, refresh, it's gone.
+- The only write endpoints are `account`, `auth/*`, and `favorites`. There is
+  nothing for ratings, reviews, logs, or follows.
+- `/api/favorites` would itself fail — it writes a `Favorite` whose `podcastId`
+  is a foreign key to a `Podcast` row, and nothing anywhere creates one.
+- Podcast pages route on iTunes ids while `Podcast.externalId` is documented as
+  a Podcast Index id, so no page can match a local record regardless.
+
+Sasha's call was to build the whole write layer as **one batch later** rather
+than piecemeal. That's the right sequencing: they share one prerequisite
+(persisting the podcast row) and a log, rating, and review all hang off the same
+record, so doing them separately means touching the same code three times.
+
+`getPodcastCommunityStats` is the read half and is already correct — when writes
+land the numbers move with no change to it. **Do not rewrite it.**
+
+**When that batch happens — no schema migration is needed.** `PodcastRating`,
+`LogEntry`, `PodcastFollow` and `Favorite` all exist, and `Podcast.externalId`
+is already an optional unique string that can hold the iTunes id. The work is:
+upsert a `Podcast` row on first interaction (this alone unbreaks favoriting),
+add follow/rate/log routes, wire the three widgets.
+
+**Follow-ups**
+
+- **Unanswered design question:** is a "log" the same action as a rating, or
+  separate? The design shows one `Log/Add review` button beside a separate Rate
+  mic, which suggests separate. Confirm before building the write layer.
+- `Add to list` and `Add to next listening` remain handler-less buttons, and are
+  absent from these Figma frames entirely. Left alone — Sasha is building those
+  flows himself.
+- The episode page's `height: 100vh` banner from the previous entry is still
+  open, still a design decision.
+
 ### 2026-08-16 — Podcast page title no longer renders on top of the banner
 
 - **Branch:** `claude/website-setup-local-4ydg75`
