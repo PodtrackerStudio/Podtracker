@@ -80,11 +80,9 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
     <>
       <SiteNav />
 
-      <div className={styles.banner}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={podcast.bannerUrl} alt={`${podcast.title} banner`} />
-        <div className={styles.bannerOverlay} />
-      </div>
+      {/* No banner (Sasha, 2026-08-18) — same call as the episode page. The
+          square cover art was being stretched across a wide strip, which read
+          as a heavy zoomed crop, and no podcast API returns a real banner. */}
 
       <main className={styles.main}>
         <section className={styles.podcastInfo}>

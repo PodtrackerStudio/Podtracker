@@ -29,7 +29,10 @@
   display: grid;
   grid-template-columns: 200px 1fr;
   gap: 36px;
-  margin-top: -80px;
+  /* Was -80px, pulling this block up over the banner so the cover art
+     overlapped it. With the banner gone there is nothing to ride over, and a
+     negative margin here would slide the whole header under the nav. */
+  margin-top: 40px;
   position: relative;
   z-index: 2;
   align-items: start;
@@ -160,7 +163,9 @@
      the banner's dark gradient — 64px left it straddling the edge, dark text on
      a dark background. 80px lands it exactly on the seam, so +24px on top of
      that gives the heading room to breathe below the banner. */
-  padding-top: 104px;
+  /* Was 104px (the 80px pull-up plus a 24px gap) purely to push the title clear
+     of the banner's dark gradient. No banner, nothing to clear. */
+  padding-top: 0;
 }
 .podcastTitle {
   font-size: 42px;
