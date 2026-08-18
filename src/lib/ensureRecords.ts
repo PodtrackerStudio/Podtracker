@@ -61,7 +61,9 @@ export async function ensureEpisode(podcastExternalId: string, episodeKey: strin
   if (!detail.isLive) return null;
 
   const match = detail.recentEpisodes.find((e) => e.id === episodeKey);
-  if (!match) return null;
+  // Episode.publishedAt is required, and an episode with no date in its feed
+  // can't be stored honestly — better to refuse than invent one.
+  if (!match?.publishedAtIso) return null;
 
   const podcastId = await ensurePodcast(podcastExternalId);
 
@@ -78,6 +80,7 @@ export async function ensureEpisode(podcastExternalId: string, episodeKey: strin
       title: match.title,
       description: match.guest,
       coverUrl: match.img,
+      publishedAt: new Date(match.publishedAtIso),
     },
     select: { id: true },
   });
