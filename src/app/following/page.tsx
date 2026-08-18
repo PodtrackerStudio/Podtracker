@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { PlusIcon } from "@/components/icons";
+import { AddPodcastsButton } from "@/components/AddPodcastsButton";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { FollowingGrid } from "./FollowingGrid";
@@ -26,12 +25,7 @@ export default async function FollowingPage() {
         {favouriteCount === 0 ? (
           <div className={styles.emptyWrap}>
             <p className={styles.emptyText}>No Favorites...</p>
-            {/* Points at Explore for now. Sasha is designing a find-shows popup
-                to replace this — see the change log. */}
-            <Link href="/explore" className={styles.emptyAction}>
-              Add Favorites
-              <PlusIcon size={26} />
-            </Link>
+            <AddPodcastsButton label="Add Favorites" className={styles.emptyAction} iconSize={26} iconAfter />
           </div>
         ) : (
           <FollowingGrid />
