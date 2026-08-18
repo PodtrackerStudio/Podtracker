@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { lookupPodcast, fetchPodcastFeed } from "./podcastApi";
 import { getPodcastDetail } from "./podcastDetail";
 import { episodeKeyFromGuid } from "./episodeKey";
 
@@ -57,13 +58,19 @@ export async function ensurePodcast(externalId: string): Promise<string> {
  * inventing a row.
  */
 export async function ensureEpisode(podcastExternalId: string, episodeKey: string): Promise<string | null> {
-  const detail = await getPodcastDetail(podcastExternalId);
-  if (!detail.isLive) return null;
+  // Deliberately NOT via getPodcastDetail: that slices to the four episodes the
+  // "Recent episodes" strip shows, so logging or rating anything older would
+  // silently fail. The feed is fetched whole and searched by key.
+  const podcast = await lookupPodcast(podcastExternalId).catch(() => null);
+  if (!podcast?.feedUrl) return null;
 
-  const match = detail.recentEpisodes.find((e) => e.id === episodeKey);
+  const feed = await fetchPodcastFeed(podcast.feedUrl).catch(() => null);
+  if (!feed) return null;
+
+  const match = feed.episodes.find((e) => episodeKeyFromGuid(e.guid) === episodeKey);
   // Episode.publishedAt is required, and an episode with no date in its feed
   // can't be stored honestly — better to refuse than invent one.
-  if (!match?.publishedAtIso) return null;
+  if (!match?.publishedAt) return null;
 
   const podcastId = await ensurePodcast(podcastExternalId);
 
@@ -78,9 +85,11 @@ export async function ensureEpisode(podcastExternalId: string, episodeKey: strin
       podcastId,
       externalId: match.guid,
       title: match.title,
-      description: match.guest,
-      coverUrl: match.img,
-      publishedAt: new Date(match.publishedAtIso),
+      description: match.description,
+      coverUrl: match.coverUrl ?? podcast.artworkUrl,
+      audioUrl: match.audioUrl,
+      durationSeconds: match.durationSeconds,
+      publishedAt: new Date(match.publishedAt),
     },
     select: { id: true },
   });
