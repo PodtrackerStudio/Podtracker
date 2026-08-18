@@ -410,6 +410,34 @@ Caption, zero ratings displayed. HTTP 200, `tsc --noEmit` clean.
   nav rather than this page. Pre-existing and site-wide — the app has no
   responsive breakpoints at all, which phillipn also flagged on 08-16.
 
+### 2026-08-18 — Following page shows the real empty state
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — ship the right-hand Figma frame.
+- **Status:** Complete.
+
+**This closes a gap flagged in an earlier entry.** `/following` rendered a
+hardcoded `FollowingGrid` of eight shows, so the "No Favorites…" state Sasha had
+designed *could never appear no matter what a user did*. Gating on a flag would
+have been wrong — this isn't community data, it's the viewer's own list, and a
+brand-new user will have an empty one even after launch.
+
+So the page now reads real data: `db.favorite.count()` for the signed-in user.
+Zero renders the empty state; anything else renders the grid. It reports zero
+today because nothing can create a favourite until the write layer lands, and it
+will start filling in on its own afterwards with no change here.
+
+- `/following` now **requires a login** — "Your shows!" is inherently personal.
+  Logged out it 307s to `/login`.
+- `FollowingGrid` is kept for the populated branch, still on mock data.
+- **"Add Favorites" points at `/explore`** as an interim. Sasha is designing a
+  find-shows popup to replace it; a button that did nothing seemed worse than one
+  that reaches somewhere real. Swap the `href` when the popup exists.
+
+**Verified:** logged out → HTTP 307. Signed in → heading "Your shows!", "No
+Favorites...", "Add Favorites" with the plus icon, both in PT Serif Caption, and
+no trace of the eight mock shows. `tsc --noEmit` and `eslint` clean.
+
 ### 2026-08-18 — Explore stops after Popular episodes (no-users design)
 
 - **Branch:** `main`
