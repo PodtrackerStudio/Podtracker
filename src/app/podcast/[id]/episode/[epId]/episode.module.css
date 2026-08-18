@@ -464,6 +464,9 @@
   border-radius: 8px;
   overflow: hidden;
   max-width: 560px;
+  /* Centred to match the Creators strip on the podcast page — the two are the
+     same component and were the only two boxes in the app sitting off-centre. */
+  margin: 0 auto;
 }
 .featuredPerson {
   display: flex;

@@ -661,6 +661,10 @@
   border-radius: 8px;
   overflow: hidden;
   max-width: 560px;
+  /* Centred in the content column. At 560px inside a 960px column the box
+     otherwise sits hard left with a 376px gap on its right, which is the one
+     thing on this page that actually reads as off-centre. */
+  margin: 0 auto;
 }
 .creatorRow {
   display: flex;

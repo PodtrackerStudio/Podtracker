@@ -71,6 +71,83 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-18 — Centred the two people strips; dropped the fake creator photos
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "center everything", and replace
+  the placeholder creator/podcast images with real ones.
+- **Status:** Centring complete. Photos **partially** complete — one real
+  creator photo exists and is now used; the rest cannot be sourced from here.
+
+**Centring: there was exactly one real problem, and this is what it was**
+
+Measured every page in Chromium at 1440px. **Every page's content column was
+already centred** — `.main` has `margin: 0 auto` everywhere, and left/right gaps
+were symmetrical on all eight pages checked. Nothing needed centring at the page
+level, which is why the earlier answers to this request kept saying so.
+
+The thing actually reading as off-centre was narrower: `.creatorsList` and its
+twin `.featuredPeopleList` are `max-width: 560px` boxes inside a 960px column,
+with no horizontal margin — so they sat hard left with a **376px gap** on their
+right. They were the *only* two stranded elements in the whole app. Both now
+carry `margin: 0 auto`; gaps are 200px/200px. A re-audit of all eight pages
+reports zero stranded elements.
+
+The episode page's copy was fixed too, deliberately: the two are the same
+component, and fixing one would have made them diverge.
+
+**Photos: what changed and what could not**
+
+- **All 18 creator portraits were random `picsum.photos` images** — an unrelated
+  stranger's face under a named, real, living person's name. That is worse than
+  no photo, because it is convincing enough that nobody spots it. They now fall
+  back to `/default-avatar.webp`, the neutral silhouette already in this repo.
+- **Chris Williamson now has a real photograph**, reusing
+  `/explore/trending-chris-williamson.jpg` — Sasha added it for the Trending
+  users strip on Explore, and the registry points at that file rather than
+  shipping a second copy. It is the only real creator photo in the repo.
+- **The Tim Dillon Show cover** now uses `/explore/ep-tim-dillon.jpg` instead of
+  a placeholder.
+- `public/creators/README.md` — **new.** Documents the drop-in convention
+  (`public/creators/<slug>.jpg` → set `avatarUrl`), and carries the licensing
+  warning, because these are photographs of real people and a press photo or a
+  search-engine result is not usable just because it is public.
+
+**Why the other 17 photos are still blank, and why that is not laziness**
+
+There is no source available that is both reachable and lawful. This container's
+gateway 403s every image host, so nothing can be fetched. More importantly,
+photographs of public figures are somebody's copyright; Wikipedia is not a way
+round it, because its images are licensed per-file, some are non-free, and the
+summary API returns no licence or author for them at all. Supplying these needs a
+human with licensed files. The plumbing is done — each one is a one-line change
+once a file exists.
+
+**Six show covers are still placeholders** — Modern Wisdom, The Ezra Klein Show,
+Huberman Lab, The Tucker Carlson Show, The Rewatchables, The Game. No real
+artwork for them exists in `public/`. The right long-term fix is the iTunes
+artwork the app already fetches for podcast pages, which needs each show's iTunes
+id; those cannot be looked up from here, and guessing them would put the wrong
+show's art on a page.
+
+**Verified**
+
+Automated centring audit across `/`, `/explore`, `/following`, `/podcast/[id]`,
+`/person/[slug]`, the episode page, `/search` and `/login`: all columns centred,
+zero stranded boxes. `tsc --noEmit` and `eslint` clean. Creators strip renders at
+200px/200px with the real Chris Williamson photo.
+
+**Follow-ups**
+
+- 17 creator photos and 6 show covers need licensed files. See
+  `public/creators/README.md`.
+- Everything still open from the entry below — unverified bios, the unattributed
+  Joe Rogan text, and legacy slugs rendering the Modern Wisdom placeholder.
+- The "Creator" heading stays left-aligned while its box is now centred, which is
+  consistent with every other heading on the page but does mean heading and box
+  no longer share an edge. The alternative is a full-width box matching Recent
+  episodes. Not changed — phillipn asked for centred.
+
 ### 2026-08-18 — Creator pages wired up: a shared registry, and a Creators strip on the podcast page
 
 - **Branch:** `claude/website-setup-local-4ydg75`
