@@ -71,6 +71,123 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-18 — Creator pages wired up: a shared registry, and a Creators strip on the podcast page
+
+- **Branch:** `claude/website-setup-local-4ydg75`
+- **Requested by:** phillipn@podtracker.studio — wanted a page per creator
+  outlining their life story, the creators listed below the show on the podcast
+  page, and a "more on the creator" link through to that page. Supplied a
+  reference screenshot of the layout.
+- **Status:** Complete for the feature as described. The biography copy is
+  **unverified** — see Follow-ups, this matters.
+
+**The starting point was better than it looked**
+
+`/person/[slug]` already existed and already matched the supplied reference
+almost exactly — photo and bio in a left column, name top-right, "Hosted show",
+"Appearances as a guest", sort controls. It was properly styled. The actual gap
+was that **nothing in the app linked to it**: a repo-wide search for `/person/`
+found exactly one link, the episode page's "Featured people" strip. Only three
+people were defined, one of which (`joe-rogan`) was unreachable except by typing
+the URL.
+
+So this was a wiring job, not a page build.
+
+**What changed**
+
+- `src/lib/creators.ts` — **new.** A curated registry of 18 creators, the single
+  source of truth for who presents a show. Both the podcast page and the creator
+  page read it, so adding one entry lights up both.
+- `src/app/podcast/[id]/page.tsx` — a Creators strip directly below the show
+  header, each row linking to `/person/[slug]` with a "More on the creator →"
+  affordance. Heading is "Creator" or "Creators" depending on count.
+- `src/app/podcast/[id]/podcast.module.css` — the `.creator*` rules.
+- `src/app/person/[slug]/page.tsx` — now reads name/photo/bio/hostedShow from the
+  registry instead of its own local record. Guest appearances stay local mock
+  data, because no public API supplies them.
+
+**Why the registry is hand-curated and not derived from the API**
+
+This is the important decision. iTunes gives every podcast an `artistName`, and
+using it to look a person up would have been one line. It is also the single
+most dangerous thing this feature could do: `artistName` is free text and is
+frequently an organisation — this repo's own seed list contains "Up First NPR"
+and "The New York Times". A company name resolves to a perfectly well-formed
+biography, so the failure is silent and confident: a corporate history rendered
+under a person's headshot, with no error anywhere to catch it.
+
+So a name only becomes a creator because a human put it in the registry.
+`getCreatorsForPodcast` consults an explicit id→slugs map first, and only then
+falls back to the show's author name — and that fallback requires an exact hit
+in the curated registry, so an unknown name yields **nothing** rather than a
+wrong person. Verified: `"NPR"`, `"The New York Times"` and `"Pardon My Take"`
+all return `[]`.
+
+The host/show pairings come from `prisma/seed.mts` and the `hosts` fields in
+`src/app/following/FollowingGrid.tsx` — the two places in this repo that already
+record who presents what.
+
+**Two real defects were found by review and fixed before commit**
+
+1. **Prototype-chain crash.** `PODCAST_CREATORS[podcastId]` indexed a plain
+   object literal with an unsanitised URL segment, so `/podcast/constructor`,
+   `/podcast/toString`, `/podcast/__proto__` etc. returned a truthy non-array and
+   threw `mapped.map is not a function`. There is no `error.tsx` anywhere under
+   `src/app`, so that was a 500 on URLs that previously rendered the placeholder
+   page. Fixed with `Object.hasOwn` guards on all three lookups. Those routes now
+   return 200 again.
+2. **Hover contrast.** The strip copies the episode page's Featured-people rules
+   verbatim, including `:hover .role { color: #93c5fd }`. Against this row's
+   `#f5f8ff` hover background that measures **1.70:1**, where WCAG AA wants 4.5:1
+   at 12px — the role line vanished at the moment the user pointed at it. That
+   one rule is deliberately dropped, leaving `var(--text-muted)` (~7:1). It is the
+   only place the strip departs from the episode idiom. **`episode.module.css`
+   has the identical failure and wants the same fix — not touched, it is Sasha's
+   page to change.**
+
+Also fixed: the registry listed only Bill Simmons for The Rewatchables while
+`FollowingGrid` records three hosts, so the strip printed the singular "Creator"
+and asserted he was the whole answer. Sean Fennessey and Chris Ryan added.
+
+**Verified**
+
+`tsc --noEmit` clean, `eslint` clean, `npm run build` compiles all 28 routes.
+All 18 creator pages return 200, plus the unknown-slug fallback. Round trip
+exercised in Chromium: podcast → creator row → creator page → hosted show →
+back. Multi-creator (`matt-shane`, `rewatchables`), single-creator and
+no-creator resolution all confirmed, and no nested `<a>` in the rendered output.
+
+**Follow-ups**
+
+- **The biographies are unverified editorial copy about real, named, living
+  people, and should be reviewed before launch.** The review pass that was
+  checking exactly this died on a session limit — ten of its verification agents
+  never ran — so no independent check of the factual claims completed. They were
+  written conservatively and confined to professional facts, but that is not the
+  same as having been checked.
+- **The `joe-rogan` bio appears to be Wikipedia's article opening**, carried over
+  unchanged from the original person page. It predates this change, but it is now
+  in a new file and still carries no attribution. Wikipedia text is CC BY-SA:
+  reusing it obliges a credit link to the article, a named and linked licence,
+  and an indication that it was modified. Either attribute it or replace it.
+- **A Wikipedia-backed bio layer was scoped but deliberately not built.** It would
+  scale to any creator, but it puts CC BY-SA text on the product and needs a
+  visible attribution line that appears in no Figma frame. That is a call for
+  Sasha and phillipn, not one to make silently. The design is in the session
+  notes: curated slug→article-title map (never a free-text search), accept only
+  `type === "standard"`, a mandatory User-Agent or Wikimedia 403s, and **do not**
+  display Wikipedia photos — the summary endpoint returns no licence for them.
+- **The strip can contradict the rest of the page.** `getPodcastDetail` renders
+  the "Modern Wisdom" placeholder for any non-numeric id, so `/podcast/crime-junkie`
+  shows Modern Wisdom's title, author and episodes while the new strip correctly
+  names Ashley Flowers for the URL you asked for. The root cause is the
+  pre-existing placeholder, not the strip, and the real fix is mapping the legacy
+  slugs to real iTunes ids — which needs a machine with egress to look them up.
+  Guessing ids would reintroduce exactly the wrong-show risk this design avoids.
+- Every `hostedShow.href` points at a non-numeric slug, so all of them currently
+  land on that same placeholder. Same fix as above.
+- `bombcast` and `the-op` have recorded hosts in `FollowingGrid` but no registry
+  entries; they degrade correctly to no strip.
 ### 2026-08-17 — Podcast page defaults to the no-users design; Listens/Likes are real
 
 - **Branch:** `main`

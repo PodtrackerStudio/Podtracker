@@ -647,3 +647,83 @@
 .similarCard {
   width: 100px;
 }
+
+/* ── CREATORS ──
+   Deliberately the same component as the "Featured people" strip on the
+   episode page (episode.module.css .featuredPeople*): same bordered list, same
+   56px circular avatar, same name/role pair, same hover treatment. The two
+   pages answer the same question — who is this — so they should not look like
+   two different designs. Values are copied rather than shared because this
+   stylesheet already keeps its own copy of every shared rule; see the note in
+   globals.css about per-page copies. */
+.creatorsList {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 560px;
+}
+.creatorRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+  transition: color 0.15s, background 0.15s;
+  cursor: pointer;
+}
+.creatorRow:last-child {
+  border-bottom: none;
+}
+.creatorRow:hover {
+  color: var(--link-hover);
+  background: #f5f8ff;
+}
+.creatorAvatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ccc;
+  display: block;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+  border: 2px solid transparent;
+}
+.creatorRow:hover .creatorAvatar {
+  border-color: var(--link-hover);
+}
+.creatorName {
+  font-size: 15px;
+  font-weight: 500;
+}
+.creatorRole {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+/* The episode page's equivalent rule fades the role line to #93c5fd on hover.
+   That is 1.70:1 against this row's #f5f8ff hover background — WCAG AA wants
+   4.5:1 at this size — so the role would vanish at the exact moment the user
+   points at it. Left at var(--text-muted), which is ~7:1 on the same
+   background. This is the ONE place the strip deliberately departs from the
+   Featured people idiom; episode.module.css has the same failure and wants the
+   same fix, but that is Sasha's page to change. */
+/* Takes its font-size and resting colour from .moreLink, this page's existing
+   "read more" idiom. It is NOT a copy: .moreLink is a standalone inline-block
+   link that darkens to var(--text) on hover, whereas this is a flex child of a
+   row that is itself a link, so it follows the row to var(--link-hover) and
+   needs margin-left: auto to sit at the trailing edge. Changing .moreLink does
+   not automatically cover this. */
+.creatorMore {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: auto;
+  padding-left: 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.creatorRow:hover .creatorMore {
+  color: var(--link-hover);
+}

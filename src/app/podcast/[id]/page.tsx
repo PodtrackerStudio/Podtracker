@@ -10,6 +10,7 @@ import { tierFromScore } from "@/lib/ratingTier";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
+import { getCreatorsForPodcast } from "@/lib/creators";
 import styles from "./podcast.module.css";
 
 // Community data — ratings, listens, likes, the distribution bars. None of this
@@ -67,6 +68,9 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
   // Listens and Likes are this app's own numbers, so they come from the
   // database, not the API. Zero until people start using the site.
   const stats = await getPodcastCommunityStats(id);
+  // Empty for any show whose host isn't in the curated registry — the strip
+  // then doesn't render at all, rather than guessing at who made the show.
+  const creators = getCreatorsForPodcast(id, podcast.author);
 
   return (
     <>
@@ -191,6 +195,31 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
             )}
           </div>
         </section>
+
+        {creators.length > 0 && (
+          <>
+            <hr className="divider" />
+
+            <section>
+              <h2 className={styles.sectionTitle}>{creators.length > 1 ? "Creators" : "Creator"}</h2>
+              <div className={styles.creatorsList}>
+                {creators.map((c) => (
+                  <Link className={styles.creatorRow} href={`/person/${c.slug}`} key={c.slug}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className={styles.creatorAvatar} src={c.avatarUrl} alt={c.name} />
+                    <div>
+                      <div className={styles.creatorName}>{c.name}</div>
+                      <div className={styles.creatorRole}>{c.role}</div>
+                    </div>
+                    {/* A span, not a nested Link — the whole row is already the
+                        link, and an <a> inside an <a> is invalid HTML. */}
+                    <span className={styles.creatorMore}>More on the creator →</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
 
         <hr className="divider" />
 
