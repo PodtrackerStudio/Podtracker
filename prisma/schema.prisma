@@ -249,6 +249,15 @@ model LogEntry {
   episodeId    String?
   listenedDate DateTime
   reviewText   String?
+  // The rating AS IT WAS when this was logged. A diary is a time capsule: it
+  // must keep showing what you thought then, even after you re-rate. The
+  // current opinion lives in PodcastRating/EpisodeRating instead.
+  //
+  // Nullable because a rating is not required to log an episode.
+  //
+  // Averages and distribution bars read the CURRENT rating, never this — else
+  // someone who relistens and logs three times would count three times.
+  tier         RatingTier?
   createdAt    DateTime @default(now())
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
