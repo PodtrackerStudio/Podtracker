@@ -71,6 +71,47 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-18 — NEXT SESSION'S GOAL: 5,000+ shows reachable, with real episode pages
+
+Sasha's stated goal for the next session, which he intends to spend entirely on
+this: **at least 5,000 podcasts available on the site, each with its full
+episode list and a working page for every episode.**
+
+**Read this before starting: the goal is right, but "added to the site" should
+not mean a bulk import.** Three separate things get conflated:
+
+1. **Browsing a show already works for any iTunes id**, with no database row.
+   `/podcast/360084272` renders live from iTunes + RSS today. Nothing needs
+   pre-loading for a show to be viewable.
+2. **Database rows are created on demand** by `ensurePodcast` the first time
+   anyone follows, rates or logs a show. Pre-loading 5,000 rows nobody has
+   touched would just be a large table with nothing attached to it.
+3. **What actually blocks the goal is that two things are fake**, and they are
+   the real work:
+   - **Search is a static file.** `src/lib/search.ts` reads `searchData.ts`, a
+     hand-written index. It never calls iTunes, so only shows written into that
+     file are findable. **This is why it feels like podcasts must be added one
+     by one.** Replacing it with a live iTunes Search call makes the entire
+     catalogue reachable — far more than 5,000 — and the static file is deleted.
+   - **Explore and the landing page use eight hardcoded `SEED_TERMS`** in
+     `popularPodcasts.ts`. Real shows, fetched live, but a fixed list that
+     reflects no popularity. Replace with the verified charts endpoint:
+     `https://rss.applemarketingtools.com/api/v2/{country}/podcasts/top/{n}/podcasts.json`
+     — max 100 per call, parameterised by country and `?genre=`.
+
+**The genuinely missing piece is the episode page.** It still renders
+`getMockEpisode`, so every episode shows the same invented Ezra Klein content
+and its `epId` is not a real key. That is what "a page for every episode" needs,
+and it is also the prerequisite for episode-level rating, logging and Next
+listening — all of which correctly 404 today because `ensureEpisode` cannot
+resolve a mock id. **Do this one first**; the others are smaller.
+
+The full episode list page (`/podcast/[id]/episodes`) should be checked too — it
+is believed to be hardcoded.
+
+Order that respects the dependencies: episode page on real data → search live →
+Explore/landing on the charts.
+
 ### 2026-08-18 — SPEC (not built): "Next listening" panel on the profile
 
 - **Requested by:** sashak@podtracker.studio, end of session. Specified fully;
