@@ -73,9 +73,14 @@ rejected. This is the part that saves the most time later.
 
 ### 2026-08-18 — NEXT SESSION'S GOAL: 5,000+ shows reachable, with real episode pages
 
-Sasha's stated goal for the next session, which he intends to spend entirely on
-this: **at least 5,000 podcasts available on the site, each with its full
-episode list and a working page for every episode.**
+Sasha's goal for the next session, which he intends to spend entirely on this:
+**every podcast reachable on the site, each with its full episode list and a
+working page for every episode.**
+
+He first said "at least 5,000", then clarified that was only because he assumed
+that was the ceiling. **There is no ceiling** — the iTunes Search API is queried
+live per request, so the reachable set is Apple's entire catalogue, millions of
+shows. Don't build to a target number; there is nothing to count.
 
 **Read this before starting: the goal is right, but "added to the site" should
 not mean a bulk import.** Three separate things get conflated:
