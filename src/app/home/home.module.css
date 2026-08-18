@@ -331,3 +331,31 @@
   font-weight: 600;
   line-height: 1.3;
 }
+.podcastGrid {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 24px 64px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.podcastCard {
+  display: block;
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #ccc;
+}
+.podcastCard img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.15s;
+}
+.podcastCard:hover img {
+  transform: scale(1.03);
+}
+
+/* ── WHAT IS ── */
+

@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { ChevronLeftIcon, ChevronRightIcon, MicIcon } from "@/components/icons";
+import { ChevronLeftIcon, ChevronRightIcon, MicIcon, PlusIcon } from "@/components/icons";
 import { RatingWidget } from "@/components/RatingWidget";
 import { ReviewWidget } from "@/components/ReviewWidget";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
-import { AddPodcastsButton } from "@/components/AddPodcastsButton";
 import styles from "./episode.module.css";
 
 // Mock data standing in for the database + Podcast Index lookup until those are wired up.
@@ -114,7 +113,10 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
             <div className={styles.actionRow}>
               <RatingWidget styles={styles} externalId={id} episodeKey={epId} />
               <ReviewWidget styles={styles} buttonClassName={styles.btnLog} externalId={id} episodeKey={epId} />
-              <AddPodcastsButton label="Add to list" className={styles.btnAddList} />
+              <button className={styles.btnAddList}>
+                <PlusIcon />
+                Add to list
+              </button>
             </div>
 
             <div className={styles.prevNextRow}>

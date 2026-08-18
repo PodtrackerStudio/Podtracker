@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { MicIcon, SpotifyIcon, YouTubeIcon, ApplePodcastsIcon } from "@/components/icons";
+import { MicIcon, PlusIcon } from "@/components/icons";
 import { RatingWidget } from "@/components/RatingWidget";
 import { ReviewWidget } from "@/components/ReviewWidget";
 import { FollowButton } from "@/components/FollowButton";
@@ -12,7 +12,6 @@ import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { getViewerPodcastState } from "@/lib/viewerState";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import { getCreatorsForPodcast } from "@/lib/creators";
-import { AddPodcastsButton } from "@/components/AddPodcastsButton";
 import styles from "./podcast.module.css";
 
 // Community data — ratings, listens, likes, the distribution bars. None of this
@@ -152,8 +151,14 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
               </div>
               <RatingWidget styles={styles} externalId={id} initialTier={viewerState.tier} />
               <ReviewWidget styles={styles} buttonClassName={styles.btnLog} externalId={id} />
-              <AddPodcastsButton label="Add to list" className={styles.btnAddList} />
-              <AddPodcastsButton label="Add to next listening" className={styles.btnAddList} />
+              <button className={styles.btnAddList}>
+                <PlusIcon />
+                Add to list
+              </button>
+              <button className={styles.btnAddList}>
+                <PlusIcon />
+                Add to next listening
+              </button>
             </div>
 
             {HAS_COMMUNITY_DATA && (
