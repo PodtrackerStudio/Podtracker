@@ -17,7 +17,7 @@ export async function verifyPassword(password: string, passwordHash: string): Pr
 // Session tokens are high-entropy random values, not user secrets — a fast
 // cryptographic hash (not bcrypt) is the correct choice for storing them,
 // so a stolen database dump can't be used to replay session tokens directly.
-function hashToken(token: string): string {
+export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 

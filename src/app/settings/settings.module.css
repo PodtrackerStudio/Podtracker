@@ -174,3 +174,39 @@
   font-size: 14px;
   padding: 60px 0;
 }
+
+/* ── AUTHENTICATION TAB ── */
+/* "Change password" sits centred under the tabs, with the three fields stacked
+   in a narrow centred column rather than the two-up grid the Display tab uses. */
+.subheading {
+  font-size: 22px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.authField {
+  max-width: 320px;
+  margin: 0 auto 20px;
+}
+.authField label {
+  display: block;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.authField input {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fafafa;
+  color: var(--text);
+}
+.authField input:focus {
+  outline: none;
+  border-color: #999;
+  background: #fff;
+}

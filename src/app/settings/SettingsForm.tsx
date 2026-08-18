@@ -30,6 +30,38 @@ export function SettingsForm({ user }: { user: User }) {
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Authentication tab
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwStatus, setPwStatus] = useState<{ type: "error" | "success"; text: string } | null>(null);
+  const [changingPw, setChangingPw] = useState(false);
+
+  async function handleChangePassword() {
+    setPwStatus(null);
+    setChangingPw(true);
+
+    const res = await fetch("/api/account/password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+    });
+
+    const data = await res.json().catch(() => null);
+    setChangingPw(false);
+
+    if (!res.ok) {
+      setPwStatus({ type: "error", text: data?.error ?? "Something went wrong." });
+      return;
+    }
+
+    // Clear the fields so the new password isn't left sitting in the form.
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPwStatus({ type: "success", text: "Password changed. Any other devices have been signed out." });
+  }
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -135,7 +167,32 @@ export function SettingsForm({ user }: { user: User }) {
           </div>
         </>
       ) : (
-        <p className={styles.placeholder}>Authentication settings (password change, etc.) haven&apos;t been designed yet — check back soon.</p>
+        <>
+          <h2 className={styles.subheading}>Change password</h2>
+
+          <div className={styles.authField}>
+            <label htmlFor="currentPassword">Current Password</label>
+            <input id="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+          </div>
+
+          <div className={styles.authField}>
+            <label htmlFor="newPassword">New Password</label>
+            <input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+          </div>
+
+          <div className={styles.authField}>
+            <label htmlFor="confirmPassword">Confirm New Password</label>
+            <input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+          </div>
+
+          {pwStatus && <div className={`${styles.statusMsg} ${styles[pwStatus.type]}`}>{pwStatus.text}</div>}
+
+          <div className={styles.saveRow}>
+            <button className={styles.saveButton} onClick={handleChangePassword} disabled={changingPw}>
+              {changingPw ? "Saving…" : "Change password"}
+            </button>
+          </div>
+        </>
       )}
     </>
   );

@@ -410,6 +410,40 @@ Caption, zero ratings displayed. HTTP 200, `tsc --noEmit` clean.
   nav rather than this page. Pre-existing and site-wide — the app has no
   responsive breakpoints at all, which phillipn also flagged on 08-16.
 
+### 2026-08-17 — Account Settings: the Authentication tab is real
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — sent the Edit profile Figma and
+  asked whether the page had been updated, and if not to build it to match.
+- **Status:** Complete and working end to end.
+
+**The Display tab already matched** Frame 1 — heading, tabs, avatar with the plus
+overlay, Username/Email, Display name/Links, Bio. Untouched.
+
+**The Authentication tab was a placeholder** reading "haven't been designed yet".
+Frame 2 designs it, so it is now a real Change password form: Current Password,
+New Password, Confirm New Password, stacked in a centred 320px column.
+
+**This one actually persists**, unlike the podcast write layer — auth already runs
+on bcrypt plus Postgres sessions, so nothing was deferred.
+
+- `src/app/api/account/password/route.ts` — **new.** Verifies the current
+  password with `verifyPassword`, enforces the same 6-character minimum as
+  signup, rejects a no-op change, then writes a fresh bcrypt hash.
+- **It also signs out every other session.** If the password was changed because
+  someone else knew it, leaving their session alive would defeat the point. The
+  current session is kept so the user isn't kicked out of the page.
+- `hashToken` is now **exported** from `src/lib/auth.ts`. The route needs it to
+  identify the current session; the first draft duplicated the function, which
+  would silently drift if the hashing ever changed.
+- The form clears all three fields on success rather than leaving the new
+  password sitting in the DOM.
+
+**Verified:** `/settings` 307-redirects when logged out; `POST
+/api/account/password` returns 401 unauthenticated. Signed in, the tab renders
+"Change password" with exactly the three labels from the frame, all three inputs
+`type="password"`. `tsc --noEmit` and `eslint` clean.
+
 ### 2026-08-17 — Logo in the nav, on the blue rather than on a black tile
 
 - **Branch:** `main`
