@@ -134,25 +134,12 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
             </div>
             <div className={styles.genresLine}>Genres: {podcast.genres}</div>
 
+            {/* "Where to listen" removed until after MVP (Sasha, 2026-08-18).
+                It listed Spotify / YouTube / Apple unconditionally with dead
+                links, asserting availability on three platforms with no basis.
+                Only Apple is provable without credentials. */}
             <div className={styles.descListenRow}>
               <p className={styles.podcastDesc}>{podcast.description}</p>
-              <div className={styles.whereToListen}>
-                <div className={styles.whereLabel}>Where to listen</div>
-                <div className={styles.listenCubby}>
-                  <a className={styles.listenItem} href="#">
-                    <SpotifyIcon size={14} />
-                    Spotify
-                  </a>
-                  <a className={styles.listenItem} href="#">
-                    <YouTubeIcon size={14} />
-                    YouTube
-                  </a>
-                  <a className={styles.listenItem} href="#">
-                    <ApplePodcastsIcon size={14} />
-                    Apple Podcasts
-                  </a>
-                </div>
-              </div>
             </div>
 
             <div className={styles.actionRow}>

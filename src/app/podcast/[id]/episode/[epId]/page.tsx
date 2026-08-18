@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { SpotifyIcon, YouTubeIcon, ApplePodcastsIcon, ChevronLeftIcon, ChevronRightIcon, MicIcon } from "@/components/icons";
+import { ChevronLeftIcon, ChevronRightIcon, MicIcon } from "@/components/icons";
 import { RatingWidget } from "@/components/RatingWidget";
 import { ReviewWidget } from "@/components/ReviewWidget";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
@@ -105,25 +105,10 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
               <span>Episode {epId}</span>
             </div>
 
+            {/* "Where to listen" removed until after MVP — see the note on the
+                podcast page. */}
             <div className={styles.descListenRow}>
               <p className={styles.episodeDesc}>{episode.description}</p>
-              <div className={styles.whereToListen}>
-                <div className={styles.whereLabel}>Where to listen</div>
-                <div className={styles.listenCubby}>
-                  <a className={styles.listenItem} href="#">
-                    <SpotifyIcon />
-                    Spotify
-                  </a>
-                  <a className={styles.listenItem} href="#">
-                    <YouTubeIcon />
-                    YouTube
-                  </a>
-                  <a className={styles.listenItem} href="#">
-                    <ApplePodcastsIcon />
-                    Apple Podcasts
-                  </a>
-                </div>
-              </div>
             </div>
 
             <div className={styles.actionRow}>
