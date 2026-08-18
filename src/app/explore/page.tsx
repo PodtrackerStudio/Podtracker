@@ -119,6 +119,12 @@ export default function ExplorePage() {
           </div>
         </section>
 
+        {/* Trending users, Popular lists and Curated lists all rank things that
+            only exist once people are using the site — followers, user-made
+            lists, top-rated shows. The page stops after Popular episodes until
+            then, matching Sasha's no-users frame. */}
+        {HAS_COMMUNITY_DATA && (
+          <>
         <hr className="divider" />
 
         <section>
@@ -190,6 +196,8 @@ export default function ExplorePage() {
             ))}
           </div>
         </section>
+          </>
+        )}
       </main>
 
       <SiteFooter />

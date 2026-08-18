@@ -410,6 +410,38 @@ Caption, zero ratings displayed. HTTP 200, `tsc --noEmit` clean.
   nav rather than this page. Pre-existing and site-wide — the app has no
   responsive breakpoints at all, which phillipn also flagged on 08-16.
 
+### 2026-08-18 — Explore stops after Popular episodes (no-users design)
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — the Explore page still showed the
+  full with-users layout; he wants the right-hand Figma frame for now.
+- **Status:** Complete.
+
+**What changed**
+
+`Trending users`, `Popular lists` and `Curated lists` are now behind
+`HAS_COMMUNITY_DATA`, along with the dividers that separated them. The page runs
+hero → Top podcasts of today → Popular episodes → footer.
+
+All three rank things that cannot exist without a user base — follower counts,
+user-made lists, top-rated shows — so they are gated rather than fed placeholder
+data. Flipping the shared flag restores all three at once, in order.
+
+**What they contain, for whoever turns them back on**
+
+- **Trending users** — circular avatars with name and follower count, "See more
+  →". Names and follower counts are Roboto, the deliberate exception to this
+  page's PT Serif Caption.
+- **Popular lists** — author avatar and name, list title, 3-up cover filmstrip
+  with a `+N` badge.
+- **Curated lists** — three wide cards, title overlaid in white: Top rated shows,
+  Top rated episodes, Most popular shows.
+
+**Verified:** headings render exactly `Discover more podcasts!` → `Top podcasts
+of today` → `Popular episodes`; all three gated sections absent; footer intact;
+exactly one divider, so no trailing separators are left behind. `tsc --noEmit`
+and `eslint` clean.
+
 ### 2026-08-17 — Account Settings: the Authentication tab is real
 
 - **Branch:** `main`
