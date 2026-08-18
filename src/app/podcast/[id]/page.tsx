@@ -9,6 +9,7 @@ import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { tierFromScore } from "@/lib/ratingTier";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
+import { getViewerPodcastState } from "@/lib/viewerState";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import { getCreatorsForPodcast } from "@/lib/creators";
 import { AddPodcastsButton } from "@/components/AddPodcastsButton";
@@ -69,6 +70,9 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
   // Listens and Likes are this app's own numbers, so they come from the
   // database, not the API. Zero until people start using the site.
   const stats = await getPodcastCommunityStats(id);
+  // What THIS viewer has already done, so the controls show their real state
+  // instead of resetting to Follow / unrated on every refresh.
+  const viewerState = await getViewerPodcastState(id);
   // Empty for any show whose host isn't in the curated registry — the strip
   // then doesn't render at all, rather than guessing at who made the show.
   const creators = getCreatorsForPodcast(id, podcast.author);
@@ -144,10 +148,10 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
 
             <div className={styles.actionRow}>
               <div className={styles.followGroup}>
-                <FollowButton styles={styles} />
+                <FollowButton styles={styles} externalId={id} initialFollowing={viewerState.following} />
               </div>
-              <RatingWidget styles={styles} />
-              <ReviewWidget styles={styles} buttonClassName={styles.btnLog} />
+              <RatingWidget styles={styles} externalId={id} initialTier={viewerState.tier} />
+              <ReviewWidget styles={styles} buttonClassName={styles.btnLog} externalId={id} />
               <AddPodcastsButton label="Add to list" className={styles.btnAddList} />
               <AddPodcastsButton label="Add to next listening" className={styles.btnAddList} />
             </div>

@@ -112,8 +112,8 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
             </div>
 
             <div className={styles.actionRow}>
-              <RatingWidget styles={styles} />
-              <ReviewWidget styles={styles} buttonClassName={styles.btnLog} />
+              <RatingWidget styles={styles} externalId={id} episodeKey={epId} />
+              <ReviewWidget styles={styles} buttonClassName={styles.btnLog} externalId={id} episodeKey={epId} />
               <AddPodcastsButton label="Add to list" className={styles.btnAddList} />
             </div>
 

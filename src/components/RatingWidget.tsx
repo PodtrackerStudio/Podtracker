@@ -19,19 +19,73 @@ const tierClass: Record<TierKey, string> = {
   dont: "ratedDont",
 };
 
-export function RatingWidget({ styles }: { styles: Record<string, string> }) {
+/** UI keys → the RatingTier enum the API and database use. */
+const TIER_TO_API: Record<TierKey, string> = {
+  highly: "HIGHLY_RECOMMEND",
+  recommend: "RECOMMEND",
+  ok: "OK",
+  dont: "DONT_RECOMMEND",
+};
+
+/**
+ * Rating only — no diary entry. Logging a listen is `ReviewWidget`.
+ *
+ * `initialTier` is read from the database on page load, so a rating you already
+ * gave shows on the mic button instead of resetting every refresh.
+ */
+export function RatingWidget({
+  styles,
+  externalId,
+  episodeKey,
+  initialTier = null,
+}: {
+  styles: Record<string, string>;
+  externalId: string;
+  /** Present on episode pages; absent means the show itself is being rated. */
+  episodeKey?: string;
+  initialTier?: TierKey | null;
+}) {
   const [open, setOpen] = useState(false);
-  const [rating, setRating] = useState<TierKey | null>(null);
+  const [rating, setRating] = useState<TierKey | null>(initialTier);
   const [pending, setPending] = useState<TierKey | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function openPopup() {
     setPending(rating);
+    setError(null);
     setOpen(true);
   }
 
-  function submit() {
-    if (pending) setRating(pending);
-    setOpen(false);
+  async function submit() {
+    if (!pending) {
+      setOpen(false);
+      return;
+    }
+    const previous = rating;
+    setRating(pending);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/rate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ externalId, episodeKey, tier: TIER_TO_API[pending] }),
+      });
+      if (!res.ok) {
+        // Put the old rating back rather than leave the button showing one the
+        // database never accepted.
+        setRating(previous);
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "Could not save that rating.");
+        return;
+      }
+      setOpen(false);
+    } catch {
+      setRating(previous);
+      setError("Could not reach the server.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -105,10 +159,12 @@ export function RatingWidget({ styles }: { styles: Record<string, string> }) {
             <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 4 }}>
               <button
                 onClick={submit}
-                style={{ background: "#06b6d4", color: "#fff", border: "none", borderRadius: 5, padding: "7px 24px", fontSize: 14, fontFamily: "inherit", fontWeight: 600, cursor: "pointer" }}
+                disabled={saving}
+                style={{ background: "#06b6d4", color: "#fff", border: "none", borderRadius: 5, padding: "7px 24px", fontSize: 14, fontFamily: "inherit", fontWeight: 600, cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1 }}
               >
-                Rate
+                {saving ? "Saving…" : "Rate"}
               </button>
+              {error && <span style={{ color: "#dc2626", fontSize: 13 }}>{error}</span>}
             </div>
           </div>
         </div>

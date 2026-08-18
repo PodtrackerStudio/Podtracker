@@ -29,19 +29,70 @@ function buildCalendarDays(year: number, month: number) {
   return days;
 }
 
-export function ReviewWidget({ styles, buttonClassName }: { styles: Record<string, string>; buttonClassName: string }) {
+/**
+ * Logging a listen: a diary entry carrying the date you heard it and,
+ * optionally, a review. Distinct from `RatingWidget`, which records a rating
+ * with no diary entry.
+ *
+ * This popup captures no rating, so logs written here store `tier: null` —
+ * which is allowed, since Sasha's rule is that a rating isn't required to log.
+ * Adding a tier control here is a design change, not a code one.
+ */
+export function ReviewWidget({
+  styles,
+  buttonClassName,
+  externalId,
+  episodeKey,
+}: {
+  styles: Record<string, string>;
+  buttonClassName: string;
+  externalId: string;
+  /** Present on episode pages; absent logs the show itself. */
+  episodeKey?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function openPopup() {
     const now = new Date();
     setSelectedDate(now);
     setCalendarDate(now);
     setDatePickerOpen(false);
+    setText("");
+    setError(null);
     setOpen(true);
+  }
+
+  async function submit() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          externalId,
+          episodeKey,
+          reviewText: text.trim() || null,
+          listenedDate: selectedDate.toISOString(),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "Could not save that log.");
+        return;
+      }
+      setOpen(false);
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const today = new Date();
@@ -167,12 +218,14 @@ export function ReviewWidget({ styles, buttonClassName }: { styles: Record<strin
                 lineHeight: 1.6,
               }}
             />
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 14, marginTop: 14 }}>
+              {error && <span style={{ color: "#dc2626", fontSize: 13 }}>{error}</span>}
               <button
-                onClick={() => setOpen(false)}
-                style={{ background: "var(--text)", color: "#fff", border: "none", borderRadius: 5, padding: "9px 26px", fontSize: 14, fontFamily: "inherit", cursor: "pointer" }}
+                onClick={submit}
+                disabled={saving}
+                style={{ background: "var(--text)", color: "#fff", border: "none", borderRadius: 5, padding: "9px 26px", fontSize: 14, fontFamily: "inherit", cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1 }}
               >
-                Submit
+                {saving ? "Saving…" : "Submit"}
               </button>
             </div>
           </div>
