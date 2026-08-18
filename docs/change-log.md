@@ -71,6 +71,56 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-18 — SPEC (not built): "Next listening" panel on the profile
+
+- **Requested by:** sashak@podtracker.studio, end of session. Specified fully;
+  no code written. Recorded so the next session builds it rather than
+  re-deriving it.
+- **Status:** Not started.
+
+**What it is**
+
+A panel on the **profile page, to the right of the diary**, headed **"Next
+listening"**. That is the name throughout — an earlier message said "watchlist"
+and Sasha corrected it: Next listening everywhere, in UI and in code.
+
+Modelled on the **Create List page's "Add title…" control** — the search box
+that finds an episode and adds it. But:
+
+- **No Title or Description fields.** Those exist because a list is named; this
+  collection is fixed and per-user, so they are meaningless here.
+- Added episodes render as a **gallery of covers**, not a titled list.
+
+**Data model — no migration needed**
+
+A single fixed collection per user, not a general list, and it must never appear
+among the user's real lists. Either one `List` row per user created on first
+add, or its own small table. **Do not** add an `isWatchlist` flag to `List` —
+that was discussed and then made unnecessary by this simpler shape.
+
+**How the two buttons behave** (same session)
+
+- **"Add to next listening"** — direct, no popup. Click and it is added, exactly
+  like Follow, and should survive a refresh via `lib/viewerState.ts` the way the
+  Follow button now does.
+- **"Add to list"** — opens a popup listing **your** lists to choose from, like
+  Spotify adding a song to a playlist. With no lists yet it shows an empty
+  state; give it a route through to Create list, because a popup offering
+  nothing and no exit is a dead end. The modal shell already exists
+  (`AddPodcastsPopup`) and can be reused with different contents.
+
+Both are currently plain, handler-less `<button>`s on the podcast and episode
+pages — the Add podcasts popup was unhooked from them on Sasha's instruction
+because he was redesigning what they should do. This entry is that redesign.
+
+**Prerequisite worth knowing**
+
+Adding an *episode* to anything goes through `ensureEpisode`, which resolves a
+hashed guid against the show's feed. The **episode page is still mock**
+(`getMockEpisode`), so its `epId` is not a real key and episode-level writes
+404. Show-level writes work. Either point that page at real data first, or
+expect Next listening to work only where a real episode key is available.
+
 ### 2026-08-18 — Centred the two people strips; dropped the fake creator photos
 
 - **Branch:** `main`
