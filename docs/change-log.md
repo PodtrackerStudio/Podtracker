@@ -410,6 +410,39 @@ Caption, zero ratings displayed. HTTP 200, `tsc --noEmit` clean.
   nav rather than this page. Pre-existing and site-wide — the app has no
   responsive breakpoints at all, which phillipn also flagged on 08-16.
 
+### 2026-08-17 — Logo in the nav, on the blue rather than on a black tile
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio
+- **Status:** Complete
+
+`SiteNav` now renders `public/logo.png` before the wordmark, 88px square.
+
+**Why there is no black tile, despite the Figma showing one.** Built as designed
+first, and the charcoal headphones disappeared. Measured contrast of the logo's
+three parts against each candidate backdrop:
+
+| Backdrop | headphones `#333333` | green thumb `#8BC53D` | red thumb `#DC1B1B` |
+| --- | --- | --- | --- |
+| Black tile (Figma) | **1.66** | 10.15 | 4.22 |
+| Nav blue `#C3DBFF` | 8.96 | **1.47** | 3.53 |
+| White | 12.63 | **2.07** | 4.98 |
+| Page grey | 10.22 | **1.67** | 4.03 |
+
+3:1 is the usual floor for a graphic to be distinguishable. **Every flat backdrop
+fails something** — the artwork contains both a very dark element and a light one.
+Sasha chose the blue (headphones read at ~9:1); the green thumb washes out, which
+he accepted. Fixing it properly means editing the artwork — darkening the green
+toward the brand's `#28BA60` would let the whole mark work on light backgrounds.
+
+The PNG is already transparent (86.4% of pixels, corner alpha 0), so no asset
+change was needed. Nav padding stayed symmetric — an earlier flush-left variant
+for the tile was reverted with it.
+
+**Still true of the asset:** 38.7% of its canvas is transparent padding, so it
+renders ~40% smaller than its box, and edge transitions average 3.5px against
+1–2px for a clean vector. A better original is still outstanding.
+
 ### 2026-08-17 — No average ratings anywhere; the flag is now one shared constant
 
 - **Branch:** `main`
