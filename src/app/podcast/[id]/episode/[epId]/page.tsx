@@ -5,30 +5,23 @@ import { ChevronLeftIcon, ChevronRightIcon, MicIcon, PlusIcon } from "@/componen
 import { RatingWidget } from "@/components/RatingWidget";
 import { ReviewWidget } from "@/components/ReviewWidget";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
+import { getEpisodeDetail } from "@/lib/episodeDetail";
 import styles from "./episode.module.css";
 
-// Mock data standing in for the database + Podcast Index lookup until those are wired up.
-function getMockEpisode(podcastId: string, epId: string) {
-  return {
-    id: epId,
-    podcastId,
-    podcastTitle: "Modern Wisdom",
-    title: `Inside Modern Politics – Ezra Klein #${epId}`,
-    date: "June 1, 2026",
-    duration: "2h 14m",
-    coverUrl: "https://picsum.photos/seed/epcover/300/300",
-    description:
-      "Chris Williamson sits down with Ezra Klein — journalist, author, and co-founder of Vox — to dig into the state of modern politics, the Democratic Party's identity crisis, media polarization, and what it actually takes to change someone's mind. One of the most substantive political conversations Chris has had on the show.",
-    avgScore: "3.8",
-    distribution: [
-      { tier: "highly", label: "Highly Recommend", pct: 48, count: 284 },
-      { tier: "recommend", label: "Recommend", pct: 30, count: 177 },
-      { tier: "ok", label: "OK", pct: 12, count: 71 },
-      { tier: "dont", label: "Don't Recommend", pct: 7, count: 41 },
-      { tier: "didnt", label: "Didn't Finish", pct: 3, count: 18 },
-    ],
-  };
-}
+// Community data — the consensus score and distribution bars. Not from any API;
+// it is this app's own and there is no user base generating it, so it stays
+// mock while the episode's own details come live from the show's RSS feed.
+// Only rendered when HAS_COMMUNITY_DATA is true.
+const community = {
+  avgScore: "3.8",
+  distribution: [
+    { tier: "highly", label: "Highly Recommend", pct: 48, count: 284 },
+    { tier: "recommend", label: "Recommend", pct: 30, count: 177 },
+    { tier: "ok", label: "OK", pct: 12, count: 71 },
+    { tier: "dont", label: "Don't Recommend", pct: 7, count: 41 },
+    { tier: "didnt", label: "Didn't Finish", pct: 3, count: 18 },
+  ],
+};
 
 const reviews = [
   { id: "r1", avatar: "https://picsum.photos/seed/av5/88/88", name: "JohnJam", tier: "recommend", tierLabel: "Recommend", date: "6/24/2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. Ezra Klein brought a lot of nuance to the political discussion that you rarely hear…" },
@@ -52,7 +45,7 @@ const featuredPeople = [
 
 export default async function EpisodePage({ params }: { params: Promise<{ id: string; epId: string }> }) {
   const { id, epId } = await params;
-  const episode = getMockEpisode(id, epId);
+  const episode = await getEpisodeDetail(id, epId);
 
   return (
     <>
@@ -72,12 +65,12 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
                 <div className={styles.avgMic}>
                   <MicIcon />
                 </div>
-                <div className={styles.scoreDisplay}>{episode.avgScore}</div>
+                <div className={styles.scoreDisplay}>{community.avgScore}</div>
                 <div className={styles.avgLabel}>Average rating</div>
 
                 <div className={styles.distSection}>
                   <div className={styles.distSectionTitle}>Ratings distribution</div>
-                  {episode.distribution.map((d) => (
+                  {community.distribution.map((d) => (
                     <div className={styles.distRow} key={d.tier}>
                       <div className={styles.distTrack}>
                         <div className={`${styles.distFill} ${styles[d.tier]}`} style={{ width: `${d.pct}%` }} />
@@ -96,12 +89,13 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
               ← {episode.podcastTitle}
             </Link>
             <h1 className={styles.episodeTitle}>{episode.title}</h1>
+            {/* No "Episode N": the route key is a hash of the feed guid, and
+                feeds don't reliably carry episode numbers. Printing the hash
+                would be noise. */}
             <div className={styles.episodeMeta}>
-              <span>{episode.date}</span>
-              <span>·</span>
-              <span>{episode.duration}</span>
-              <span>·</span>
-              <span>Episode {epId}</span>
+              {episode.date && <span>{episode.date}</span>}
+              {episode.date && episode.duration && <span>·</span>}
+              {episode.duration && <span>{episode.duration}</span>}
             </div>
 
             {/* "Where to listen" removed until after MVP — see the note on the
@@ -119,15 +113,24 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
               </button>
             </div>
 
+            {/* Neighbours come from the feed order. Either can be absent — the
+                newest episode has no next, the oldest no previous — so each is
+                rendered only when it exists rather than linking nowhere. */}
             <div className={styles.prevNextRow}>
-              <Link href="#" className={styles.prevNextBtn}>
-                <ChevronLeftIcon />
-                Previous episode
-              </Link>
-              <Link href="#" className={styles.prevNextBtn}>
-                Next episode
-                <ChevronRightIcon />
-              </Link>
+              {episode.previousId ? (
+                <Link href={`/podcast/${id}/episode/${episode.previousId}`} className={styles.prevNextBtn}>
+                  <ChevronLeftIcon />
+                  Previous episode
+                </Link>
+              ) : (
+                <span />
+              )}
+              {episode.nextId && (
+                <Link href={`/podcast/${id}/episode/${episode.nextId}`} className={styles.prevNextBtn}>
+                  Next episode
+                  <ChevronRightIcon />
+                </Link>
+              )}
             </div>
           </div>
         </section>
@@ -192,6 +195,14 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
           </>
         )}
 
+        {/* Featured people is hardcoded to Chris Williamson and Ezra Klein, so
+            on a live episode it names the wrong people entirely — it was
+            claiming they featured on a Joe Rogan episode. No podcast API or RSS
+            feed returns host/guest data, so there is nothing to populate it
+            with. Shown only on the placeholder, where those two are the right
+            answer, until a real source exists. */}
+        {!episode.isLive && (
+          <>
         <hr className="divider" />
 
         <section>
@@ -209,6 +220,8 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
             ))}
           </div>
         </section>
+          </>
+        )}
       </main>
 
       <SiteFooter />
