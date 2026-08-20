@@ -108,6 +108,8 @@ export type EpisodeListEntry = {
   id: string;
   title: string;
   date: string;
+  /** Episode artwork, falling back to the show cover. */
+  img: string;
 };
 
 export type EpisodeList = {
@@ -142,6 +144,8 @@ export async function getEpisodeList(podcastId: string): Promise<EpisodeList> {
       id: episodeKeyFromGuid(e.guid),
       title: e.title,
       date: formatDate(e.publishedAt),
+      // Many feeds set per-episode art; the rest inherit the show cover.
+      img: e.coverUrl ?? podcast.artworkUrl,
     })),
     isLive: true,
   };

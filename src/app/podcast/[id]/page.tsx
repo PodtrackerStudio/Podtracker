@@ -11,7 +11,6 @@ import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { getViewerPodcastState } from "@/lib/viewerState";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
-import { getCreatorsForPodcast } from "@/lib/creators";
 import styles from "./podcast.module.css";
 
 // Community data — ratings, listens, likes, the distribution bars. None of this
@@ -74,7 +73,6 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
   const viewerState = await getViewerPodcastState(id);
   // Empty for any show whose host isn't in the curated registry — the strip
   // then doesn't render at all, rather than guessing at who made the show.
-  const creators = getCreatorsForPodcast(id, podcast.author);
 
   return (
     <>
@@ -185,30 +183,12 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
           </div>
         </section>
 
-        {creators.length > 0 && (
-          <>
-            <hr className="divider" />
-
-            <section>
-              <h2 className={styles.sectionTitle}>{creators.length > 1 ? "Creators" : "Creator"}</h2>
-              <div className={styles.creatorsList}>
-                {creators.map((c) => (
-                  <Link className={styles.creatorRow} href={`/person/${c.slug}`} key={c.slug}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className={styles.creatorAvatar} src={c.avatarUrl} alt={c.name} />
-                    <div>
-                      <div className={styles.creatorName}>{c.name}</div>
-                      <div className={styles.creatorRole}>{c.role}</div>
-                    </div>
-                    {/* A span, not a nested Link — the whole row is already the
-                        link, and an <a> inside an <a> is invalid HTML. */}
-                    <span className={styles.creatorMore}>More on the creator →</span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          </>
-        )}
+        {/* Creators strip removed for MVP (Sasha, 2026-08-19). Many shows have
+            no person data at all, so it appeared for some and not others, and
+            the registry it read from covers only a handful by hand. Comes back
+            when there is a real source for host/guest data.
+            `lib/creators.ts` and `/person/[slug]` are kept — see the change
+            log. */}
 
         <hr className="divider" />
 

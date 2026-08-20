@@ -35,11 +35,6 @@ const lists = [
   { id: "l3", avatar: "https://picsum.photos/seed/laimerkor/80/80", title: "Episodes I listened this week", author: "LaimerKor", more: 3, gallery: ["https://picsum.photos/seed/listep1/80/80", "https://picsum.photos/seed/listep2/80/80", "https://picsum.photos/seed/epcover/80/80"] },
 ];
 
-const featuredPeople = [
-  { id: "chris", slug: "chris-williamson", name: "Chris Williamson", role: "Host", avatar: "https://picsum.photos/seed/chriswilliamson/120/120" },
-  { id: "ezra", slug: "ezra-klein", name: "Ezra Klein", role: "Guest", avatar: "https://picsum.photos/seed/ezraklein/120/120" },
-];
-
 // `HAS_COMMUNITY_DATA` (imported above) renders Sasha's no-users episode design
 // when false — the right-hand Figma frame — and the with-users one when true.
 
@@ -195,33 +190,10 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
           </>
         )}
 
-        {/* Featured people is hardcoded to Chris Williamson and Ezra Klein, so
-            on a live episode it names the wrong people entirely — it was
-            claiming they featured on a Joe Rogan episode. No podcast API or RSS
-            feed returns host/guest data, so there is nothing to populate it
-            with. Shown only on the placeholder, where those two are the right
-            answer, until a real source exists. */}
-        {!episode.isLive && (
-          <>
-        <hr className="divider" />
-
-        <section>
-          <h2 className={styles.sectionTitle}>Featured people</h2>
-          <div className={styles.featuredPeopleList}>
-            {featuredPeople.map((p) => (
-              <Link className={styles.featuredPerson} href={`/person/${p.slug}`} key={p.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={styles.featuredPersonAvatar} src={p.avatar} alt={p.name} />
-                <div>
-                  <div className={styles.featuredPersonName}>{p.name}</div>
-                  <div className={styles.featuredPersonRole}>{p.role}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-          </>
-        )}
+        {/* Featured people removed for MVP (Sasha, 2026-08-19). No podcast API
+            or RSS feed returns host/guest data, so it only ever showed a
+            hardcoded pair — and many shows have no person data at all. Comes
+            back when there is a real source. */}
       </main>
 
       <SiteFooter />

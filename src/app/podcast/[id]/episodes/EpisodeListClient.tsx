@@ -60,6 +60,8 @@ export function EpisodeListClient({
         <div>
           {displayed.map((ep) => (
             <Link className={styles.episodeRow} href={`/podcast/${podcastId}/episode/${ep.id}`} key={ep.id}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.episodeThumb} src={ep.img} alt="" />
               <div className={styles.episodeText}>
                 <div className={styles.episodeLink}>{ep.title}</div>
                 <div className={styles.episodeDate}>{ep.date}</div>
