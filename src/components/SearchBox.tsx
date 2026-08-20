@@ -2,7 +2,8 @@
 
 import { useState, useRef, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { quickSearch, hrefForSearchItem, subtitleForSearchItem } from "@/lib/search";
+import { hrefForSearchItem, subtitleForSearchItem } from "@/lib/search";
+import { useSearchResults } from "./useSearchResults";
 import { SearchIcon } from "./icons";
 
 export function SearchBox() {
@@ -11,7 +12,7 @@ export function SearchBox() {
   const [open, setOpen] = useState(false);
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const matches = value.trim() ? quickSearch(value) : [];
+  const matches = useSearchResults(value);
 
   function goToResultsPage() {
     if (!value.trim()) return;

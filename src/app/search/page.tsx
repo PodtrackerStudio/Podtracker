@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { search, hrefForSearchItem, subtitleForSearchItem } from "@/lib/search";
+import { search, hrefForSearchItem, subtitleForSearchItem, type SearchItem } from "@/lib/search";
 import styles from "./search.module.css";
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
-  const { topResult, otherResults } = search(query);
+  const { topResult, otherResults } = await search(query);
 
   return (
     <>
@@ -36,7 +36,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           <section>
             <h2 className={styles.sectionTitle}>Other results</h2>
             <div className={styles.resultsList}>
-              {otherResults.map((item) => (
+              {otherResults.map((item: SearchItem) => (
                 <Link className={styles.resultCard} href={hrefForSearchItem(item)} key={item.id}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className={styles.resultCover} src={item.cover} alt={item.title} />

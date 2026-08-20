@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { quickSearch, subtitleForSearchItem } from "@/lib/search";
-import type { SearchItem } from "@/lib/searchData";
+import { subtitleForSearchItem, type SearchItem } from "@/lib/search";
+import { useSearchResults } from "./useSearchResults";
 import { PlusIcon } from "@/components/icons";
 import styles from "../app/user/[username]/profileSub.module.css";
 
@@ -13,7 +13,8 @@ export function AddFavoriteButton() {
   const [query, setQuery] = useState("");
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const matches: SearchItem[] = query.trim() ? quickSearch(query).filter((i) => i.type === "podcast") : [];
+  // Live search now returns podcasts only, so no filtering is needed.
+  const matches: SearchItem[] = useSearchResults(query);
 
   async function addFavorite(item: SearchItem) {
     if (item.type !== "podcast") return;

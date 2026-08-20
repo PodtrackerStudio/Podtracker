@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { quickSearch, subtitleForSearchItem } from "@/lib/search";
-import type { SearchItem } from "@/lib/searchData";
+import { subtitleForSearchItem, type SearchItem } from "@/lib/search";
+import { useSearchResults } from "@/components/useSearchResults";
 import styles from "./createList.module.css";
 
 type AddedItem = { id: string; title: string };
@@ -19,7 +19,7 @@ export function CreateListClient() {
   const [query, setQuery] = useState("");
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const matches: SearchItem[] = query.trim() ? quickSearch(query) : [];
+  const matches: SearchItem[] = useSearchResults(query);
 
   function addItem(item: SearchItem) {
     setItems((prev) => (prev.some((i) => i.id === item.id) ? prev : [...prev, { id: item.id, title: item.title }]));
