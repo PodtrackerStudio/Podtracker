@@ -56,9 +56,9 @@ export default async function ExplorePage() {
         <section>
           <div className={styles.sectionHeaderRow}>
             <h2 className={styles.sectionTitle}>Top podcasts of today</h2>
-            <a href="#" className={styles.seeFullLink}>
+            <Link href="/explore/top-podcasts" className={styles.seeFullLink}>
               See full list →
-            </a>
+            </Link>
           </div>
           <div className={styles.coverGrid}>
             {topPodcasts.map((p) => (

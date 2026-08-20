@@ -1,0 +1,52 @@
+.main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 56px 48px 80px;
+}
+
+/* Same grid as the Add Favorites popup — this is that view as a real page. */
+.title {
+  font-size: 40px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 72px 56px;
+  justify-items: center;
+}
+
+.card {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+}
+.card img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background: #ccc;
+  transition: transform 0.15s;
+}
+.card:hover img {
+  transform: scale(1.04);
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px 32px;
+  }
+  .main {
+    padding: 40px 24px 64px;
+  }
+}
