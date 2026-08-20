@@ -1,0 +1,119 @@
+.wrap {
+  max-width: 960px;
+  margin: 56px auto 0;
+  padding: 0 24px;
+}
+
+.heading {
+  font-size: 30px;
+  font-weight: 400;
+  margin-bottom: 28px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin-bottom: 40px;
+}
+
+/* Avatar, name, then the body — matching the Figma's three-column row. */
+.comment {
+  display: grid;
+  grid-template-columns: 56px 140px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ccc;
+  display: block;
+}
+
+.author {
+  font-size: 14px;
+  padding-top: 4px;
+}
+
+/* Comment bodies are user-written, so Roboto — the same rule reviews follow. */
+.text {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-width: 520px;
+}
+
+.empty {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+.addHeading {
+  font-size: 20px;
+  font-weight: 400;
+  margin-bottom: 14px;
+}
+
+.input {
+  width: 100%;
+  max-width: 520px;
+  display: block;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  border: none;
+  background: #fff;
+  color: var(--text);
+  resize: vertical;
+}
+.input:focus {
+  outline: 2px solid var(--accent-blue);
+}
+
+.error {
+  color: #dc2626;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.submitRow {
+  max-width: 520px;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.submit {
+  background: var(--btn-primary-blue);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 9px 30px;
+  font-size: 15px;
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  cursor: pointer;
+}
+.submit:hover:not(:disabled) {
+  opacity: 0.88;
+}
+.submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .comment {
+    grid-template-columns: 44px 1fr;
+  }
+  .author {
+    grid-column: 2;
+  }
+  .text {
+    grid-column: 2;
+  }
+}

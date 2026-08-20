@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { Comments } from "@/components/Comments";
 import styles from "./review.module.css";
 
 /** RatingTier enum → the label and colour class the design uses. */
@@ -49,6 +51,15 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
         })
       : null;
 
+  const [viewer, comments] = await Promise.all([
+    getCurrentUser(),
+    db.comment.findMany({
+      where: { logEntryId: entry.id },
+      include: { user: true },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+
   const tier = rating?.tier ?? entry.tier ?? null;
   const display = tier ? TIER_DISPLAY[tier] : null;
 
@@ -87,6 +98,18 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             <p className={styles.body}>{entry.reviewText}</p>
           </div>
         </article>
+
+        <Comments
+          logEntryId={entry.id}
+          canComment={Boolean(viewer)}
+          comments={comments.map((c) => ({
+            id: c.id,
+            text: c.text,
+            authorName: c.user.displayName,
+            authorUsername: c.user.username,
+            authorAvatarUrl: c.user.avatarUrl,
+          }))}
+        />
       </main>
       <SiteFooter />
     </>

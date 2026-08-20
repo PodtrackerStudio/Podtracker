@@ -48,6 +48,7 @@ model User {
   lists          List[]
   podcastFollows PodcastFollow[]
   favorites      Favorite[]
+  comments       Comment[]
 
   followedBy Follow[] @relation("following")
   following  Follow[] @relation("follower")
@@ -263,6 +264,7 @@ model LogEntry {
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   podcast Podcast? @relation(fields: [podcastId], references: [id], onDelete: Cascade)
   episode Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  comments Comment[]
 
   @@index([userId, listenedDate])
   @@index([podcastId])
@@ -280,9 +282,32 @@ model List {
   createdAt   DateTime @default(now())
 
   user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items ListItem[]
+  items    ListItem[]
+  comments Comment[]
 
   @@index([userId])
+}
+
+// Comments on a review or a list. Exactly one of logEntryId / listId is set,
+// enforced in the application layer — the same pattern LogEntry and ListItem
+// already use for their podcast/episode either-or.
+//
+// A "review" is a LogEntry carrying reviewText; there is no separate table, so
+// comments on reviews point at LogEntry.
+model Comment {
+  id         String   @id @default(cuid())
+  userId     String
+  logEntryId String?
+  listId     String?
+  text       String
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logEntry LogEntry? @relation(fields: [logEntryId], references: [id], onDelete: Cascade)
+  list     List?     @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@index([logEntryId, createdAt])
+  @@index([listId, createdAt])
 }
 
 model ListItem {
