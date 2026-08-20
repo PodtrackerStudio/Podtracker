@@ -103,6 +103,50 @@ export function summaryOnly(text: string): string {
   return summary || sentences[0]?.trim() || "";
 }
 
+export type EpisodeListEntry = {
+  /** Hashed guid — the route key. */
+  id: string;
+  title: string;
+  date: string;
+};
+
+export type EpisodeList = {
+  podcastTitle: string;
+  episodes: EpisodeListEntry[];
+  isLive: boolean;
+};
+
+/**
+ * Every episode of a show, newest first, for the full episode list page.
+ *
+ * The whole feed, not a slice — this page is the only route to episodes older
+ * than the four in the "Recent episodes" strip. Feeds are cached for an hour,
+ * so this is no more expensive than any other page on the show.
+ *
+ * Never throws; an unreachable feed yields an empty list the page can render
+ * honestly rather than a 500.
+ */
+export async function getEpisodeList(podcastId: string): Promise<EpisodeList> {
+  const empty = { podcastTitle: "", episodes: [], isLive: false };
+  if (!/^\d+$/.test(podcastId)) return empty;
+
+  const podcast = await lookupPodcast(podcastId).catch(() => null);
+  if (!podcast?.feedUrl) return empty;
+
+  const feed = await fetchPodcastFeed(podcast.feedUrl).catch(() => null);
+  if (!feed) return { podcastTitle: podcast.title, episodes: [], isLive: false };
+
+  return {
+    podcastTitle: podcast.title,
+    episodes: feed.episodes.map((e) => ({
+      id: episodeKeyFromGuid(e.guid),
+      title: e.title,
+      date: formatDate(e.publishedAt),
+    })),
+    isLive: true,
+  };
+}
+
 // Mirrors placeholderDetail in podcastDetail.ts — the legacy hardcoded slugs
 // ("jre", "modern-wisdom", …) still linked from Similar podcasts have no feed
 // behind them, and a rendered stand-in beats a 500.
