@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PlusIcon } from "./icons";
-import { AddPodcastsPopup } from "./AddPodcastsPopup";
+import { AddPodcastsPopup, type PopupShow } from "./AddPodcastsPopup";
 
 /**
  * Renders one of the site's "+" controls and opens the Add podcasts picker.
@@ -17,6 +17,7 @@ export function AddPodcastsButton({
   iconSize,
   popupTitle,
   iconAfter = false,
+  shows,
 }: {
   label: string;
   className?: string;
@@ -24,6 +25,8 @@ export function AddPodcastsButton({
   popupTitle?: string;
   /** Following's empty state puts the + after the label; the others before. */
   iconAfter?: boolean;
+  /** Apple chart rows, fetched by the server component that renders this. */
+  shows: PopupShow[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -34,7 +37,7 @@ export function AddPodcastsButton({
         {label}
         {iconAfter && <PlusIcon size={iconSize} />}
       </button>
-      {open && <AddPodcastsPopup title={popupTitle} onClose={() => setOpen(false)} />}
+      {open && <AddPodcastsPopup title={popupTitle} shows={shows} onClose={() => setOpen(false)} />}
     </>
   );
 }

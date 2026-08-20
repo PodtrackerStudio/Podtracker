@@ -16,38 +16,20 @@ import styles from "./addPodcastsPopup.module.css";
  * click is part of the deferred write-layer batch, not something to bolt on
  * here — see docs/change-log.md.
  */
-const SHOW_ARTWORK = [
-  { title: "The Joe Rogan Experience", img: "/explore/joe-rogan.jpg" },
-  { title: "The Shawn Ryan Show", img: "/explore/shawn-ryan.jpg" },
-  { title: "Crime Junkie", img: "/explore/crime-junkie.jpg" },
-  { title: "Good Hang with Amy Poehler", img: "/explore/good-hang-amy-poehler.jpg" },
-  { title: "This Past Weekend w/ Theo Von", img: "/explore/theo-von.jpg" },
-  { title: "The Daily", img: "/explore/the-daily.jpg" },
-  { title: "The Diary of a CEO", img: "/explore/diary-of-a-ceo.jpg" },
-  { title: "Matt & Shane's Secret Podcast", img: "/explore/matt-and-shane.jpg" },
-  { title: "Up First from NPR", img: "/explore/ep-up-first-npr.jpg" },
-  { title: "The Tim Dillon Show", img: "/explore/ep-tim-dillon.jpg" },
-  { title: "Murdered: Carmen Van Huss", img: "/explore/ep-murdered-carmen.jpg" },
-  { title: "The Rich Roll Podcast", img: "/explore/list-sleep-2.jpg" },
-];
 
-const PLACEHOLDER_COUNT = 48;
 
-/**
- * 48 tiles cycled from the 12 cover images that exist in `public/`. Sasha asked
- * for "close to 50" and his own mock repeats covers, so duplicates are expected
- * placeholder behaviour — there simply aren't 50 real covers in the repo, and
- * inventing filenames would render broken images.
- *
- * This whole array disappears when the API lands; the grid becomes live search
- * results at that point.
- */
-const PLACEHOLDER_SHOWS = Array.from({ length: PLACEHOLDER_COUNT }, (_, i) => {
-  const art = SHOW_ARTWORK[i % SHOW_ARTWORK.length];
-  return { id: `placeholder-${i}`, title: art.title, img: art.img };
-});
+export type PopupShow = { id: string; title: string; artworkUrl: string };
 
-export function AddPodcastsPopup({ title = "Add podcasts", onClose }: { title?: string; onClose: () => void }) {
+export function AddPodcastsPopup({
+  title = "Add podcasts",
+  shows,
+  onClose,
+}: {
+  title?: string;
+  /** Apple's podcast chart, fetched server-side. */
+  shows: PopupShow[];
+  onClose: () => void;
+}) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Esc closes, and the page behind must not scroll while this is open.
@@ -83,10 +65,10 @@ export function AddPodcastsPopup({ title = "Add podcasts", onClose }: { title?: 
         </button>
         <h2 className={styles.title}>{title}</h2>
         <div className={styles.grid}>
-          {PLACEHOLDER_SHOWS.map((show) => (
+          {shows.map((show) => (
             <button className={styles.card} key={show.id} type="button" title={show.title}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={show.img} alt={show.title} />
+              <img src={show.artworkUrl} alt={show.title} />
             </button>
           ))}
         </div>

@@ -3,21 +3,11 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PlayIcon } from "@/components/icons";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
+import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import styles from "./explore.module.css";
 
 const DEMO_EPISODE_HREF = "/podcast/modern-wisdom/episode/1109";
 const DEMO_LIST_HREF = "/list/joe-rogan-mma-show";
-
-const topPodcasts = [
-  { id: "jre", title: "The Joe Rogan Experience", meta: "Comedy · Interview", tier: "highly", tierLabel: "Highly Recommend", score: 3.8, img: "/explore/joe-rogan.jpg" },
-  { id: "shawn-ryan", title: "The Shawn Ryan Show", meta: "Interview · News", tier: "highly", tierLabel: "Highly Recommend", score: 3.9, img: "/explore/shawn-ryan.jpg" },
-  { id: "crime-junkie", title: "Crime Junkie", meta: "True Crime", tier: "highly", tierLabel: "Highly Recommend", score: 3.7, img: "/explore/crime-junkie.jpg" },
-  { id: "good-hang", title: "Good Hang with Amy Poehler", meta: "Comedy", tier: "recommend", tierLabel: "Recommend", score: 3.1, img: "/explore/good-hang-amy-poehler.jpg" },
-  { id: "theo-von", title: "This Past Weekend w/ Theo Von", meta: "Comedy · Interview", tier: "highly", tierLabel: "Highly Recommend", score: 3.6, img: "/explore/theo-von.jpg" },
-  { id: "the-daily", title: "The Daily", meta: "News", tier: "recommend", tierLabel: "Recommend", score: 3.0, img: "/explore/the-daily.jpg" },
-  { id: "doac", title: "The Diary of a CEO", meta: "Business · Interview", tier: "recommend", tierLabel: "Recommend", score: 3.3, img: "/explore/diary-of-a-ceo.jpg" },
-  { id: "matt-shane", title: "Matt & Shane's Secret Podcast", meta: "Comedy", tier: "highly", tierLabel: "Highly Recommend", score: 3.9, img: "/explore/matt-and-shane.jpg" },
-];
 
 const popularEpisodes = [
   { id: "e1", title: "Joe Rogan #2161 – Tony Hinchcliffe", date: "Jun 3, 2025", tier: "highly", tierLabel: "Highly Recommend", score: 3.9, img: "/explore/ep-joe-rogan-2161.jpg" },
@@ -50,7 +40,10 @@ const curatedLists = [
   { id: "most-popular", title: "Most popular shows", img: "/explore/curated-most-popular-shows.webp" },
 ];
 
-export default function ExplorePage() {
+export default async function ExplorePage() {
+  // Apple's chart — real popularity, replacing a hardcoded list of eight names.
+  const topPodcasts = await getPopularPodcasts(8);
+
   return (
     <>
       <SiteNav active="explore" />
@@ -71,16 +64,10 @@ export default function ExplorePage() {
             {topPodcasts.map((p) => (
               <Link className={styles.coverCard} href={`/podcast/${p.id}`} key={p.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.img} alt="Podcast cover" />
+                <img src={p.artworkUrl} alt="Podcast cover" />
                 <div className={styles.hoverCard}>
                   <div className={styles.hoverCardTitle}>{p.title}</div>
-                  <div className={styles.hoverCardDate}>{p.meta}</div>
-                  {HAS_COMMUNITY_DATA && (
-                    <div className={styles.hoverCardRating}>
-                      <span className={styles.hoverCardScore}>{p.score.toFixed(1)}</span>
-                      <span className={`${styles.hoverCardLabel} ${styles[p.tier]}`}>{p.tierLabel}</span>
-                    </div>
-                  )}
+                  <div className={styles.hoverCardDate}>{p.artistName}</div>
                 </div>
               </Link>
             ))}
