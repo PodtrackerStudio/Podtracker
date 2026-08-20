@@ -73,9 +73,8 @@ export default async function ReviewsPage({ params }: { params: Promise<{ userna
             {reviews.map((entry) => {
               const cover = entry.episode?.coverUrl ?? entry.podcast?.coverUrl ?? "https://picsum.photos/seed/reviewdefault/200/200";
               const title = entry.episode?.title ?? entry.podcast?.title ?? "Untitled";
-              const href = entry.episodeId
-                ? `/podcast/${entry.podcastId ?? entry.episode?.podcastId}/episode/${entry.episodeId}`
-                : `/podcast/${entry.podcastId}`;
+              // Clicking a review opens the review itself, not the show.
+              const href = `/review/${entry.id}`;
               const rating = entry.episodeId
                 ? episodeRatings.find((r) => r.episodeId === entry.episodeId)
                 : podcastRatings.find((r) => r.podcastId === entry.podcastId);

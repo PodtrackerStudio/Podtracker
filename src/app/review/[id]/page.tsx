@@ -1,68 +1,93 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import styles from "../review.module.css";
+import { db } from "@/lib/db";
+import styles from "./review.module.css";
 
-type ReviewTier = "highly" | "recommend" | "ok" | "dont";
+/** RatingTier enum → the label and colour class the design uses. */
+const TIER_DISPLAY: Record<string, { label: string; className: string }> = {
+  HIGHLY_RECOMMEND: { label: "Highly Recommend", className: "highly" },
+  RECOMMEND: { label: "Recommend", className: "recommend" },
+  OK: { label: "Ok", className: "ok" },
+  DONT_RECOMMEND: { label: "Don't recommend", className: "dont" },
+  DIDNT_FINISH: { label: "Didn't finish", className: "didnt" },
+};
 
-function getMockReview(id: string): {
-  episodeTitle: string;
-  podcastTitle: string;
-  cover: string;
-  reviewerName: string;
-  date: string;
-  tier: ReviewTier;
-  tierLabel: string;
-  text: string;
-} {
-  if (id === "matt-shane-393") {
-    return {
-      episodeTitle: "Ep 393 The Presidents (Feat Louis C.K.)",
-      podcastTitle: "Matt and Shane's secret podcast",
-      cover: "/explore/matt-and-shane.jpg",
-      reviewerName: "Alexander Knysh",
-      date: "7/31/26",
-      tier: "highly",
-      tierLabel: "Highly Recommend",
-      text: "A fantastic blend of humor and information, While Neither Shane nor Louis are experts on history, that is exactly what makes the episode so fun. Seeing historical figures be described in such vulgar and brutally honest ways, make their characters and actions more interesting to learn about, and will likely make someone, who's only experience with history is boring classrooms, potentially seek out more of the subject. Hope that the rest of the shows are just as good.",
-    };
-  }
+const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "numeric", day: "numeric", year: "2-digit" });
 
-  return {
-    episodeTitle: "Untitled episode",
-    podcastTitle: "Unknown podcast",
-    cover: "https://picsum.photos/seed/review-fallback/200/200",
-    reviewerName: "Anonymous",
-    date: "",
-    tier: "recommend",
-    tierLabel: "Recommend",
-    text: "No review text available.",
-  };
-}
-
-export default async function ReviewDetailPage({ params }: { params: Promise<{ id: string }> }) {
+/**
+ * A single review, opened from anywhere one is listed.
+ *
+ * A "review" is a `LogEntry` carrying `reviewText` — there is no separate table.
+ * The tier shown is the author's **current** rating of the same target rather
+ * than `LogEntry.tier`, matching how the profile's reviews tab does it, since a
+ * review can exist without a rating and vice versa.
+ */
+export default async function ReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const review = getMockReview(id);
+
+  const entry = await db.logEntry.findUnique({
+    where: { id },
+    include: { user: true, episode: { include: { podcast: true } }, podcast: true },
+  });
+
+  // Log entries without review text are diary entries, not reviews.
+  if (!entry || !entry.reviewText) notFound();
+
+  const podcast = entry.podcast ?? entry.episode?.podcast ?? null;
+
+  const rating = entry.episodeId
+    ? await db.episodeRating.findUnique({
+        where: { userId_episodeId: { userId: entry.userId, episodeId: entry.episodeId } },
+        select: { tier: true },
+      })
+    : entry.podcastId
+      ? await db.podcastRating.findUnique({
+          where: { userId_podcastId: { userId: entry.userId, podcastId: entry.podcastId } },
+          select: { tier: true },
+        })
+      : null;
+
+  const tier = rating?.tier ?? entry.tier ?? null;
+  const display = tier ? TIER_DISPLAY[tier] : null;
+
+  const title = entry.episode?.title ?? podcast?.title ?? "Untitled";
+  const cover = entry.episode?.coverUrl ?? podcast?.coverUrl ?? "/default-avatar.webp";
+  const href = entry.episode && podcast ? `/podcast/${podcast.externalId}/episode/${entry.episodeId}` : podcast ? `/podcast/${podcast.externalId}` : "#";
 
   return (
     <>
       <SiteNav />
-
       <main className={styles.main}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className={styles.cover} src={review.cover} alt={review.episodeTitle} />
-        <h1 className={styles.episodeTitle}>{review.episodeTitle}</h1>
-        <div className={styles.podcastTitle}>{review.podcastTitle}</div>
+        <article className={styles.reviewHeader}>
+          <Link href={href}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className={styles.cover} src={cover} alt={title} />
+          </Link>
 
-        <div className={styles.metaRow}>
-          <span className={styles.reviewerName}>Review by {review.reviewerName}</span>
-          <span className={styles.date}>Date: {review.date}</span>
-        </div>
+          <div>
+            <h1 className={styles.title}>
+              <Link href={href}>{title}</Link>
+            </h1>
+            {entry.episode && podcast && <div className={styles.showName}>{podcast.title}</div>}
 
-        <div className={`${styles.ratingTag} ${styles[review.tier]}`}>{review.tierLabel}</div>
+            <div className={styles.byline}>
+              <span>
+                Review by{" "}
+                <Link href={`/user/${entry.user.username}`} className={styles.author}>
+                  {entry.user.displayName}
+                </Link>
+              </span>
+              <span className={styles.date}>Date: {dateFormatter.format(entry.listenedDate)}</span>
+            </div>
 
-        <p className={styles.reviewText}>{review.text}</p>
+            {display && <div className={`${styles.tier} ${styles[display.className]} rating-label`}>{display.label}</div>}
+
+            <p className={styles.body}>{entry.reviewText}</p>
+          </div>
+        </article>
       </main>
-
       <SiteFooter />
     </>
   );

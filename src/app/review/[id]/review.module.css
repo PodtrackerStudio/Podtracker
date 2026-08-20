@@ -1,0 +1,98 @@
+.main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.reviewHeader {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.cover {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background: #ccc;
+}
+
+.title {
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+.title a {
+  text-decoration: none;
+  color: var(--text);
+}
+.title a:hover {
+  text-decoration: underline;
+}
+
+.showName {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  margin-bottom: 14px;
+}
+
+.byline {
+  display: flex;
+  align-items: baseline;
+  gap: 40px;
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+.author {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+}
+.author:hover {
+  text-decoration: underline;
+}
+.date {
+  color: var(--text);
+}
+
+/* Londrina Solid comes from the shared `rating-label` class on the element. */
+.tier {
+  font-size: 15px;
+  margin-bottom: 18px;
+}
+.highly {
+  color: var(--highly-recommend);
+}
+.recommend {
+  color: var(--recommend);
+}
+.ok {
+  color: var(--ok);
+}
+.dont {
+  color: var(--dont);
+}
+.didnt {
+  color: var(--didnt-finish);
+}
+
+/* Review body stays Roboto — the one standing exception to PT Serif Caption. */
+.body {
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 640px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 720px) {
+  .reviewHeader {
+    grid-template-columns: 1fr;
+  }
+  .cover {
+    max-width: 200px;
+  }
+}
