@@ -44,6 +44,65 @@ function stripHtml(text: string): string {
   return text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Signals that a sentence is promotional rather than part of the summary.
+ *
+ * Podcast feed descriptions almost always run: the actual summary, then the
+ * guest's own links, then sponsor reads, then network ad boilerplate. A real
+ * example from JRE #2542:
+ *
+ *   "Steve Hilton is a businessman, political commentator, author, and
+ *    Republican candidate for governor of California. www.youtube.com/@…
+ *    Perplexity: Download the app… Use code ROGAN at BlueChew.com to get 10%
+ *    OFF… Learn more about your ad choices. Visit podcastchoices.com/adchoices"
+ *
+ * Only the first sentence is the summary.
+ */
+const PROMO_SIGNALS = [
+  /https?:\/\//i,
+  /\bwww\./i,
+  /\.(com|net|org|io|co|fm)\b/i,
+  /\buse code\b/i,
+  /\bpromo code\b/i,
+  /\d+%\s*off\b/i,
+  /\bbrought to you by\b/i,
+  /\bsponsor(ed|s|ship)?\b/i,
+  /\bad choices\b/i,
+  /\badvertising inquiries\b/i,
+  /\bprivacy & opt-?out\b/i,
+  /\bdownload the app\b/i,
+  /\bsign up\b/i,
+  /\bfree trial\b/i,
+  /\bdiscount\b/i,
+];
+
+/**
+ * Keeps the summary and drops the sponsorship tail.
+ *
+ * Takes sentences from the start and stops at the first promotional one, since
+ * the ordering is reliable — once a feed starts selling, it does not go back to
+ * describing the episode.
+ *
+ * Falls back to the first sentence if that leaves nothing, so a description
+ * whose opening line happens to contain a link still shows something rather
+ * than going blank.
+ */
+export function summaryOnly(text: string): string {
+  const clean = stripHtml(text);
+  if (!clean) return "";
+
+  const sentences = clean.split(/(?<=[.!?])\s+/);
+  const kept: string[] = [];
+
+  for (const sentence of sentences) {
+    if (PROMO_SIGNALS.some((re) => re.test(sentence))) break;
+    kept.push(sentence);
+  }
+
+  const summary = kept.join(" ").trim();
+  return summary || sentences[0]?.trim() || "";
+}
+
 // Mirrors placeholderDetail in podcastDetail.ts — the legacy hardcoded slugs
 // ("jre", "modern-wisdom", …) still linked from Similar podcasts have no feed
 // behind them, and a rendered stand-in beats a 500.
@@ -102,7 +161,7 @@ export async function getEpisodeDetail(podcastId: string, episodeKey: string): P
     date: formatDate(episode.publishedAt),
     duration: formatDuration(episode.durationSeconds),
     coverUrl: episode.coverUrl ?? podcast.artworkUrl,
-    description: stripHtml(episode.description),
+    description: summaryOnly(episode.description),
     previousId: older ? episodeKeyFromGuid(older.guid) : null,
     nextId: newer ? episodeKeyFromGuid(newer.guid) : null,
     isLive: true,
