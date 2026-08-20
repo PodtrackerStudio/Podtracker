@@ -71,6 +71,58 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-20 — SPEC (not built): real reviews, then comments on reviews and lists
+
+Sasha's next request, in his order: **make reviews publishable and readable, so
+that when he writes his first review after logging in it works — with a comment
+section under it.** Comments go under **all reviews and lists**. Figma exists
+(`How a review looks like`): a "Comments" heading, rows of avatar + username +
+text + MORE, then "Add comment" with an `Enter comment…` textarea and a blue
+Submit pill.
+
+**Do these in order. Comments cannot come first.**
+
+**1. Reviews: the write half already works, the read half does not exist.**
+`/api/log` stores `reviewText` on a `LogEntry` today — a review written now
+genuinely persists. But **nothing reads it**. `/review/[id]` renders a hardcoded
+array (JohnJam, Vito Corleone, Phillip Neiman) and never touches the database,
+so a real review would sit in Postgres while the page shows fiction. Needed:
+- `/review/[id]` loads a `LogEntry` by id instead of the mock array
+- Popular reviews sections query real entries rather than their hardcoded lists
+- The profile's recent activity shows the viewer's own
+
+Note `ReviewWidget` has **no tier control**, so reviews written through it store
+`tier: null`. Valid per Sasha's rule that rating is optional; adding one is a
+design decision, not a bug to fix silently.
+
+**2. Comments: needs a new table, so a migration.** Shape it like `LogEntry` —
+nullable `logEntryId` and nullable `listId`, exactly one set, enforced in the
+application layer:
+
+```prisma
+model Comment {
+  id         String   @id @default(cuid())
+  userId     String
+  logEntryId String?  // comment on a review
+  listId     String?  // comment on a list
+  text       String
+  createdAt  DateTime @default(now())
+}
+```
+
+Then `POST /api/comments`, and a `Comments` component used by both the review
+and list pages.
+
+**Why this order.** A comment is a foreign key to the thing it is on. Reviews
+and lists are both **entirely mock today** — `/review/[id]` and `/list/[id]`
+have no database access at all — so a comment built now would attach to a string
+in a source file. Build the read path first and comments attach to ids that
+still exist tomorrow.
+
+**Lists are further behind than reviews.** Reviews only need a read path; lists
+have neither a create nor a read path wired. Comments on lists therefore land
+after comments on reviews.
+
 ### 2026-08-18 — NEXT SESSION'S GOAL: 5,000+ shows reachable, with real episode pages
 
 Sasha's goal for the next session, which he intends to spend entirely on this:
