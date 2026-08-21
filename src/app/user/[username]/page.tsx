@@ -4,13 +4,22 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { PlusIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { tierFromScore } from "@/lib/ratingTier";
+import { episodeKeyFromGuid } from "@/lib/episodeKey";
 import styles from "./profile.module.css";
 
 // A seeded demo account kept around to show what a populated profile looks
 // like — real signups won't have activity until rating/review persistence
 // (task #3) exists, so this is the only way to demo the full design for now.
 const DEMO_USERNAME = "sasha";
+
+/** Tier → label + colour class for the recent-logs cards. */
+const LOG_TIER_DISPLAY: Record<string, { label: string; className: string }> = {
+  HIGHLY_RECOMMEND: { label: "Highly Recommend", className: "highly" },
+  RECOMMEND: { label: "Recommend", className: "recommend" },
+  OK: { label: "Ok", className: "ok" },
+  DONT_RECOMMEND: { label: "Don't recommend", className: "dont" },
+  DIDNT_FINISH: { label: "Didn't finish", className: "didnt" },
+};
 
 function getDemoProfile() {
   return {
@@ -346,16 +355,47 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           {hasActivity ? (
             <div className={styles.listeningGrid}>
               {logEntries.map((entry) => {
-                const cover = entry.episode?.coverUrl ?? entry.podcast?.coverUrl ?? "https://picsum.photos/seed/logentry/480/300";
-                const href = entry.episode
-                  ? `/podcast/${entry.podcastId ?? entry.episode.podcastId}/episode/${entry.episodeId}`
-                  : `/podcast/${entry.podcastId}`;
+                const cover = entry.episode?.coverUrl ?? entry.podcast?.coverUrl ?? "/default-avatar.webp";
+
+                // Routes take the EXTERNAL ids — the iTunes id for a show, the
+                // hashed feed guid for an episode. Using the raw database cuids
+                // sent every link to a non-numeric id, which fell through to
+                // the Modern Wisdom placeholder.
+                const showExternalId = entry.podcast?.externalId ?? null;
+                const episodeKey = entry.episode?.externalId ? episodeKeyFromGuid(entry.episode.externalId) : null;
+                const href =
+                  episodeKey && showExternalId
+                    ? `/podcast/${showExternalId}/episode/${episodeKey}`
+                    : showExternalId
+                      ? `/podcast/${showExternalId}`
+                      : null;
+
+                // Current rating of the same target, not LogEntry.tier — a log
+                // can exist without a rating.
+                const tier = entry.episodeId
+                  ? episodeRatings.find((r) => r.episodeId === entry.episodeId)?.tier
+                  : podcastRatings.find((r) => r.podcastId === entry.podcastId)?.tier;
+                const tierMeta = tier ? LOG_TIER_DISPLAY[tier] : null;
+
                 return (
                   <div key={entry.id}>
-                    <Link href={href}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {href ? (
+                      <Link href={href}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img className={styles.listeningThumb} src={cover} alt="Episode" />
+                      </Link>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img className={styles.listeningThumb} src={cover} alt="Episode" />
-                    </Link>
+                    )}
+                    <div className={styles.listeningMeta}>
+                      {tierMeta && <span className={`${styles.ratingTag} ${styles[tierMeta.className]}`}>{tierMeta.label}</span>}
+                      {entry.reviewText && (
+                        <Link href={`/review/${entry.id}`} className={styles.readReview}>
+                          Read review
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 );
               })}
