@@ -29,23 +29,14 @@
   justify-items: center;
 }
 
+/* Wraps MediaThumbCard (which brings the cover, the hover popup and its own
+   scale-on-hover) plus the tier label beneath it. Must not clip, or the popup
+   gets cut off. */
 .card {
-  display: block;
   width: 100%;
   max-width: 200px;
-  text-decoration: none;
   text-align: center;
-}
-.card img {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  display: block;
-  background: #ccc;
-  transition: transform 0.15s;
-}
-.card:hover img {
-  transform: scale(1.04);
+  overflow: visible;
 }
 
 .tier {

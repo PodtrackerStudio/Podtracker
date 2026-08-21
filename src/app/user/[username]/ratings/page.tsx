@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { FilterMenu, type FilterOption } from "@/components/FilterMenu";
+import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { db } from "@/lib/db";
 import {
   getUserRatings,
@@ -14,6 +15,8 @@ import {
   type SortMode,
 } from "@/lib/userRatings";
 import styles from "./ratings.module.css";
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
 
 const TIER_OPTIONS: FilterOption[] = TIER_ORDER.map((t) => ({
   value: t,
@@ -97,13 +100,21 @@ export default async function RatingsPage({
           <>
             <div className={styles.grid}>
               {result.items.map((item) => (
-                <Link className={styles.card} href={item.href} key={item.key} title={item.title}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.coverUrl ?? "/default-avatar.webp"} alt={item.title} />
+                <div className={styles.card} key={item.key}>
+                  {/* MediaThumbCard supplies the shared hover popup. It shows
+                      the title and — for episodes — the release date. The
+                      average rating inside it is gated on HAS_COMMUNITY_DATA,
+                      so it appears on its own once that flips. */}
+                  <MediaThumbCard
+                    href={item.href}
+                    cover={item.coverUrl ?? "/default-avatar.webp"}
+                    title={item.title}
+                    subtitle={item.kind === "episode" && item.releasedAt ? dateFormatter.format(item.releasedAt) : undefined}
+                  />
                   <span className={`${styles.tier} ${styles[TIER_CLASS[item.tier]]} rating-label`}>
                     {TIER_LABEL[item.tier]}
                   </span>
-                </Link>
+                </div>
               ))}
             </div>
 
