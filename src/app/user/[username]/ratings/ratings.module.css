@@ -1,0 +1,109 @@
+.main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 48px 80px;
+}
+
+.title {
+  font-size: 40px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+/* The three collapsed menus, spaced out rather than stacked in columns of
+   options — Sasha wanted this less crowded than Letterboxd. */
+.filters {
+  display: flex;
+  gap: 56px;
+  align-items: center;
+  margin-bottom: 44px;
+  flex-wrap: wrap;
+}
+
+/* 4 across, and RATINGS_PER_PAGE caps it at 8 rows. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px 32px;
+  justify-items: center;
+}
+
+.card {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  text-decoration: none;
+  text-align: center;
+}
+.card img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background: #ccc;
+  transition: transform 0.15s;
+}
+.card:hover img {
+  transform: scale(1.04);
+}
+
+.tier {
+  display: block;
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+.highly {
+  color: var(--highly-recommend);
+}
+.recommend {
+  color: var(--recommend);
+}
+.ok {
+  color: var(--ok);
+}
+.dont {
+  color: var(--dont);
+}
+.didnt {
+  color: var(--didnt-finish);
+}
+
+.empty {
+  color: var(--text-muted);
+  padding: 40px 0;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  margin-top: 56px;
+}
+.pagerLink {
+  color: var(--text);
+  text-decoration: none;
+  font-size: 15px;
+}
+.pagerLink:hover {
+  text-decoration: underline;
+}
+.pagerCount {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 20px;
+  }
+  .filters {
+    gap: 28px;
+  }
+  .main {
+    padding: 32px 24px 64px;
+  }
+}

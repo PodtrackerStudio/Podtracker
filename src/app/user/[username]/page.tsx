@@ -377,7 +377,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           <>
             <section className={styles.bottomGrid}>
               <div>
-                <h3 className={styles.bottomColTitle}>Ratings distribution</h3>
+                <h3 className={styles.bottomColTitle}><Link href={`/user/${username}/ratings`} className={styles.distHeadingLink}>Ratings distribution</Link></h3>
                 {(
                   [
                     { tier: "highly", key: "HIGHLY_RECOMMEND" as const, label: "Highly Recommend" },
@@ -390,13 +390,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                   const count = distributionCounts[d.key];
                   const pct = allRatings.length > 0 ? Math.round((count / allRatings.length) * 100) : 0;
                   return (
-                    <div className={styles.distRow} key={d.tier}>
+                    <Link className={styles.distRow} key={d.tier} href={`/user/${username}/ratings?tier=${d.key}`}>
                       <span className={`${styles.distName} ${styles[d.tier]}`}>{d.label}</span>
                       <div className={`${styles.distTrack} ${styles.tooltipWrap}`}>
                         <div className={`${styles.distFill} ${styles[d.tier]}`} style={{ width: `${pct}%` }} />
                         <span className={styles.tooltip}>{count} ratings</span>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

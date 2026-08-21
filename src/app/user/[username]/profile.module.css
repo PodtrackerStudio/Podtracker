@@ -453,3 +453,19 @@
   background: #e0e0e0;
   display: block;
 }
+
+/* The distribution heading and each tier row link into Your Ratings. */
+.distHeadingLink {
+  color: inherit;
+  text-decoration: none;
+}
+.distHeadingLink:hover {
+  text-decoration: underline;
+}
+a.distRow {
+  text-decoration: none;
+  cursor: pointer;
+}
+a.distRow:hover .distName {
+  text-decoration: underline;
+}
