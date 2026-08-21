@@ -71,6 +71,59 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-21 — SPEC (not built): real trending episodes on Explore
+
+Replaces the hardcoded `popularEpisodes` array in `src/app/explore/page.tsx` —
+eight invented episodes shown to everyone. Sasha wants it done in **one pass**,
+linking to real episode pages rather than shipping the cheap version first.
+
+**The source: Apple's Trending Episodes chart. Free, no key, already verified.**
+
+```
+https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{n}/podcast-episodes.json
+```
+
+`feed.title` is literally "Trending Episodes". Same host and shape as the shows
+chart already used by `getPopularPodcasts`, so extend that file rather than
+starting a new one. Per-result fields: `id`, `name`, `artistName`, `kind`,
+`artworkUrl100`, `genres`, `url`.
+
+**Spotify is NOT the source, despite being the obvious guess.**
+`api.spotify.com/v1/charts/podcasts` returns **410 Gone** — the Web API has no
+charts endpoint at all. Spotify's podcast charts are a web page only. Don't
+spend time on it even after the credentials arrive.
+
+**The problem to solve: the chart gives no show id and no feed guid.**
+
+Episode routes are `/podcast/{iTunesShowId}/episode/{hashedFeedGuid}`, and a
+chart result has neither directly. Two things were tried and failed:
+
+- Batched `lookup?id=<episodeIds>&entity=podcastEpisode` → **resultCount 0**.
+  Chart episode ids are not resolvable through the lookup endpoint. Don't retry.
+- There is no show-id field on the result.
+
+**What does work, and is the build:**
+
+1. **Parse the show id out of `url`.** Format:
+   `podcasts.apple.com/us/podcast/<slug>/id360084272?i=1000784635823` — the
+   `id<digits>` segment is the iTunes show id.
+2. **Fetch that show's feed** via the existing `fetchPodcastFeed`, which is
+   cached for an hour. 25 trending episodes come from roughly 12–15 distinct
+   shows, so this is a dozen cached fetches, not 25.
+3. **Match the episode by title.** The chart's `name` is the feed's episode
+   title (verified: `#2543 - MrBallen` appears verbatim in the JRE feed). Then
+   `episodeKeyFromGuid(match.guid)` gives the route key.
+4. **Fall back to the show page** when a title doesn't match — do not drop the
+   entry and do not guess. Title matching will fail occasionally across millions
+   of feeds; a working show link is the correct degradation.
+
+**Estimated ~1h15 total.** The naive version (links to shows only) is ~30 min,
+but Sasha explicitly chose to do it properly in one pass.
+
+**Also worth doing in the same pass:** Explore's "See full list" beside Popular
+episodes is still `href="#"` — it had no source until now. Point it at a full
+trending-episodes page, mirroring `/explore/top-podcasts`.
+
 ### 2026-08-21 — SPEC (not built): Next listening page, calendar tab, add-to-list wiring
 
 Sasha's spec, with Figma frames for both the profile placement and the full page.
