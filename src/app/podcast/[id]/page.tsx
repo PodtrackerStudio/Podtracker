@@ -5,8 +5,6 @@ import { MicIcon, PlusIcon } from "@/components/icons";
 import { RatingWidget } from "@/components/RatingWidget";
 import { ReviewWidget } from "@/components/ReviewWidget";
 import { FollowButton } from "@/components/FollowButton";
-import { MediaThumbCard } from "@/components/MediaThumbCard";
-import { tierFromScore } from "@/lib/ratingTier";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { getViewerPodcastState } from "@/lib/viewerState";
@@ -49,13 +47,6 @@ const lists = [
   { id: "l3", avatar: "https://picsum.photos/seed/av10/80/80", title: "Helpful Advice (for me)", author: "Bullsfan1991", more: 11, gallery: ["https://picsum.photos/seed/simrichroll/80/80", "https://picsum.photos/seed/simtimferriss/80/80", "https://picsum.photos/seed/mwcover/80/80"] },
 ];
 
-const similarPodcasts = [
-  { id: "doac", name: "The Diary of a CEO", img: "https://picsum.photos/seed/simdoac/200/200", avgRating: 3.9 },
-  { id: "huberman", name: "Huberman Lab", img: "https://picsum.photos/seed/simhuberman/200/200", avgRating: 4.0 },
-  { id: "timferriss", name: "The Tim Ferriss Show", img: "https://picsum.photos/seed/simtimferriss/200/200", avgRating: 3.6 },
-  { id: "richroll", name: "The Rich Roll Podcast", img: "https://picsum.photos/seed/simrichroll/200/200", avgRating: 3.4 },
-  { id: "jre", name: "The Joe Rogan Experience", img: "https://picsum.photos/seed/jre/200/200", avgRating: 3.7 },
-];
 
 // `HAS_COMMUNITY_DATA` (imported above) gates everything needing a user base.
 // False renders Sasha's no-users design (Figma Frames 11 + 13); true restores
@@ -71,8 +62,6 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
   // What THIS viewer has already done, so the controls show their real state
   // instead of resetting to Follow / unrated on every refresh.
   const viewerState = await getViewerPodcastState(id);
-  // Empty for any show whose host isn't in the curated registry — the strip
-  // then doesn't render at all, rather than guessing at who made the show.
 
   return (
     <>
@@ -285,23 +274,12 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
           </>
         )}
 
-        <hr className="divider" />
-
-        <section>
-          <h2 className={styles.sectionTitle} style={{ fontSize: 20, marginBottom: 16 }}>
-            Similar podcasts
-          </h2>
-          <div className={styles.similarGrid}>
-            {similarPodcasts.map((p) => (
-              <div className={styles.similarCard} key={p.id}>
-                <MediaThumbCard href={`/podcast/${p.id}`} cover={p.img} title={p.name} rating={{ score: p.avgRating, ...tierFromScore(p.avgRating) }} />
-              </div>
-            ))}
-          </div>
-          <div className={styles.seeMoreRow} style={{ marginTop: 16 }}>
-            <button className={styles.btnSeeMore}>More similar podcasts</button>
-          </div>
-        </section>
+        {/* Similar podcasts removed 2026-08-20. iTunes has no similar-podcast
+            data at all — no related/similar fields, no such entity — and the
+            charts endpoint's ?genre= parameter does not actually filter. It was
+            five hardcoded shows with placeholder images, identical on every
+            page. Returns as "listeners of this also follow…" computed from
+            follow/favourite overlap once there are users. See the change log. */}
       </main>
 
       <SiteFooter />

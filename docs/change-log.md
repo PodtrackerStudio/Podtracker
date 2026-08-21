@@ -71,6 +71,51 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-20 — Removed Similar podcasts; it returns as "listeners also follow"
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — asked whether iTunes exposes
+  similar podcasts, to be wired up if so and **removed entirely if not**.
+- **Status:** Removed. Comes back from Podtracker's own data later.
+
+**iTunes has no similar-podcast data. Verified directly, don't re-investigate.**
+
+- The lookup response has **zero** related / similar / recommended fields.
+- There is no `similarPodcast` entity — that request returns compressed junk,
+  not a valid response.
+- Apple's "You might also like" exists on their web pages but is not in the
+  public API. Spotify's API doesn't expose it either.
+
+**The obvious fallback also doesn't work.** The charts endpoint accepts
+`?genre=` but **does not actually filter on it**: asking for genre `1303`
+(Comedy) returned The Daily (News), Crime Junkie and Dateline (True Crime) —
+the general chart, unfiltered. So "top shows in the same genre" is not
+available from it.
+
+**What was there:** five hardcoded shows with `picsum` placeholder images,
+identical on every podcast page — a Joe Rogan page recommended the same five as
+every other. Same class of problem as the fabricated episode list and the
+random creator photos.
+
+**A middle option was offered and declined:** genre-matched via
+`searchPodcasts` on the show's own genre name, which would work since the
+lookup does return real genres. Sasha rejected it as dressing up a weak signal
+as a recommendation, consistent with cutting rather than faking (banners,
+people profiles, Where to listen).
+
+**How to build it properly, when there are users:** *listeners of this also
+follow…*, computed from `PodcastFollow` / `Favorite` overlap. Genuinely better
+than anything Apple offers and it is the Letterboxd model. Sasha's rough
+threshold for switching to own-data signals elsewhere is ~100 users.
+
+**Side effect:** this removed the last links to the legacy `jre` / `huberman` /
+`doac` slugs, which fell through to the Modern Wisdom placeholder. Nothing in
+the app now links to a non-numeric podcast id. The placeholder path in
+`getPodcastDetail` still exists as a safety net for typed URLs.
+
+`MediaThumbCard` and `tierFromScore` imports dropped with it; the podcast pages
+now report zero lint warnings.
+
 ### 2026-08-20 — SPEC (not built): real reviews, then comments on reviews and lists
 
 Sasha's next request, in his order: **make reviews publishable and readable, so
