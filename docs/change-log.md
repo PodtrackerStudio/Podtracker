@@ -88,7 +88,20 @@ one. Two options:
 Claude recommended the flag. **Sasha has not confirmed** — he was asked once
 before and the conversation moved on. Don't guess.
 
-**2. The page** — `/user/[username]/next-listening`, per the second Figma frame:
+**2. Where it lives — REVISED by Sasha 2026-08-21.** **No separate tab or page.**
+Next listening is a panel **on the profile page, below the recent logs**. He
+changed his mind after the spec was first written; the standalone
+`/user/[username]/next-listening` route in the original Figma frame is **not to
+be built**. Everything below describes what that panel contains, in place.
+
+Consequence: it is not in the profile sub-nav (Profile / Favorites / Your
+Reviews / Your lists / Full diary stays as-is), and the "All media" menu now
+filters a panel rather than a page — `FilterMenu` writes to the query string, so
+selecting a filter will re-render the whole profile page. That is acceptable but
+worth knowing; if it feels heavy, that menu is the one piece that may need a
+local-state variant instead.
+
+The panel contains, per the second Figma frame:
 - Heading "Next Listening…"
 - An **"Add podcasts…" bar that behaves like the site search** — type a podcast,
   pick it, it is added to the list. Search is already live against iTunes
@@ -101,7 +114,7 @@ before and the conversation moved on. Don't guess.
   ratings grid — title, plus date for episodes, no average rating while
   `HAS_COMMUNITY_DATA` is false.
 
-**3. Profile placement** — a "Next listening" panel beside the diary, and the
+**3. The calendar tab** — separate from the above. Both the Next listening panel and the
 **calendar tab**. Both already exist on the profile as *demo-only* markup
 (`demoNextListening`, `demoListenedDays`, `juneWeeks` in
 `src/app/user/[username]/page.tsx`) rendered only for `DEMO_USERNAME`. Those are
@@ -116,7 +129,7 @@ label flip, POST, revert on failure. Needs `ensurePodcast` / `ensureEpisode` on
 the way in, same as every other write.
 
 **Order:** storage decision → endpoint → button wiring (smallest, proves the
-path) → page → profile panel and calendar.
+path) → the profile panel → the calendar. No standalone page.
 
 ### 2026-08-20 — Removed Similar podcasts; it returns as "listeners also follow"
 
