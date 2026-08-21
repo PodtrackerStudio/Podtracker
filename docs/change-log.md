@@ -71,6 +71,53 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-21 — SPEC (not built): Next listening page, calendar tab, add-to-list wiring
+
+Sasha's spec, with Figma frames for both the profile placement and the full page.
+
+**1. Storage — decide this first, it blocks everything else.**
+Next listening is one fixed collection per user. It must be distinguishable from
+a real user list, or it will appear inside the add-to-list popup as if it were
+one. Two options:
+- **Add `isWatchlist Boolean @default(false)` to `List`** — correct and
+  explicit; popup filters on `where: { isWatchlist: false }`. Costs a small
+  migration, same shape as the two already applied.
+- **Reserve a title** (e.g. "Next listening") and filter on the string — no
+  migration, but a magic string nothing in the schema explains.
+
+Claude recommended the flag. **Sasha has not confirmed** — he was asked once
+before and the conversation moved on. Don't guess.
+
+**2. The page** — `/user/[username]/next-listening`, per the second Figma frame:
+- Heading "Next Listening…"
+- An **"Add podcasts…" bar that behaves like the site search** — type a podcast,
+  pick it, it is added to the list. Search is already live against iTunes
+  (`src/lib/search.ts`), so reuse that rather than writing a second search.
+- An **"All media" menu copied exactly from the ratings page** — reuse
+  `components/FilterMenu.tsx`, which already reads its selection from the query
+  string. Sasha said "make it exactly like that", so do not fork it.
+- A count ("4 podcasts") and a grid of covers.
+- Grid should use `MediaThumbCard` for the hover popup, consistent with the
+  ratings grid — title, plus date for episodes, no average rating while
+  `HAS_COMMUNITY_DATA` is false.
+
+**3. Profile placement** — a "Next listening" panel beside the diary, and the
+**calendar tab**. Both already exist on the profile as *demo-only* markup
+(`demoNextListening`, `demoListenedDays`, `juneWeeks` in
+`src/app/user/[username]/page.tsx`) rendered only for `DEMO_USERNAME`. Those are
+hardcoded and need pointing at real data — the calendar in particular should
+read `LogEntry.listenedDate`, which is real and already being written.
+
+**4. Wire the button.** "Add to next listening +" on the podcast and episode
+pages is currently a plain `<button>` with no handler — it was deliberately
+unhooked from the Add podcasts popup on 2026-08-18 because Sasha was
+redesigning it. It should now add the item directly, like Follow: optimistic
+label flip, POST, revert on failure. Needs `ensurePodcast` / `ensureEpisode` on
+the way in, same as every other write.
+
+**Order:** storage decision → endpoint → button wiring (smallest, proves the
+path) → page → profile panel and calendar.
+
 ### 2026-08-20 — Removed Similar podcasts; it returns as "listeners also follow"
 
 - **Branch:** `main`
