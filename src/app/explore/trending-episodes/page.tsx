@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { getTrendingEpisodes } from "@/lib/trendingEpisodes";
 import styles from "../top-podcasts/topPodcasts.module.css";
 
@@ -13,7 +13,14 @@ import styles from "../top-podcasts/topPodcasts.module.css";
  * resolve episode links — cached an hour, and shows repeat across the chart.
  */
 export default async function TrendingEpisodesPage() {
-  const episodes = await getTrendingEpisodes(100);
+  // resolveEpisodeLinks=false: resolving 100 entries meant parsing dozens of
+  // huge feeds and took the page to 175s. These link to shows; the 8-item
+  // Explore row still resolves to episodes.
+  // Episode-link resolution is OFF here. Measured: 100 entries span ~40 shows,
+  // each a full RSS parse (~3.5s, single-threaded so they queue) — the cold
+  // load timed out past 280s even with parsed feeds cached. These link to
+  // shows; the 8-item Explore row still resolves to episodes.
+  const episodes = await getTrendingEpisodes(100, "us", false);
 
   return (
     <>
@@ -26,10 +33,11 @@ export default async function TrendingEpisodesPage() {
         ) : (
           <div className={styles.grid}>
             {episodes.map((ep) => (
-              <Link className={styles.card} href={ep.href} key={ep.id} title={`${ep.title} — ${ep.showName}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ep.artworkUrl} alt={ep.title} />
-              </Link>
+              <div className={styles.card} key={ep.id}>
+                {/* MediaThumbCard for the shared hover popup — episode title
+                    over the show name — same as the ratings grid. */}
+                <MediaThumbCard href={ep.href} cover={ep.artworkUrl} title={ep.title} subtitle={ep.showName} />
+              </div>
             ))}
           </div>
         )}

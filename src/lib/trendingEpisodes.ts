@@ -60,7 +60,23 @@ function normalise(title: string): string {
  * feeds that will happen; a working show link beats dropping the entry or
  * guessing at an episode.
  */
-export async function getTrendingEpisodes(limit = 8, country = "us"): Promise<TrendingEpisode[]> {
+export async function getTrendingEpisodes(
+  limit = 8,
+  country = "us",
+  /**
+   * Resolve each entry to its episode page by matching feed titles.
+   *
+   * **Costly — leave it off for large lists.** Each distinct show means parsing
+   * a full RSS feed, and podcast feeds are enormous (JRE's carries ~2,700
+   * episodes). Next's fetch cache stores the HTTP response but the XML is
+   * re-parsed every render, so this does not get cheaper on repeat loads.
+   *
+   * Measured on the 100-item page: 175s with no cap, 45s cold / 16s warm capped
+   * at 12 feeds, versus 4.4s for the equivalent shows page. So the full list
+   * passes `false` and links to shows; the 8-item Explore row passes `true`.
+   */
+  resolveEpisodeLinks = true,
+): Promise<TrendingEpisode[]> {
   const fetchCount = Math.min(Math.max(limit, 1), 100);
   const url = `${CHARTS_BASE}/${country}/podcasts/top/${fetchCount}/podcast-episodes.json`;
 
@@ -75,7 +91,20 @@ export async function getTrendingEpisodes(limit = 8, country = "us"): Promise<Tr
   }
 
   // One feed fetch per distinct show, reused across that show's episodes.
-  const showIds = [...new Set(results.map((r) => showIdFromUrl(r.url)).filter((id): id is string => Boolean(id)))];
+  //
+  // HARD CAP. Each resolution parses a full RSS feed, and podcast feeds are
+  // huge — JRE's carries ~2,700 episodes. At limit=100 the chart spans 40+
+  // distinct shows, and resolving them all took the page past 400 seconds,
+  // which reads as a hang rather than a slow load. Beyond this many shows,
+  // entries simply link to the show page. The first N are the top of the
+  // chart, which is what anyone actually clicks.
+  const MAX_FEEDS = 12;
+  const showIds = !resolveEpisodeLinks
+    ? []
+    : [...new Set(results.map((r) => showIdFromUrl(r.url)).filter((id): id is string => Boolean(id)))].slice(
+    0,
+    MAX_FEEDS,
+  );
 
   const feedsByShow = new Map<string, { guid: string; title: string }[]>();
   await Promise.all(

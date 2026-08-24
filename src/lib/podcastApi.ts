@@ -91,7 +91,24 @@ export type PodcastFeed = {
 // The XML is fetched with `fetch` rather than rss-parser's own `parseURL` so
 // that it goes through Next's cache like the iTunes calls do; rss-parser's
 // HTTP client bypasses it entirely.
+/**
+ * Parsed feeds, cached in memory.
+ *
+ * Next's fetch cache stores the raw HTTP response, but the **XML parse** ran on
+ * every render — and podcast feeds are huge, JRE's carries ~2,700 episodes.
+ * That parse, not the network, is what took the trending-episodes page to 175
+ * seconds when it resolved dozens of shows.
+ *
+ * Keyed by feed url, same TTL as the fetch revalidate so the two don't drift.
+ * Per server process, so it empties on restart — that is fine, it is a
+ * performance cache, never a source of truth.
+ */
+const parsedFeedCache = new Map<string, { feed: PodcastFeed; expiresAt: number }>();
+
 export async function fetchPodcastFeed(feedUrl: string): Promise<PodcastFeed> {
+  const cached = parsedFeedCache.get(feedUrl);
+  if (cached && cached.expiresAt > Date.now()) return cached.feed;
+
   const res = await fetch(feedUrl, { next: { revalidate: REVALIDATE_SECONDS } });
   if (!res.ok) throw new Error(`Feed fetch failed: ${res.status}`);
   const feed = await rssParser.parseString(await res.text());
@@ -99,11 +116,14 @@ export async function fetchPodcastFeed(feedUrl: string): Promise<PodcastFeed> {
   const episodes = feed.items.map(toFeedEpisode);
   const oldest = episodes[episodes.length - 1];
 
-  return {
+  const parsed: PodcastFeed = {
     description: feed.description ?? "",
     episodes,
     firstPublishedAt: oldest?.publishedAt ?? null,
   };
+
+  parsedFeedCache.set(feedUrl, { feed: parsed, expiresAt: Date.now() + REVALIDATE_SECONDS * 1000 });
+  return parsed;
 }
 
 function toFeedEpisode(item: Parser.Item): FeedEpisode {
