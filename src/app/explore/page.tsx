@@ -3,22 +3,12 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PlayIcon } from "@/components/icons";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
+import { getTrendingEpisodes } from "@/lib/trendingEpisodes";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import styles from "./explore.module.css";
 
-const DEMO_EPISODE_HREF = "/podcast/modern-wisdom/episode/1109";
 const DEMO_LIST_HREF = "/list/joe-rogan-mma-show";
 
-const popularEpisodes = [
-  { id: "e1", title: "Joe Rogan #2161 – Tony Hinchcliffe", date: "Jun 3, 2025", tier: "highly", tierLabel: "Highly Recommend", score: 3.9, img: "/explore/ep-joe-rogan-2161.jpg" },
-  { id: "e2", title: "The Shawn Ryan Show #171", date: "Jun 1, 2025", tier: "highly", tierLabel: "Highly Recommend", score: 3.8, img: "/explore/ep-shawn-ryan-171.jpg" },
-  { id: "e3", title: "Up First – NPR", date: "May 30, 2025", tier: "recommend", tierLabel: "Recommend", score: 3.0, img: "/explore/ep-up-first-npr.jpg" },
-  { id: "e4", title: "The Shawn Ryan Show #170", date: "May 27, 2025", tier: "recommend", tierLabel: "Recommend", score: 3.2, img: "/explore/ep-shawn-ryan-170.jpg" },
-  { id: "e5", title: "Murdered: Carmen Van Huss", date: "May 24, 2025", tier: "highly", tierLabel: "Highly Recommend", score: 3.7, img: "/explore/ep-murdered-carmen.jpg" },
-  { id: "e6", title: "Teen Takeovers & Netanyahu's New Nightmare | The Tim Dillon Show", date: "May 22, 2025", tier: "recommend", tierLabel: "Recommend", score: 2.9, img: "/explore/ep-tim-dillon.jpg" },
-  { id: "e7", title: "Joe Rogan #2521 – Aravind Srinivas", date: "May 20, 2025", tier: "recommend", tierLabel: "Recommend", score: 3.1, img: "/explore/ep-joe-rogan-2521.jpg" },
-  { id: "e8", title: "Good Hang with Amy Poehler", date: "May 18, 2025", tier: "highly", tierLabel: "Highly Recommend", score: 3.6, img: "/explore/ep-good-hang.jpg" },
-];
 
 const trendingUsers = [
   { id: "tony-soprano", name: "Tony Soprano", followers: "89k followers", img: "/explore/trending-tony-soprano.webp" },
@@ -41,8 +31,9 @@ const curatedLists = [
 ];
 
 export default async function ExplorePage() {
-  // Apple's chart — real popularity, replacing a hardcoded list of eight names.
-  const topPodcasts = await getPopularPodcasts(8);
+  // Both from Apple's charts — real popularity, replacing hardcoded lists.
+  // Fetched together: the episode chart resolves feeds, so it's the slower one.
+  const [topPodcasts, trendingEpisodes] = await Promise.all([getPopularPodcasts(8), getTrendingEpisodes(8)]);
 
   return (
     <>
@@ -79,27 +70,22 @@ export default async function ExplorePage() {
         <section>
           <div className={styles.sectionHeaderRow}>
             <h2 className={styles.sectionTitle}>Popular episodes</h2>
-            <a href="#" className={styles.seeFullLink}>
+            <Link href="/explore/trending-episodes" className={styles.seeFullLink}>
               See full list →
-            </a>
+            </Link>
           </div>
           <div className={styles.episodeGrid}>
-            {popularEpisodes.map((ep) => (
-              <Link className={styles.episodeThumb} href={DEMO_EPISODE_HREF} key={ep.id}>
+            {trendingEpisodes.map((ep) => (
+              <Link className={styles.episodeThumb} href={ep.href} key={ep.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ep.img} alt="Episode thumbnail" />
+                <img src={ep.artworkUrl} alt="Episode thumbnail" />
                 <div className={styles.playOverlay}>
                   <PlayIcon />
                 </div>
                 <div className={styles.hoverCard}>
                   <div className={styles.hoverCardTitle}>{ep.title}</div>
-                  <div className={styles.hoverCardDate}>{ep.date}</div>
-                  {HAS_COMMUNITY_DATA && (
-                    <div className={styles.hoverCardRating}>
-                      <span className={styles.hoverCardScore}>{ep.score.toFixed(1)}</span>
-                      <span className={`${styles.hoverCardLabel} ${styles[ep.tier]}`}>{ep.tierLabel}</span>
-                    </div>
-                  )}
+                  {/* The show name, not a date — the chart carries no date. */}
+                  <div className={styles.hoverCardDate}>{ep.showName}</div>
                 </div>
               </Link>
             ))}
