@@ -14,9 +14,10 @@ const API_TO_TIER: Record<string, TierKey> = {
 export type ViewerPodcastState = {
   following: boolean;
   tier: TierKey | null;
+  inNextListening: boolean;
 };
 
-const NONE: ViewerPodcastState = { following: false, tier: null };
+const NONE: ViewerPodcastState = { following: false, tier: null, inNextListening: false };
 
 /**
  * What the signed-in viewer has already done to this show.
@@ -37,7 +38,7 @@ export async function getViewerPodcastState(externalId: string): Promise<ViewerP
     const podcast = await db.podcast.findUnique({ where: { externalId }, select: { id: true } });
     if (!podcast) return NONE;
 
-    const [follow, rating] = await Promise.all([
+    const [follow, rating, watchItem] = await Promise.all([
       db.podcastFollow.findUnique({
         where: { userId_podcastId: { userId: user.id, podcastId: podcast.id } },
         select: { userId: true },
@@ -46,11 +47,18 @@ export async function getViewerPodcastState(externalId: string): Promise<ViewerP
         where: { userId_podcastId: { userId: user.id, podcastId: podcast.id } },
         select: { tier: true },
       }),
+      // Already in their Next listening? Keeps the button from resetting to
+      // "Add" on every refresh, the same bug Follow used to have.
+      db.listItem.findFirst({
+        where: { podcastId: podcast.id, list: { userId: user.id, isWatchlist: true } },
+        select: { id: true },
+      }),
     ]);
 
     return {
       following: Boolean(follow),
       tier: rating ? API_TO_TIER[rating.tier] ?? null : null,
+      inNextListening: Boolean(watchItem),
     };
   } catch {
     return NONE;

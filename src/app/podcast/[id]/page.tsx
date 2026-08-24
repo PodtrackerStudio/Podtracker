@@ -5,6 +5,7 @@ import { MicIcon, PlusIcon } from "@/components/icons";
 import { RatingWidget } from "@/components/RatingWidget";
 import { ReviewWidget } from "@/components/ReviewWidget";
 import { FollowButton } from "@/components/FollowButton";
+import { NextListeningButton } from "@/components/NextListeningButton";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { getViewerPodcastState } from "@/lib/viewerState";
@@ -140,10 +141,11 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                 <PlusIcon />
                 Add to list
               </button>
-              <button className={styles.btnAddList}>
-                <PlusIcon />
-                Add to next listening
-              </button>
+              <NextListeningButton
+                className={styles.btnAddList}
+                externalId={id}
+                initialAdded={viewerState.inNextListening}
+              />
             </div>
 
             {HAS_COMMUNITY_DATA && (

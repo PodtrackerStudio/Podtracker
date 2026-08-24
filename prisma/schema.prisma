@@ -279,6 +279,11 @@ model List {
   title       String
   description String?
   isRanked    Boolean  @default(false) // if true, list detail page shows position numbers (e.g. a "top 10" list)
+  // The user's single "Next listening" collection, not a list they made.
+  // Exactly one per user, created on first add. MUST be excluded wherever real
+  // lists are shown — the add-to-list popup, the profile's Your lists tab —
+  // or it appears as though the user created it.
+  isWatchlist Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
