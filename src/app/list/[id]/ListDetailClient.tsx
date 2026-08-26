@@ -40,10 +40,14 @@ function byDate(items: ListItemView[], direction: 1 | -1) {
 
 export function ListDetailClient({
   items,
+  totalCount,
   isRanked,
   description,
 }: {
+  /** Already filtered by the All media menu — the count reflects the filter. */
   items: ListItemView[];
+  /** Unfiltered size, so an empty grid can say which kind of empty it is. */
+  totalCount: number;
   isRanked: boolean;
   description: string | null;
 }) {
@@ -92,7 +96,7 @@ export function ListDetailClient({
       </div>
 
       {items.length === 0 ? (
-        <p className={styles.empty}>Nothing in this list yet.</p>
+        <p className={styles.empty}>{totalCount === 0 ? "Nothing in this list yet." : "Nothing matches that filter."}</p>
       ) : (
         <div className={styles.grid}>
           {pageItems.map((item, i) => (

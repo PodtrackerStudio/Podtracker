@@ -71,6 +71,67 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-26 — All media menu on the list page, and the write path VERIFIED
+
+- **Branch:** `main`
+- **Requested by:** Sasha — put the All media / Shows only / Episodes only
+  menu on the list page itself, defaulting to All media.
+- **Status:** Complete.
+
+**What changed**
+
+- **`/list/[id]` got the `FilterMenu`** — the same component as Next listening
+  and the ratings page, `param="media"`, defaulting to "All media" and opening
+  to Shows only / Episodes only. Selection lives in the query string, so a
+  filtered list is a linkable URL.
+- `.addRow` became `.controlsRow`: a three-column grid with the filter on the
+  left and the "Add podcasts…" bar centred, matching Next listening's control
+  row. Anyone can filter; only the owner sees the bar.
+- `ListDetailClient` takes `totalCount` alongside the already-filtered `items`,
+  so an empty grid can say **"Nothing matches that filter."** rather than
+  "Nothing in this list yet." The count reflects the filter, as on Next
+  listening.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/list/[id]/page.tsx` | Modified — reads `?media=`, filters by kind, renders `FilterMenu` |
+| `src/app/list/[id]/ListDetailClient.tsx` | Modified — `totalCount` prop, filter-aware empty message |
+| `src/app/list/[id]/list.module.css` | Modified — `.addRow` → `.controlsRow` + `.addSlot` |
+
+**Why**
+
+The filter menu went in the control row rather than the count/description/sort
+row below it, so that row keeps the three-column layout the Figma gives it.
+That also puts the filter in the same place it sits on Next listening.
+
+Filtering happens on the server, from the query string, rather than in
+`ListDetailClient` state — it costs nothing (the items are already loaded) and
+it makes a filtered view shareable, which is the same reasoning `FilterMenu`
+was built on for the profile's rating distribution.
+
+**The two previous entries' open follow-up is now closed.** Sasha created
+`shows I listen to` while this was being built, and it is in Postgres:
+description set, five shows added through the Create List form, and
+**`#909 - Bill Burr` — a 2017 episode — appended at position 6 through the
+"Add podcasts…" bar on the list page**. That single row proves the whole chain
+end to end: the new iTunes episode search found it, `ensureEpisode` matched its
+guid against JRE's feed, and the `ListItem` write succeeded. Nothing in the
+write path is unverified any more.
+
+**Follow-ups**
+
+- **"Add to list" on the podcast and episode pages is still a handler-less
+  `<button>`.** `/api/lists/items` is what it should call, with a list picker
+  in front of it — and that picker must exclude `isWatchlist` lists.
+- **A list still can't be emptied.** No remove control on `/list/[id]`, same as
+  Next listening. The trash icons on the Create List page only edit client
+  state before submit.
+- The nav search and `/search` page still have no scope control — they get
+  episodes via the progressive rule only.
+
+
 ### 2026-08-26 — Search finds episodes, so lists can hold them
 
 - **Branch:** `main`

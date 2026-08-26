@@ -99,13 +99,20 @@
   font-weight: 700;
 }
 
-/* The owner's "Add podcasts…" bar sits on its own centred row between the
-   byline and the count/description/sort row, so that row keeps the three-column
-   layout the Figma gives it. */
-.addRow {
+/* All media menu on the left with the “Add podcasts…” bar centred beside it —
+   the same arrangement as the Next listening control row. Kept out of the
+   count/description/sort row below so that one keeps the three-column layout
+   the Figma gives it. */
+.controlsRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.addSlot {
   display: flex;
   justify-content: center;
-  margin-bottom: 28px;
 }
 
 .empty {
