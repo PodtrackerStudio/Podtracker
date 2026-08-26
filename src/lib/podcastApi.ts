@@ -58,6 +58,56 @@ export async function lookupPodcast(itunesId: string | number): Promise<ItunesPo
   return toPodcastResult(first);
 }
 
+export type ItunesEpisodeResult = {
+  /** iTunes id of the SHOW the episode belongs to — what `/podcast/[id]` routes on. */
+  showItunesId: number;
+  title: string;
+  showTitle: string;
+  artworkUrl: string;
+  /**
+   * The episode's RSS guid, verbatim.
+   *
+   * **Verified identical to the guid in the show's own feed** (JRE #2542 is
+   * `d0eed536-9b6e-11f1-91e1-87ba07d621a5` from both), which is what makes this
+   * endpoint usable at all: `episodeKeyFromGuid` on it produces the same route
+   * key the feed path produces, and `ensureEpisode` then finds the episode by
+   * that hash with nothing to reconcile.
+   */
+  guid: string;
+  releaseDate: string | null;
+  durationSeconds: number | null;
+};
+
+/**
+ * Live episode search across Apple's catalogue.
+ *
+ * Not to be confused with the `lookup?entity=podcastEpisode` dead end recorded
+ * in docs/change-log.md — that was resolving *chart* episode ids and returns
+ * resultCount 0. `search` is a different endpoint and works: every result
+ * carries `collectionId` and `episodeGuid`, the two things a route needs.
+ *
+ * Results missing either are dropped rather than rendered as links that go
+ * nowhere. In practice none are, but the fields aren't contractual.
+ */
+export async function searchEpisodes(term: string, limit = 10): Promise<ItunesEpisodeResult[]> {
+  const url = `${ITUNES_BASE}/search?media=podcast&entity=podcastEpisode&limit=${limit}&term=${encodeURIComponent(term)}`;
+  const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS } });
+  if (!res.ok) throw new Error(`iTunes episode search failed: ${res.status}`);
+  const data = await res.json();
+
+  return (data.results ?? [])
+    .filter((r: Record<string, unknown>) => r.episodeGuid && r.collectionId)
+    .map((r: Record<string, unknown>) => ({
+      showItunesId: r.collectionId as number,
+      title: r.trackName as string,
+      showTitle: (r.collectionName as string) ?? "",
+      artworkUrl: (r.artworkUrl600 as string) ?? (r.artworkUrl160 as string) ?? (r.artworkUrl60 as string),
+      guid: r.episodeGuid as string,
+      releaseDate: (r.releaseDate as string) ?? null,
+      durationSeconds: r.trackTimeMillis ? Math.round((r.trackTimeMillis as number) / 1000) : null,
+    }));
+}
+
 export type FeedEpisode = {
   title: string;
   publishedAt: string | null;

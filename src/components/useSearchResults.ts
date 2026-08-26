@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { SearchItem } from "@/lib/search";
+import type { SearchItem, SearchScope } from "@/lib/search";
 
 /**
  * Debounced live search for client components.
@@ -13,7 +13,7 @@ import type { SearchItem } from "@/lib/search";
  * Goes through `/api/search` rather than calling iTunes from the browser, so
  * the request stays server-side and shares Next's cache.
  */
-export function useSearchResults(query: string, limit = 5): SearchItem[] {
+export function useSearchResults(query: string, limit = 5, scope: SearchScope = "all"): SearchItem[] {
   const [results, setResults] = useState<SearchItem[]>([]);
   const q = query.trim();
 
@@ -28,7 +28,7 @@ export function useSearchResults(query: string, limit = 5): SearchItem[] {
     // that the dropdown still feels immediate.
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}`, {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}&scope=${scope}`, {
           signal: controller.signal,
         });
         const data = await res.json();
@@ -43,7 +43,7 @@ export function useSearchResults(query: string, limit = 5): SearchItem[] {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [q, limit]);
+  }, [q, limit, scope]);
 
   // Stale results from a previous query never show, because an empty query
   // returns empty regardless of what state still holds.

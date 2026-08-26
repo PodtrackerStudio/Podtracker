@@ -2,12 +2,23 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { subtitleForSearchItem, type SearchItem } from "@/lib/search";
+import { subtitleForSearchItem, type SearchItem, type SearchScope } from "@/lib/search";
 import { useSearchResults } from "@/components/useSearchResults";
 import { TrashIcon } from "@/components/icons";
 import styles from "./createList.module.css";
 
-type AddedItem = { id: string; title: string };
+/**
+ * One row of the list being built. `externalId` is the show's iTunes id either
+ * way — for an episode it's the show it belongs to, with `episodeKey` naming
+ * which episode. That pair is exactly what `/api/lists` resolves.
+ */
+type AddedItem = { id: string; title: string; externalId: string; episodeKey?: string };
+
+const SCOPES: { value: SearchScope; label: string }[] = [
+  { value: "all", label: "All media" },
+  { value: "shows", label: "Shows only" },
+  { value: "episodes", label: "Episodes only" },
+];
 
 /**
  * The Create List form.
@@ -17,8 +28,8 @@ type AddedItem = { id: string; title: string };
  * press Create List. Adding to a list *afterwards* happens on the list itself,
  * through the same "Add podcasts…" bar Next listening uses.
  *
- * `/api/search` returns shows, so shows are what can be added here. Episodes
- * reach a list through the episode page, not this form.
+ * Shows and episodes are both addable: results are shows until the query
+ * reaches past a show's name, and the scope control forces either kind.
  */
 export function CreateListClient() {
   const router = useRouter();
@@ -29,14 +40,20 @@ export function CreateListClient() {
 
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<SearchScope>("all");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const matches: SearchItem[] = useSearchResults(query);
+  const matches: SearchItem[] = useSearchResults(query, 6, scope);
 
   function addItem(item: SearchItem) {
-    setItems((prev) => (prev.some((i) => i.id === item.id) ? prev : [...prev, { id: item.id, title: item.title }]));
+    const added: AddedItem =
+      item.type === "episode"
+        ? { id: item.id, title: item.title, externalId: item.showExternalId, episodeKey: item.episodeKey }
+        : { id: item.id, title: item.title, externalId: item.id };
+
+    setItems((prev) => (prev.some((i) => i.id === added.id) ? prev : [...prev, added]));
     setQuery("");
     setAdding(false);
   }
@@ -60,13 +77,16 @@ export function CreateListClient() {
           isRanked,
           // Order is the order they were added — that's what a ranked list
           // numbers and what "List order" sorts by on the list page.
-          items: items.map((i) => ({ externalId: i.id })),
+          items: items.map((i) => ({ externalId: i.externalId, episodeKey: i.episodeKey })),
         }),
       });
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data?.id) {
-        setError(data?.error ?? "Could not create that list.");
+        // The API reports which item it couldn't resolve; naming it beats
+        // making the user work out which one to take back out.
+        const failed = typeof data?.failedIndex === "number" ? items[data.failedIndex] : undefined;
+        setError(failed ? `${data.error} Remove “${failed.title}” and try again.` : (data?.error ?? "Could not create that list."));
         return;
       }
 
@@ -104,7 +124,7 @@ export function CreateListClient() {
             <input
               autoFocus
               className={styles.addInput}
-              placeholder="Search for a podcast…"
+              placeholder="Search shows or episodes…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onBlur={() => {
@@ -117,8 +137,28 @@ export function CreateListClient() {
             </button>
           )}
 
-          {adding && matches.length > 0 && (
+          {adding && query.trim() && (
             <div className={styles.addDropdown}>
+              {/* onMouseDown throughout: it fires before the input's onBlur, so
+                  neither switching scope nor picking a result loses the click. */}
+              <div className={styles.scopeRow} role="group" aria-label="Filter results">
+                {SCOPES.map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    className={s.value === scope ? `${styles.scopeButton} ${styles.scopeActive}` : styles.scopeButton}
+                    aria-pressed={s.value === scope}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      if (blurTimeout.current) clearTimeout(blurTimeout.current);
+                      setScope(s.value);
+                    }}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
               {matches.map((item) => (
                 <button
                   key={item.id}
@@ -137,6 +177,8 @@ export function CreateListClient() {
                   </div>
                 </button>
               ))}
+
+              {matches.length === 0 && <p className={styles.addNoResults}>No results.</p>}
             </div>
           )}
         </div>

@@ -2,18 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { subtitleForSearchItem, type SearchItem, type SearchScope } from "@/lib/search";
 import styles from "./addPodcastsBar.module.css";
 
-/** Mirrors SearchItem from lib/search.ts — what /api/search returns. */
-type SearchResult = {
-  type: "podcast";
-  /** iTunes id — what the add endpoints expect as externalId. */
-  id: string;
-  title: string;
-  artistName: string;
-  cover: string;
-  episodeCount: number;
-};
+/** The Shows only / Episodes only control, in the wording the site already uses. */
+const SCOPES: { value: SearchScope; label: string }[] = [
+  { value: "all", label: "All media" },
+  { value: "shows", label: "Shows only" },
+  { value: "episodes", label: "Episodes only" },
+];
 
 /**
  * The "Add podcasts…" bar, on the Next listening page and on every list page
@@ -23,6 +20,12 @@ type SearchResult = {
  * adds it to the collection instead of navigating. The collection is whatever
  * `endpoint` points at; `extraBody` carries anything that endpoint needs beyond
  * the id, which for a list is its `listId`.
+ *
+ * **Episodes and shows both.** Results are shows until the query reaches past a
+ * show's name ("joe rogan" gives the show, "joe rogan bill burr" gives the
+ * episodes), and the scope control forces either kind. An episode is added by
+ * its show's id plus its hashed feed guid, which is what `ensureEpisode`
+ * resolves against.
  *
  * Search is debounced and every in-flight request is superseded: typing fast
  * used to let a slow early response overwrite a fast later one, so results
@@ -40,8 +43,10 @@ export function AddPodcastsBar({
 } = {}) {
   const router = useRouter();
   const [value, setValue] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<SearchItem[]>([]);
+  const [scope, setScope] = useState<SearchScope>("all");
   const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -62,8 +67,9 @@ export function AddPodcastsBar({
         setOpen(false);
         return;
       }
+      setSearching(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=6`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=6&scope=${scope}`);
         if (!res.ok) return;
         const data = await res.json();
         if (seq !== requestSeq.current) return; // superseded
@@ -71,11 +77,15 @@ export function AddPodcastsBar({
         setOpen(true);
       } catch {
         // Leave the previous results up rather than blanking the dropdown.
+      } finally {
+        if (seq === requestSeq.current) setSearching(false);
       }
     }, 250);
 
     return () => clearTimeout(timer);
-  }, [value]);
+    // `scope` is a dependency on purpose: changing it re-runs the search, which
+    // is the whole point of the control.
+  }, [value, scope]);
 
   // Click-away and Escape close the dropdown.
   useEffect(() => {
@@ -93,15 +103,22 @@ export function AddPodcastsBar({
     };
   }, []);
 
-  async function add(item: SearchResult) {
+  async function add(item: SearchItem) {
     if (busyId) return;
     setBusyId(item.id);
     setMessage(null);
     try {
+      // An episode is identified by its show plus its hashed feed guid; a show
+      // by its iTunes id alone. Both add endpoints take that same pair.
+      const target =
+        item.type === "episode"
+          ? { externalId: item.showExternalId, episodeKey: item.episodeKey }
+          : { externalId: item.id };
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ externalId: item.id, ...extraBody }),
+        body: JSON.stringify({ ...target, ...extraBody }),
       });
       const data = await res.json().catch(() => null);
 
@@ -129,36 +146,54 @@ export function AddPodcastsBar({
         className={styles.input}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        onFocus={() => results.length > 0 && setOpen(true)}
+        onFocus={() => value.trim() && setOpen(true)}
         placeholder="Add podcasts..."
         aria-label={`Add podcasts to ${collectionName}`}
       />
 
-      {open && results.length > 0 && (
-        <div className={styles.dropdown} role="listbox">
-          {results.map((item) => (
-            <button
-              className={styles.result}
-              key={item.id}
-              onClick={() => add(item)}
-              disabled={busyId !== null}
-              role="option"
-              aria-selected={false}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className={styles.resultCover} src={item.cover || "/default-avatar.webp"} alt="" />
-              <span className={styles.resultText}>
-                <span className={styles.resultTitle}>{item.title}</span>
-                {/* Episode count where Apple gives one, else the author —
-                    "0 episodes" reads worse than a name. Mirrors
-                    subtitleForSearchItem. */}
-                <span className={styles.resultSubtitle}>
-                  {item.episodeCount > 0 ? `${item.episodeCount.toLocaleString("en-US")} episodes` : item.artistName}
+      {/* Stays open with no results too, so the scope control is still
+          reachable when a filter is what emptied the list. */}
+      {open && value.trim() && (
+        <div className={styles.dropdown}>
+          <div className={styles.scopeRow} role="group" aria-label="Filter results">
+            {SCOPES.map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                className={s.value === scope ? `${styles.scopeButton} ${styles.scopeActive}` : styles.scopeButton}
+                onClick={() => setScope(s.value)}
+                aria-pressed={s.value === scope}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          <div role="listbox">
+            {results.map((item) => (
+              <button
+                className={styles.result}
+                key={item.id}
+                onClick={() => add(item)}
+                disabled={busyId !== null}
+                role="option"
+                aria-selected={false}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className={styles.resultCover} src={item.cover || "/default-avatar.webp"} alt="" />
+                <span className={styles.resultText}>
+                  <span className={styles.resultTitle}>{item.title}</span>
+                  {/* Episode count or author for a show; show name and date for
+                      an episode. Shared with the nav search so the two never
+                      describe the same result differently. */}
+                  <span className={styles.resultSubtitle}>{subtitleForSearchItem(item)}</span>
                 </span>
-              </span>
-              <span className={styles.resultAdd}>{busyId === item.id ? "…" : "+"}</span>
-            </button>
-          ))}
+                <span className={styles.resultAdd}>{busyId === item.id ? "…" : "+"}</span>
+              </button>
+            ))}
+
+            {results.length === 0 && <p className={styles.noResults}>{searching ? "Searching…" : "No results."}</p>}
+          </div>
         </div>
       )}
 

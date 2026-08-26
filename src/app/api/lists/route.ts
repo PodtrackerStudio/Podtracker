@@ -35,13 +35,20 @@ export async function POST(request: Request) {
     // silently would be worse — the user would see a list missing entries it
     // never told them about.
     const targets: { podcastId: string | null; episodeId: string | null }[] = [];
-    for (const item of incoming) {
+    for (const [index, item] of incoming.entries()) {
       if (!item?.externalId) continue;
 
       if (item.episodeKey) {
         const episodeId = await ensureEpisode(String(item.externalId), String(item.episodeKey));
+        // Apple only seems to index episodes its feed still carries, so this is
+        // rare — but a show that truncates its feed between the search and the
+        // submit would land here. failedIndex lets the form name the title
+        // instead of making the user guess which one to remove.
         if (!episodeId) {
-          return NextResponse.json({ error: "One of those episodes is no longer in its show's feed." }, { status: 404 });
+          return NextResponse.json(
+            { error: "That episode is no longer in its show's feed.", failedIndex: index },
+            { status: 404 },
+          );
         }
         targets.push({ podcastId: null, episodeId });
       } else {

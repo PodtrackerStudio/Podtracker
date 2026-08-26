@@ -71,6 +71,111 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-26 — Search finds episodes, so lists can hold them
+
+- **Branch:** `main`
+- **Requested by:** Sasha — lists can't hold episodes because search only
+  returns shows. His rule: results stay shows until the query reaches past a
+  show's name ("joe rogan" gives the show, "joe rogan bill burr" gives the
+  episodes), plus a Shows only / Episodes only control on the add bars.
+- **Status:** Complete, except the logged-in click-through — see Follow-ups.
+
+**What changed**
+
+- **`searchEpisodes` in `podcastApi.ts`** — iTunes
+  `search?media=podcast&entity=podcastEpisode`. **This is not the dead end the
+  2026-08-21 entry warns about.** That one was `lookup?entity=podcastEpisode`
+  on *chart* episode ids, which returns resultCount 0. `search` is a different
+  endpoint and works.
+- **The reason it works at all:** every result carries `collectionId` (the
+  show's iTunes id) and `episodeGuid` — **and that guid is byte-identical to the
+  one in the show's own RSS feed**. Verified: JRE #2542 is
+  `d0eed536-9b6e-11f1-91e1-87ba07d621a5` from both, and
+  `episodeKeyFromGuid` on it gives `0f850eb2cb4a`, the same key already stored
+  in Postgres from the feed path. So a search result routes straight to
+  `/podcast/[id]/episode/[epId]` and `ensureEpisode` finds it with **no feed
+  parsing and nothing to reconcile**.
+- **`SearchItem` is now a union** of `PodcastSearchItem | EpisodeSearchItem`.
+  Both keep `id` / `title` / `cover`, and `hrefForSearchItem` and
+  `subtitleForSearchItem` handle both, so the nav typeahead and `/search`
+  gained episodes **without either file changing**.
+- **`queryReachesPastShowName` is the show-then-episodes rule.** Apple's *show*
+  search won't make the distinction — it returns The Joe Rogan Experience for
+  "joe rogan bill burr" just as happily as for "joe rogan" — so the split is
+  decided here: if any meaningful word in the query is absent from the top
+  show's name, the episode search runs. Filler words ("the", "podcast",
+  "show"…) don't count. No show match at all also means episodes, since they're
+  the only thing left to offer.
+- **Scope control** on both add bars and the Create List dropdown: All media /
+  Shows only / Episodes only, forcing either kind. It sits inside the dropdown,
+  above the results — see Why.
+- Episodes are addable to lists and Next listening; `/api/lists`,
+  `/api/lists/items` and `/api/next-listening` already took `episodeKey`, so
+  only the clients needed to send it. `/api/lists` now returns `failedIndex`
+  so the form can name an item it couldn't resolve.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/podcastApi.ts` | Added `ItunesEpisodeResult` and `searchEpisodes` |
+| `src/lib/search.ts` | Rewritten — `SearchItem` union, `SearchScope`, `queryReachesPastShowName`, episode href/subtitle |
+| `src/app/api/search/route.ts` | Modified — accepts `scope` |
+| `src/components/useSearchResults.ts` | Modified — `scope` argument |
+| `src/components/AddPodcastsBar.tsx` | Modified — scope control, episode results, adds by show id + episodeKey |
+| `src/components/addPodcastsBar.module.css` | Modified — `.scopeRow`, `.scopeButton`, `.scopeActive`, `.noResults` |
+| `src/app/list/create/CreateListClient.tsx` | Modified — scope control, episode items, names the item that failed to resolve |
+| `src/app/list/create/createList.module.css` | Modified — same scope-control styles |
+| `src/app/api/lists/route.ts` | Modified — returns `failedIndex` on an unresolvable episode |
+
+**Why**
+
+The alternative was scoping episode search *within* a matched show — take
+"joe rogan", find JRE, then search its feed for "bill burr". It was rejected
+once the iTunes endpoint proved out: it needs no feed parse (JRE's feed is
+2,743 episodes and ~3.5s to parse cold), and it finds episodes across shows,
+which the scoped version can't. "huberman sleep" returning Huberman Lab's sleep
+episodes only works because the search is global.
+
+The two searches run **sequentially, not in parallel**, because the residual
+check needs the top show first. That means the episode call is skipped entirely
+for a plain show query — the common case — at the cost of one extra round trip
+when episodes are wanted. Both are cached by Next for an hour.
+
+One show slot is kept when episodes take over, so a query naming a show never
+makes the show itself unreachable. Two slots were tried first and ate too many
+episode rows out of a six-row dropdown.
+
+The scope control sits **inside the dropdown**, not beside the input, because
+the Next listening page already carries an "All media" `FilterMenu` chip in that
+same row — filtering the grid, not the search — and two near-identical chips
+side by side would read as one control.
+
+**Follow-ups**
+
+- **Not click-tested logged in:** adding an episode through the "Add podcasts…"
+  bar or the Create List form. Verified logged out: `/api/search` across all
+  three scopes, the show-then-episode rule on Sasha's own examples, the nav
+  typeahead returning episodes, `/search` rendering them, and a searched
+  episode link opening a real episode page (`#1575 - Bill Burr`, Dec 7 2020)
+  for an episode that was never in the database.
+- **Truncated feeds are a theoretical failure, not an observed one.** A show
+  can drop old episodes from its RSS while Apple still indexes them, and
+  `ensureEpisode` would then refuse. Checked JRE (2,743 in feed, back to 2009),
+  Monday Morning Podcast (1,414), Huberman Lab (435) and The Daily (**58**,
+  back only to Oct 2021): across every search tried, **zero** results were
+  missing from their feed — Apple appears not to index what the feed no longer
+  carries. The Daily's search results were all from the last two days. If it
+  does happen, the create form now names the title to remove.
+- **Adding an episode is slower than adding a show.** `ensureEpisode` fetches
+  and parses the show's whole feed, ~3.5s cold for JRE. Creating a list with
+  several episodes from different shows resolves them one at a time. Worth
+  watching if list creation starts feeling slow.
+- The nav search and `/search` page have **no** scope control — they got
+  episodes but not the toggle. Add one if the progressive rule proves too
+  blunt there.
+
+
 ### 2026-08-26 — Lists are real: the Joe Rogan mockup is gone
 
 - **Branch:** `main`
