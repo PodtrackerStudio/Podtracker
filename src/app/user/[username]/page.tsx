@@ -5,6 +5,8 @@ import { PlusIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { episodeKeyFromGuid } from "@/lib/episodeKey";
+import { getNextListening } from "@/lib/nextListening";
+import { AddPodcastsBar } from "@/components/AddPodcastsBar";
 import styles from "./profile.module.css";
 
 // A seeded demo account kept around to show what a populated profile looks
@@ -271,7 +273,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const viewer = await getCurrentUser();
   const isOwnProfile = viewer?.id === profileUser.id;
 
-  const [followersCount, followingIds, logEntries, podcastRatings, episodeRatings] = await Promise.all([
+  const [followersCount, followingIds, logEntries, podcastRatings, episodeRatings, nextListening] = await Promise.all([
     db.follow.count({ where: { followingId: profileUser.id } }),
     db.follow.findMany({ where: { followerId: profileUser.id }, select: { followingId: true } }),
     db.logEntry.findMany({
@@ -282,6 +284,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     }),
     db.podcastRating.findMany({ where: { userId: profileUser.id } }),
     db.episodeRating.findMany({ where: { userId: profileUser.id } }),
+    getNextListening(profileUser.id),
   ]);
 
   const followingCount = followingIds.length;
@@ -439,6 +442,25 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                     </Link>
                   );
                 })}
+              </div>
+
+              <div>
+                <h3 className={styles.bottomColTitle}>Next listening</h3>
+                {/* Only the owner can add to their own queue. */}
+                {isOwnProfile && <AddPodcastsBar />}
+                {nextListening.length === 0 ? (
+                  <p className={styles.nextListeningEmpty}>Nothing queued yet.</p>
+                ) : (
+                  <div className={styles.listGallery}>
+                    {nextListening.slice(0, 6).map((item) => (
+                      <Link href={item.href} key={item.itemId} title={item.title}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img className={styles.listGalleryImg} src={item.coverUrl ?? "/default-avatar.webp"} alt={item.title} />
+                      </Link>
+                    ))}
+                    {nextListening.length > 6 && <div className={styles.listGalleryMore}>+{nextListening.length - 6}</div>}
+                  </div>
+                )}
               </div>
             </section>
           </>

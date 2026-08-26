@@ -1,0 +1,108 @@
+.wrap {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  max-width: 260px;
+}
+
+/* Plain white pill, matching the Figma's "Add podcasts..." bar. */
+.input {
+  width: 100%;
+  padding: 10px 16px;
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  color: var(--text);
+  background: #fff;
+  border: none;
+  border-radius: 4px;
+}
+.input::placeholder {
+  color: var(--text-muted);
+}
+.input:focus {
+  outline: 2px solid var(--accent-blue);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 70;
+  width: 340px;
+  max-width: 90vw;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.13);
+  overflow: hidden;
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+.result:last-child {
+  border-bottom: none;
+}
+.result:hover:not(:disabled) {
+  background: var(--accent-blue);
+}
+.result:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.resultCover {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: #ccc;
+  flex-shrink: 0;
+}
+
+.resultText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.resultTitle {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.resultSubtitle {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultAdd {
+  font-size: 20px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  padding-left: 4px;
+}
+
+.message {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}

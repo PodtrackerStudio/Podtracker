@@ -469,3 +469,9 @@ a.distRow {
 a.distRow:hover .distName {
   text-decoration: underline;
 }
+
+.nextListeningEmpty {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
