@@ -127,7 +127,7 @@ All of these are deliberate or already known. Fixing them unasked wastes a turn 
 - ~~**`src/app/api/favorites/route.ts` is unused**~~ — **live as of 2026-08-26.** It takes an `externalId` (it used to take a database `podcastId` no client ever had), and favouriting **also follows**, because `/following` lists follows.
 - **The old `/user/[username]/favorites` page was deleted on purpose.** Favorites in the profile sub-nav points at `/following` — they're the same feature. Adding is reachable again through the Add Favorites popup; there is still no per-show *remove* control.
 - ~~**"Add to list" and "Add to next listening"** are buttons with no `onClick`~~ — both work as of 2026-08-26. Next listening is a direct toggle; "Add to list" opens a picker of your lists.
-- **"+ Log podcast"** in the nav links to `/explore`. There's no log-an-episode flow yet.
+- ~~**“+ Log podcast” links to `/explore`**~~ — it goes to `/log` as of 2026-08-26: the nav search, then the same review popup “Add Log / Review” opens.
 - **Review cards deliberately omit the podcast and episode name.** That information is reachable by hovering the artwork — the shared `media-thumb` popup pattern. Don't add the titles back.
 
 ## Next steps Sasha has named

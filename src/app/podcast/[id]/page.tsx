@@ -137,7 +137,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                 <FollowButton styles={styles} externalId={id} initialFollowing={viewerState.following} />
               </div>
               <RatingWidget styles={styles} externalId={id} initialTier={viewerState.tier} />
-              <ReviewWidget styles={styles} buttonClassName={styles.btnLog} externalId={id} />
+              <ReviewWidget buttonClassName={styles.btnLog} externalId={id} />
               <AddToListButton className={styles.btnAddList} externalId={id} />
               <NextListeningButton
                 className={styles.btnAddList}

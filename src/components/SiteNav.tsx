@@ -36,8 +36,9 @@ export async function SiteNav({ active }: SiteNavProps) {
             <Link href="/explore" className={active === "explore" ? "active" : undefined}>
               Explore
             </Link>
-            {/* Links to Explore for now — there's no dedicated "log an episode" flow yet (rating/review persistence isn't wired up), so this just gets you to something you can open and log from its own page. */}
-            <Link href="/explore" className="nav-log-btn">
+            {/* The log flow: search, pick a show or episode, then the same
+                review popup "Add Log / Review" opens on a podcast page. */}
+            <Link href="/log" className="nav-log-btn">
               <PlusIcon size={14} />
               Log podcast
             </Link>

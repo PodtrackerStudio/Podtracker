@@ -2,11 +2,18 @@
 
 import { useState, useRef, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { hrefForSearchItem, subtitleForSearchItem } from "@/lib/search";
+import { hrefForSearchItem, subtitleForSearchItem, type SearchItem } from "@/lib/search";
 import { useSearchResults } from "./useSearchResults";
 import { SearchIcon } from "./icons";
 
-export function SearchBox() {
+/**
+ * The nav search.
+ *
+ * `onSelect` is what the "+ Log podcast" page uses: same markup, same classes,
+ * same live results, but picking one hands the item back instead of navigating.
+ * Left off, it behaves exactly as the nav always has.
+ */
+export function SearchBox({ onSelect, placeholder = "Search…" }: { onSelect?: (item: SearchItem) => void; placeholder?: string } = {}) {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(false);
@@ -14,16 +21,28 @@ export function SearchBox() {
 
   const matches = useSearchResults(value);
 
-  function goToResultsPage() {
-    if (!value.trim()) return;
+  function choose(item: SearchItem) {
     setOpen(false);
-    router.push(`/search?q=${encodeURIComponent(value.trim())}`);
+    if (onSelect) {
+      setValue("");
+      onSelect(item);
+      return;
+    }
+    router.push(hrefForSearchItem(item));
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
-      goToResultsPage();
+      // With a select handler there is no results page to fall through to, so
+      // Enter takes the top match instead.
+      if (onSelect) {
+        if (matches.length > 0) choose(matches[0]);
+        return;
+      }
+      if (!value.trim()) return;
+      setOpen(false);
+      router.push(`/search?q=${encodeURIComponent(value.trim())}`);
     } else if (e.key === "Escape") {
       setOpen(false);
     }
@@ -35,7 +54,7 @@ export function SearchBox() {
         <SearchIcon />
         <input
           type="text"
-          placeholder="Search…"
+          placeholder={placeholder}
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
@@ -60,8 +79,7 @@ export function SearchBox() {
                 // onMouseDown fires before the input's onBlur, so the click isn't lost.
                 e.preventDefault();
                 if (blurTimeout.current) clearTimeout(blurTimeout.current);
-                setOpen(false);
-                router.push(hrefForSearchItem(item));
+                choose(item);
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
