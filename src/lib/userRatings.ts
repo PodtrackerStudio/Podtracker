@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { episodeHref } from "./episodeKey";
 
 export const RATINGS_PER_PAGE = 32; // 4 across × 8 down, per Sasha's cap
 
@@ -95,7 +96,9 @@ export async function getUserRatings(
       tier: r.tier as Tier,
       title: r.episode.title,
       coverUrl: r.episode.coverUrl ?? r.episode.podcast.coverUrl,
-      href: `/podcast/${r.episode.podcast.externalId}/episode/${r.episode.id}`,
+      // r.episode.id is a database cuid and matches no episode in any feed —
+      // using it sent every rated episode to the placeholder episode page.
+      href: episodeHref(r.episode.podcast.externalId, r.episode.externalId) ?? "#",
       kind: "episode" as const,
       releasedAt: r.episode.publishedAt,
       ratedAt: r.updatedAt,

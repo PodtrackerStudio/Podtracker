@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { PlusIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { episodeKeyFromGuid } from "@/lib/episodeKey";
+import { episodeHref } from "@/lib/episodeKey";
 import { getNextListening } from "@/lib/nextListening";
 import styles from "./profile.module.css";
 
@@ -279,7 +279,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       where: { userId: profileUser.id },
       orderBy: { listenedDate: "desc" },
       take: 6,
-      include: { episode: true, podcast: true },
+      // episode.podcast, because an episode entry has no podcastId of its own —
+      // without it every episode log had no show id and rendered unlinked.
+      include: { episode: { include: { podcast: true } }, podcast: true },
     }),
     db.podcastRating.findMany({ where: { userId: profileUser.id } }),
     db.episodeRating.findMany({ where: { userId: profileUser.id } }),
@@ -363,14 +365,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 // hashed feed guid for an episode. Using the raw database cuids
                 // sent every link to a non-numeric id, which fell through to
                 // the Modern Wisdom placeholder.
-                const showExternalId = entry.podcast?.externalId ?? null;
-                const episodeKey = entry.episode?.externalId ? episodeKeyFromGuid(entry.episode.externalId) : null;
-                const href =
-                  episodeKey && showExternalId
-                    ? `/podcast/${showExternalId}/episode/${episodeKey}`
-                    : showExternalId
-                      ? `/podcast/${showExternalId}`
-                      : null;
+                // An episode log has no podcastId of its own, so the show has
+                // to come off the episode — without that fallback the card had
+                // no href at all and quietly stopped being clickable.
+                const showExternalId = entry.podcast?.externalId ?? entry.episode?.podcast?.externalId ?? null;
+                const href = entry.episode
+                  ? episodeHref(showExternalId, entry.episode.externalId)
+                  : showExternalId
+                    ? `/podcast/${showExternalId}`
+                    : null;
 
                 // Current rating of the same target, not LogEntry.tier — a log
                 // can exist without a rating.

@@ -3,6 +3,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { episodeHref } from "@/lib/episodeKey";
 import { ProfileSubHeader } from "../ProfileSubHeader";
 import styles from "../profileSub.module.css";
 
@@ -27,7 +28,9 @@ export default async function DiaryPage({ params }: { params: Promise<{ username
 
   const entries = await db.logEntry.findMany({
     where: { userId: profileUser.id },
-    include: { episode: true, podcast: true },
+    // episode.podcast, because an episode entry has no podcastId of its own —
+    // the show it belongs to is only reachable through the episode.
+    include: { episode: { include: { podcast: true } }, podcast: true },
     orderBy: { listenedDate: "desc" },
   });
 
@@ -51,11 +54,16 @@ export default async function DiaryPage({ params }: { params: Promise<{ username
             {entries.map((entry) => {
               const cover = entry.episode?.coverUrl ?? entry.podcast?.coverUrl ?? "https://picsum.photos/seed/diarydefault/200/200";
               const title = entry.episode?.title ?? entry.podcast?.title ?? "Untitled";
-              const href = entry.episodeId
-                ? `/podcast/${entry.podcastId ?? entry.episode?.podcastId}/episode/${entry.episodeId}`
-                : `/podcast/${entry.podcastId}`;
-              return (
-                <Link className={styles.reviewRow} href={href} key={entry.id}>
+              // Both ids here used to be database cuids, so every episode row
+              // linked to the placeholder episode rather than the logged one.
+              const showExternalId = entry.podcast?.externalId ?? entry.episode?.podcast?.externalId ?? null;
+              const href = entry.episode
+                ? episodeHref(showExternalId, entry.episode.externalId)
+                : showExternalId
+                  ? `/podcast/${showExternalId}`
+                  : null;
+              const body = (
+                <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className={styles.reviewThumb} src={cover} alt={title} />
                   <div className={styles.reviewBody}>
@@ -63,7 +71,19 @@ export default async function DiaryPage({ params }: { params: Promise<{ username
                     <div className={styles.reviewDate}>{entry.listenedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
                     {entry.reviewText && <p className={styles.reviewText}>{entry.reviewText}</p>}
                   </div>
+                </>
+              );
+
+              // A legacy row whose show never got an iTunes id has nowhere to
+              // go; render it unlinked rather than pointing at a broken route.
+              return href ? (
+                <Link className={styles.reviewRow} href={href} key={entry.id}>
+                  {body}
                 </Link>
+              ) : (
+                <div className={styles.reviewRow} key={entry.id}>
+                  {body}
+                </div>
               );
             })}
           </div>

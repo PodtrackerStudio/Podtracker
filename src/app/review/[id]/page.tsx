@@ -4,6 +4,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { episodeHref } from "@/lib/episodeKey";
 import { Comments } from "@/components/Comments";
 import styles from "./review.module.css";
 
@@ -65,7 +66,14 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
 
   const title = entry.episode?.title ?? podcast?.title ?? "Untitled";
   const cover = entry.episode?.coverUrl ?? podcast?.coverUrl ?? "/default-avatar.webp";
-  const href = entry.episode && podcast ? `/podcast/${podcast.externalId}/episode/${entry.episodeId}` : podcast ? `/podcast/${podcast.externalId}` : "#";
+  // episodeHref, not entry.episodeId — that is a database cuid, and a link
+  // built from it matches no episode in any feed, so it landed on the
+  // placeholder episode instead of the one being reviewed.
+  const href = entry.episode
+    ? (episodeHref(podcast?.externalId, entry.episode.externalId) ?? "#")
+    : podcast?.externalId
+      ? `/podcast/${podcast.externalId}`
+      : "#";
 
   return (
     <>

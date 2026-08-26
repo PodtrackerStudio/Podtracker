@@ -71,6 +71,78 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-26 — Logged episodes linked to the Ezra Klein placeholder
+
+- **Branch:** `main`
+- **Requested by:** Sasha — the second thing he logged opened "the Ezra Klein
+  thing" instead of the episode. Asked whether that was a mistake. It was.
+- **Status:** Complete.
+
+**What changed**
+
+**Four pages built episode routes out of database cuids.** The route is
+`/podcast/<iTunes id>/episode/<hashed feed guid>`; these passed
+`LogEntry.episodeId` or `Episode.id` — a cuid — as the episode segment. That
+matches no episode in any feed, and `getEpisodeDetail` answers an unmatched key
+with `placeholder()`, which is **"Inside Modern Politics – Ezra Klein"**. So the
+link didn't error. It rendered a different, plausible-looking episode.
+
+- `src/app/review/[id]/page.tsx` — `${entry.episodeId}`
+- `src/app/user/[username]/diary/page.tsx` — `${entry.episodeId}`, and
+  `${entry.podcastId ?? entry.episode?.podcastId}` for the show, also a cuid
+- `src/lib/userRatings.ts` — `${r.episode.id}`, so every rated episode on the
+  ratings page had it too
+- `src/app/user/[username]/page.tsx` — a different failure: it hashed the guid
+  correctly but read the show from `entry.podcast`, which is **null on an
+  episode log**, and its query didn't include `episode.podcast`. `href` came out
+  null, so the listening card silently stopped being a link at all.
+
+**`episodeHref(showExternalId, episodeGuid)` in `src/lib/episodeKey.ts`** now
+builds it in one place. Four sites getting the same thing wrong independently is
+the argument for it. It falls back to the show page when the guid is missing and
+returns null when there is no show, so callers handle "nothing to link to"
+explicitly instead of emitting `/podcast/undefined/...`.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/episodeKey.ts` | Added `episodeHref` |
+| `src/app/review/[id]/page.tsx` | Modified — uses `episodeHref` |
+| `src/app/user/[username]/diary/page.tsx` | Modified — includes `episode.podcast`; uses `episodeHref`; renders unlinked when there is no route |
+| `src/app/user/[username]/page.tsx` | Modified — includes `episode.podcast`; show id falls back to the episode's show |
+| `src/lib/userRatings.ts` | Modified — uses `episodeHref` |
+
+**Why**
+
+Verified against the real log entry. `Alexkny08` logged Crime Junkie's
+"MYSTERIOUS DEATH OF: Alyssa Romine-Olson":
+
+- before: `/podcast/1322200189/episode/cmtaeh5t9000eg0y28ywj3pox` → placeholder
+- after: `/podcast/1322200189/episode/89db86107635` → the real episode, August
+  24 2026, 56m, real description
+
+`/review/cmtaeh5wh000fg0y252m2znee` now points its cover and title at that
+route.
+
+**Follow-up worth a decision: `placeholder()` in `episodeDetail.ts` is what hid
+all of this.** It exists so the legacy hardcoded slugs still linked from
+"Similar podcasts" render something instead of 500ing, and it is deliberate and
+documented. But it answers *any* unrecognised episode key with a fabricated
+Ezra Klein episode, so a broken link looks like a working one — four of them
+survived in the codebase because nothing ever failed visibly. A 404 for a key
+that matches nothing in a live feed would have surfaced these immediately.
+Not changed here, because it is load-bearing for those legacy links and
+narrowing it is Sasha's call.
+
+**Follow-ups**
+
+- The placeholder-vs-404 decision above.
+- The ratings page fix (`userRatings.ts`) was verified by the same key
+  arithmetic as the others but not opened in a browser — it needs a session.
+- No per-show favourite remove control, unchanged from the previous entry.
+
+
 ### 2026-08-26 — Following shows what you follow, and Add Favorites writes
 
 - **Branch:** `main`
