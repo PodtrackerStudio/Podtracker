@@ -7,7 +7,7 @@ import styles from "./addPodcastsBar.module.css";
 /** Mirrors SearchItem from lib/search.ts — what /api/search returns. */
 type SearchResult = {
   type: "podcast";
-  /** iTunes id — what /api/next-listening expects as externalId. */
+  /** iTunes id — what the add endpoints expect as externalId. */
   id: string;
   title: string;
   artistName: string;
@@ -16,16 +16,28 @@ type SearchResult = {
 };
 
 /**
- * The "Add podcasts…" bar on the profile's Next listening panel.
+ * The "Add podcasts…" bar, on the Next listening page and on every list page
+ * the viewer owns.
  *
  * Behaves like the nav search — type, see live iTunes results — but picking one
- * adds it to Next listening instead of navigating.
+ * adds it to the collection instead of navigating. The collection is whatever
+ * `endpoint` points at; `extraBody` carries anything that endpoint needs beyond
+ * the id, which for a list is its `listId`.
  *
  * Search is debounced and every in-flight request is superseded: typing fast
  * used to let a slow early response overwrite a fast later one, so results
  * would flicker back to a stale query.
  */
-export function AddPodcastsBar() {
+export function AddPodcastsBar({
+  endpoint = "/api/next-listening",
+  extraBody,
+  collectionName = "Next listening",
+}: {
+  endpoint?: string;
+  extraBody?: Record<string, string>;
+  /** Named in the confirmation messages and the input's accessible label. */
+  collectionName?: string;
+} = {}) {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -86,10 +98,10 @@ export function AddPodcastsBar() {
     setBusyId(item.id);
     setMessage(null);
     try {
-      const res = await fetch("/api/next-listening", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ externalId: item.id }),
+        body: JSON.stringify({ externalId: item.id, ...extraBody }),
       });
       const data = await res.json().catch(() => null);
 
@@ -97,11 +109,11 @@ export function AddPodcastsBar() {
         setMessage(data?.error ?? "Could not add that.");
         return;
       }
-      setMessage(data?.alreadyThere ? `${item.title} is already in Next listening.` : `Added ${item.title}.`);
+      setMessage(data?.alreadyThere ? `${item.title} is already in ${collectionName}.` : `Added ${item.title}.`);
       setValue("");
       setResults([]);
       setOpen(false);
-      // Server-rendered panel — refresh so the new tile comes from the database
+      // Server-rendered page — refresh so the new tile comes from the database
       // rather than being optimistically faked into place.
       router.refresh();
     } catch {
@@ -119,7 +131,7 @@ export function AddPodcastsBar() {
         onChange={(e) => setValue(e.target.value)}
         onFocus={() => results.length > 0 && setOpen(true)}
         placeholder="Add podcasts..."
-        aria-label="Add podcasts to Next listening"
+        aria-label={`Add podcasts to ${collectionName}`}
       />
 
       {open && results.length > 0 && (

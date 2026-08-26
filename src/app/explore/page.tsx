@@ -7,7 +7,10 @@ import { getTrendingEpisodes } from "@/lib/trendingEpisodes";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import styles from "./explore.module.css";
 
-const DEMO_LIST_HREF = "/list/joe-rogan-mma-show";
+// The Popular lists cards are mock rows with no real list behind them, so
+// they have nowhere to go — /list/[id] renders real lists only now. They sit
+// behind HAS_COMMUNITY_DATA and get real hrefs when real lists rank here.
+const DEMO_LIST_HREF = "#";
 
 
 const trendingUsers = [

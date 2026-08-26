@@ -4,10 +4,22 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { subtitleForSearchItem, type SearchItem } from "@/lib/search";
 import { useSearchResults } from "@/components/useSearchResults";
+import { TrashIcon } from "@/components/icons";
 import styles from "./createList.module.css";
 
 type AddedItem = { id: string; title: string };
 
+/**
+ * The Create List form.
+ *
+ * Everything is collected here and submitted in one go, because this page is
+ * the first step of making a list — you add as many titles as you want, then
+ * press Create List. Adding to a list *afterwards* happens on the list itself,
+ * through the same "Add podcasts…" bar Next listening uses.
+ *
+ * `/api/search` returns shows, so shows are what can be added here. Episodes
+ * reach a list through the episode page, not this form.
+ */
 export function CreateListClient() {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -17,6 +29,8 @@ export function CreateListClient() {
 
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const matches: SearchItem[] = useSearchResults(query);
@@ -31,11 +45,40 @@ export function CreateListClient() {
     setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
-  function handleSubmit() {
-    if (!title.trim() || items.length === 0) return;
-    // No backend/database wired up yet — this is where a real POST to create
-    // the List + ListItem rows would go once Postgres is connected.
-    router.push("/list/joe-rogan-mma-show");
+  async function handleSubmit() {
+    if (!title.trim() || items.length === 0 || saving) return;
+    setSaving(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/lists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          isRanked,
+          // Order is the order they were added — that's what a ranked list
+          // numbers and what "List order" sorts by on the list page.
+          items: items.map((i) => ({ externalId: i.id })),
+        }),
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.id) {
+        setError(data?.error ?? "Could not create that list.");
+        return;
+      }
+
+      router.push(`/list/${data.id}`);
+      // The lists tab is server-rendered; without this the new list can be
+      // missing from it until a hard reload.
+      router.refresh();
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -61,7 +104,7 @@ export function CreateListClient() {
             <input
               autoFocus
               className={styles.addInput}
-              placeholder="Search for an episode or podcast…"
+              placeholder="Search for a podcast…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onBlur={() => {
@@ -103,8 +146,8 @@ export function CreateListClient() {
           {items.map((item) => (
             <div className={styles.item} key={item.id}>
               {item.title}
-              <button className={styles.itemRemove} onClick={() => removeItem(item.id)}>
-                ✕
+              <button className={styles.itemRemove} onClick={() => removeItem(item.id)} aria-label={`Remove ${item.title}`}>
+                <TrashIcon />
               </button>
             </div>
           ))}
@@ -112,10 +155,15 @@ export function CreateListClient() {
       </div>
 
       <div className={styles.submitRow} style={{ gridColumn: "1 / -1" }}>
-        <button className={styles.submitButton} onClick={handleSubmit} disabled={!title.trim() || items.length === 0}>
-          Create List
+        <button className={styles.submitButton} onClick={handleSubmit} disabled={saving || !title.trim() || items.length === 0}>
+          {saving ? "Creating…" : "Create List"}
         </button>
       </div>
+      {error && (
+        <p className={styles.error} style={{ gridColumn: "1 / -1" }}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

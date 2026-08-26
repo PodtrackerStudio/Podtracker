@@ -98,3 +98,18 @@
   color: var(--text);
   font-weight: 700;
 }
+
+/* The owner's "Add podcasts…" bar sits on its own centred row between the
+   byline and the count/description/sort row, so that row keeps the three-column
+   layout the Figma gives it. */
+.addRow {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 0;
+}

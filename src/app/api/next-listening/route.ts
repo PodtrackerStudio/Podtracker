@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
 import { getOrCreateWatchlist } from "@/lib/nextListening";
+import { appendListItem } from "@/lib/lists";
 
 /**
  * Add a show or episode to the user's Next listening.
@@ -35,21 +36,12 @@ export async function POST(request: Request) {
 
     const listId = await getOrCreateWatchlist(user.id);
 
-    // Adding the same thing twice should be a no-op, not a duplicate tile.
-    const existing = await db.listItem.findFirst({
-      where: { listId, ...(episodeId ? { episodeId } : { podcastId }) },
-      select: { id: true },
-    });
-    if (existing) return NextResponse.json({ ok: true, added: true, alreadyThere: true });
+    // Shared with /api/lists/items: adding the same thing twice is a no-op
+    // rather than a duplicate tile, and ListItem.position has no default so
+    // the next position is read and incremented.
+    const { added } = await appendListItem(listId, { podcastId, episodeId });
 
-    // ListItem.position has no default and the list is newest-first, so append.
-    const last = await db.listItem.findFirst({ where: { listId }, orderBy: { position: "desc" }, select: { position: true } });
-
-    await db.listItem.create({
-      data: { listId, position: (last?.position ?? 0) + 1, podcastId, episodeId },
-    });
-
-    return NextResponse.json({ ok: true, added: true });
+    return NextResponse.json({ ok: true, added: true, alreadyThere: !added });
   } catch {
     return NextResponse.json({ error: "Could not add that." }, { status: 502 });
   }

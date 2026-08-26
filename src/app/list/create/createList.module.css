@@ -154,6 +154,9 @@
   position: relative;
 }
 .itemRemove {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
   background: none;
   border: none;
   color: var(--text-muted);
@@ -193,4 +196,11 @@
 .submitButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.error {
+  text-align: center;
+  color: var(--dont);
+  font-size: 14px;
+  margin-top: 12px;
 }

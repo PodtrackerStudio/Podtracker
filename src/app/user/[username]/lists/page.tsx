@@ -26,8 +26,10 @@ export default async function ListsPage({ params }: { params: Promise<{ username
   const viewer = await getCurrentUser();
   const isOwnProfile = viewer?.id === profileUser.id;
 
+  // isWatchlist excluded: Next listening is stored as a List and would
+  // otherwise show up here as a list the user made.
   const lists = await db.list.findMany({
-    where: { userId: profileUser.id },
+    where: { userId: profileUser.id, isWatchlist: false },
     include: { items: { include: { podcast: true, episode: { include: { podcast: true } } }, take: 3 }, _count: { select: { items: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -64,7 +66,9 @@ export default async function ListsPage({ params }: { params: Promise<{ username
                   </div>
                   <div>
                     <div className={styles.listRowTitle}>{list.title}</div>
-                    <div className={styles.listRowCount}>{list._count.items} episodes</div>
+                    <div className={styles.listRowCount}>
+                      {list._count.items} {list._count.items === 1 ? "podcast" : "podcasts"}
+                    </div>
                   </div>
                 </Link>
               ))}

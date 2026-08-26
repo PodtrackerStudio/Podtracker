@@ -250,7 +250,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
           <h2 className={styles.sectionTitle}>Popular Lists</h2>
           <div className={styles.listsList}>
             {lists.map((l) => (
-              <Link className={styles.listCard} href="/list/joe-rogan-mma-show" key={l.id}>
+              <Link className={styles.listCard} href="#" key={l.id}>
                 <div className={styles.listCardLeft}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className={styles.listAvatar} src={l.avatar} alt="" />

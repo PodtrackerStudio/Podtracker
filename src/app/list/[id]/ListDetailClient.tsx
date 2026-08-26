@@ -2,22 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { MediaThumbCard } from "@/components/MediaThumbCard";
-import { tierFromScore } from "@/lib/ratingTier";
-import { HAS_COMMUNITY_DATA } from "@/lib/community";
+import type { ListItemView } from "@/lib/lists";
 import styles from "./list.module.css";
 
-export type ListEpisode = {
-  id: string;
-  title: string;
-  cover: string;
-  href: string;
-  episodeNumber: number;
-  publishedAt: string; // ISO date, used for release-date sorting
-  avgRating: number;
-  listPosition: number; // the curator's original order
-};
-
-type SortMode = "listOrder" | "earliestFirst" | "newestFirst" | "rating";
+type SortMode = "listOrder" | "earliestFirst" | "newestFirst";
 
 const PAGE_SIZE = 100;
 
@@ -25,38 +13,54 @@ const SORT_LABELS: Record<SortMode, string> = {
   listOrder: "List order",
   earliestFirst: "Earliest first",
   newestFirst: "Newest first",
-  rating: "Average rating",
 };
+
+// "Average rating" used to be a fourth option. It sorted invented numbers on
+// the mock list and there is nothing real to sort by yet — list items carry no
+// aggregated score. It comes back when averages are computed, alongside
+// HAS_COMMUNITY_DATA being flipped on.
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+/**
+ * Date sorts have to cope with shows, which have no release date at all.
+ * Undated items keep their list order and always sit after the dated ones,
+ * whichever direction is chosen — that's more honest than treating "no date"
+ * as either the oldest or the newest thing in the list.
+ */
+function byDate(items: ListItemView[], direction: 1 | -1) {
+  const dated = items.filter((i) => i.publishedAt);
+  const undated = items.filter((i) => !i.publishedAt);
+  dated.sort((a, b) => direction * a.publishedAt!.localeCompare(b.publishedAt!));
+  undated.sort((a, b) => a.position - b.position);
+  return [...dated, ...undated];
+}
+
 export function ListDetailClient({
-  episodes,
+  items,
   isRanked,
   description,
 }: {
-  episodes: ListEpisode[];
+  items: ListItemView[];
   isRanked: boolean;
-  description: string;
+  description: string | null;
 }) {
   const [sort, setSort] = useState<SortMode>("listOrder");
   const [page, setPage] = useState(1);
 
   const sorted = useMemo(() => {
-    const copy = [...episodes];
+    const copy = [...items];
     switch (sort) {
       case "earliestFirst":
-        return copy.sort((a, b) => a.publishedAt.localeCompare(b.publishedAt));
+        return byDate(copy, 1);
       case "newestFirst":
-        return copy.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-      case "rating":
-        return copy.sort((a, b) => b.avgRating - a.avgRating);
+        return byDate(copy, -1);
       default:
-        return copy.sort((a, b) => a.listPosition - b.listPosition);
+        return copy.sort((a, b) => a.position - b.position);
     }
-  }, [episodes, sort]);
+  }, [items, sort]);
 
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
   const pageItems = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -69,40 +73,41 @@ export function ListDetailClient({
   return (
     <>
       <div className={styles.metaRow}>
-        <div className={styles.episodeCount}>{episodes.length} episodes</div>
+        <div className={styles.episodeCount}>
+          {items.length} {items.length === 1 ? "podcast" : "podcasts"}
+        </div>
         <div className={styles.description}>{description}</div>
         <div className={styles.sortColumn}>
           <label htmlFor="list-sort" className={styles.sortLabel}>
             Sort by
           </label>
           <select id="list-sort" className={styles.sortSelect} value={sort} onChange={(e) => changeSort(e.target.value as SortMode)}>
-            {Object.entries(SORT_LABELS)
-              // Sorting by average rating is meaningless with no ratings, so the
-              // option is hidden until there are some.
-              .filter(([value]) => value !== "rating" || HAS_COMMUNITY_DATA)
-              .map(([value, label]) => (
-                <option value={value} key={value}>
-                  {label}
-                </option>
-              ))}
+            {Object.entries(SORT_LABELS).map(([value, label]) => (
+              <option value={value} key={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
-      <div className={styles.grid}>
-        {pageItems.map((ep, i) => (
-          <div className={styles.cell} key={ep.id}>
-            <MediaThumbCard
-              href={ep.href}
-              cover={ep.cover}
-              title={ep.title}
-              subtitle={formatDate(ep.publishedAt)}
-              rating={{ score: ep.avgRating, ...tierFromScore(ep.avgRating) }}
-            />
-            {isRanked && <div className={styles.rank}>{(page - 1) * PAGE_SIZE + i + 1}</div>}
-          </div>
-        ))}
-      </div>
+      {items.length === 0 ? (
+        <p className={styles.empty}>Nothing in this list yet.</p>
+      ) : (
+        <div className={styles.grid}>
+          {pageItems.map((item, i) => (
+            <div className={styles.cell} key={item.itemId}>
+              <MediaThumbCard
+                href={item.href}
+                cover={item.coverUrl ?? "/default-avatar.webp"}
+                title={item.title}
+                subtitle={item.publishedAt ? formatDate(item.publishedAt) : undefined}
+              />
+              {isRanked && <div className={styles.rank}>{(page - 1) * PAGE_SIZE + i + 1}</div>}
+            </div>
+          ))}
+        </div>
+      )}
 
       {totalPages > 1 && (
         <div className={styles.pagination}>

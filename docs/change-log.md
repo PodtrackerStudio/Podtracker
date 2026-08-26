@@ -69,7 +69,120 @@ rejected. This is the part that saves the most time later.
 
 ---
 
-## Entries
+## Entries
+
+### 2026-08-26 — Lists are real: the Joe Rogan mockup is gone
+
+- **Branch:** `main`
+- **Requested by:** Sasha — lists must stop landing on the Joe Rogan mockup;
+  make a list work like Next listening (same "Add podcasts…" bar), with the
+  Create List page as the first step when you press add list.
+- **Status:** Complete, except the logged-in click-through — see Follow-ups.
+
+**What changed**
+
+- **`/list/[id]` renders from Postgres.** It used to serve one hardcoded mock,
+  the "Joe Rogan- MMA Show" list, for *every* id — which is why creating a list
+  appeared to work and then dropped you on somebody else's. An id that isn't a
+  real list now 404s. `src/lib/jreMmaShowEpisodes.json` (590 lines of curated
+  mock) is deleted.
+- **Creating a list actually creates one.** `CreateListClient.handleSubmit` was
+  a comment saying "no backend wired up yet" followed by
+  `router.push("/list/joe-rogan-mma-show")`. It now POSTs the whole form to the
+  new `/api/lists` and lands on the list it just made.
+- **The owner gets the "Add podcasts…" bar on their own list**, so adding to a
+  list after creating it means opening the list — the same gesture as Next
+  listening. `AddPodcastsBar` took `endpoint` / `extraBody` / `collectionName`
+  props for this; its default is unchanged, so Next listening's call site
+  didn't move.
+- **One shared item mapper.** `toListItemViews` in the new `src/lib/lists.ts`
+  shapes `ListItem` rows for both a curated list and Next listening, so the
+  hashed-guid episode-route gotcha only has to be right once. `appendListItem`
+  likewise now backs both `/api/lists/items` and `/api/next-listening`.
+- **Two bugs the above exposed, fixed:** the profile's Your lists tab queried
+  `db.list.findMany({ where: { userId } })` with no `isWatchlist` filter, so
+  Next listening showed there as a list the user made — the exact thing the
+  schema comment says must never happen. And its per-list count read
+  "N episodes" for lists that are mostly whole shows.
+- **The mock "Popular Lists" cards** on Explore and the podcast/episode pages
+  pointed at the deleted mockup; they are `href="#"` now. All three sit behind
+  `HAS_COMMUNITY_DATA`, which is `false`, so nothing visible changed.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/lists.ts` | Added — `toListItemViews`, `getListForView`, `appendListItem` |
+| `src/lib/nextListening.ts` | Modified — reuses `toListItemViews`; `NextListeningItem` is now an alias of `ListItemView` |
+| `src/lib/jreMmaShowEpisodes.json` | Deleted — the mock list's data |
+| `src/app/api/lists/route.ts` | Added — POST creates a list with its items |
+| `src/app/api/lists/items/route.ts` | Added — POST adds one show/episode to an existing list |
+| `src/app/api/next-listening/route.ts` | Modified — its inline dedupe-and-append is now `appendListItem` |
+| `src/app/list/[id]/page.tsx` | Modified — real data, 404 on unknown id, watchlist redirect, owner's add bar |
+| `src/app/list/[id]/ListDetailClient.tsx` | Modified — takes `ListItemView[]`; date sorts cope with undated shows |
+| `src/app/list/[id]/list.module.css` | Modified — `.addRow`, `.empty` |
+| `src/app/list/create/page.tsx` | Modified — redirects to `/login` when logged out |
+| `src/app/list/create/CreateListClient.tsx` | Modified — real submit, saving/error states, trash icon |
+| `src/app/list/create/createList.module.css` | Modified — `.error`, trash button alignment |
+| `src/components/AddPodcastsBar.tsx` | Modified — `endpoint` / `extraBody` / `collectionName` props |
+| `src/components/icons.tsx` | Modified — added `TrashIcon` |
+| `src/app/user/[username]/lists/page.tsx` | Modified — excludes `isWatchlist`; count reads "podcasts" |
+| `src/app/explore/page.tsx`, `src/app/podcast/[id]/page.tsx`, `src/app/podcast/[id]/episode/[epId]/page.tsx` | Modified — mock list cards no longer link to the deleted mockup |
+
+**Why**
+
+The Create List page collects everything and submits once, rather than creating
+an empty list and appending to it, because that is what Sasha's frame shows —
+title, description, ranked, a stack of added titles, one "Create List" button.
+`/api/lists` therefore resolves every item through `ensurePodcast` /
+`ensureEpisode` **before** creating the `List` row: a lookup that fails leaves
+nothing behind instead of a half-built list, and the failure is reported rather
+than silently dropping an entry the user watched themselves add.
+
+The add bar was generalised rather than copied. Next listening's version had
+already been debugged — the 250ms debounce and the sequence-number supersede
+that stops a slow early response overwriting a fast later one — and a second
+copy would have drifted.
+
+`ListItemView.publishedAt` is null for shows on purpose. Only episodes have a
+release date; giving a show its `createdAt` would silently mislabel "Earliest
+first" as a release-date sort. Undated items keep list order and sit after the
+dated ones in both directions, which is more honest than pretending a show is
+either the oldest or the newest thing in the list.
+
+"Average rating" was dropped from the sort menu. It sorted `Math.random()`
+values on the mock, and there is no aggregated score on a list item to replace
+them with. It never rendered anyway — `HAS_COMMUNITY_DATA` hides it — so
+nothing visible changed, and leaving it would have meant a dead option the day
+that flag flips.
+
+Placement note: the add bar sits on its own centred row between the byline and
+the count/description/sort row, so that row keeps the three-column layout the
+Figma gives it. There is no frame for a list page *with* an add bar — the
+reference Sasha gave was "just like in next listening".
+
+**Follow-ups**
+
+- **The logged-in write path is not click-tested.** Verified without a session:
+  `/list/[id]` renders real rows with real hrefs, ranked numbering, both date
+  sorts, the watchlist redirect, 404 on an unknown id, `/list/create` →
+  `/login`, and both new endpoints returning 401. Verified with a temporary
+  `List` seeded straight into Postgres and then deleted. **Not** verified:
+  submitting the Create List form and adding through the bar on a real list.
+  Sasha needs to sign in and do that once.
+- **Only shows can be added from the Create List page**, because `/api/search`
+  returns shows. `/api/lists/items` already accepts an `episodeKey`, so the
+  "Add to list" button on an episode page is the missing half, not the API.
+- **"Add to list" on the podcast and episode pages is still a handler-less
+  `<button>`.** `/api/lists/items` is what it should call, with a list picker
+  in front of it — and that picker must exclude `isWatchlist` lists.
+- **A list can't be emptied.** There is no remove control on `/list/[id]`, the
+  same as Next listening. The trash icons on the Create List page only edit
+  client state before submit.
+- **A list needs at least one title to be created** — the Create List button
+  stays disabled until then, which is what the page already did. Worth a
+  decision now that adding later from the list page works.
+
 
 ### 2026-08-26 — Next listening: built, and the placement decision REVERSED
 

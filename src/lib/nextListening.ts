@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { episodeKeyFromGuid } from "./episodeKey";
+import { toListItemViews, type ListItemView } from "./lists";
 
 export const NEXT_LISTENING_TITLE = "Next listening";
 
@@ -22,13 +22,8 @@ export async function getOrCreateWatchlist(userId: string): Promise<string> {
   return created.id;
 }
 
-export type NextListeningItem = {
-  itemId: string;
-  title: string;
-  coverUrl: string | null;
-  href: string;
-  kind: "show" | "episode";
-};
+/** Same shape as any other list row — see `toListItemViews`. */
+export type NextListeningItem = ListItemView;
 
 /**
  * What's in the user's Next listening, newest first.
@@ -41,6 +36,7 @@ export async function getNextListening(userId: string): Promise<NextListeningIte
     where: { userId, isWatchlist: true },
     select: {
       items: {
+        // Newest first, unlike a curated list, which keeps the curator's order.
         orderBy: { position: "desc" },
         include: { podcast: true, episode: { include: { podcast: true } } },
       },
@@ -48,37 +44,5 @@ export async function getNextListening(userId: string): Promise<NextListeningIte
   });
   if (!list) return [];
 
-  return list.items.flatMap((item): NextListeningItem[] => {
-    if (item.episode) {
-      const show = item.episode.podcast;
-      return [
-        {
-          itemId: item.id,
-          title: item.episode.title,
-          coverUrl: item.episode.coverUrl ?? show.coverUrl,
-          // Episode routes take the HASHED feed guid. Episode.externalId holds
-          // the raw guid, so it must be hashed here — using it directly
-          // produces a link that resolves to nothing.
-          href: item.episode.externalId
-            ? `/podcast/${show.externalId}/episode/${episodeKeyFromGuid(item.episode.externalId)}`
-            : `/podcast/${show.externalId}`,
-          kind: "episode" as const,
-        },
-      ];
-    }
-    if (item.podcast) {
-      return [
-        {
-          itemId: item.id,
-          title: item.podcast.title,
-          coverUrl: item.podcast.coverUrl,
-          href: `/podcast/${item.podcast.externalId}`,
-          kind: "show" as const,
-        },
-      ];
-    }
-    // A ListItem with neither target is malformed; skip rather than render a
-    // broken tile.
-    return [];
-  });
+  return toListItemViews(list.items);
 }
