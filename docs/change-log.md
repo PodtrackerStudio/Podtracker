@@ -71,6 +71,42 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-26 — Next listening: built, and the placement decision REVERSED
+
+**This supersedes the earlier spec entry that says the standalone route is "not
+to be built".** That entry is now wrong; read this one instead.
+
+Sasha changed the placement three times. Final answer, and what's in the code:
+
+- The **profile** shows a plain stacked-cover thumbnail, like any other list.
+  Both the heading and the gallery link through. **No search bar on it.**
+- **`/user/[username]/next-listening`** is the list page: "Next Listening…"
+  heading, the All media `FilterMenu` (same component as the ratings page, per
+  "make it exactly like that"), the "Add podcasts…" bar for the owner, an item
+  count, and a `MediaThumbCard` grid so covers hover.
+
+**Storage:** `List` with `isWatchlist: true`, one per user, created on first
+add — migration `add_list_is_watchlist`. It reuses `ListItem` and everything
+that already understands list items. **It must stay excluded wherever real
+lists are shown** (the add-to-list popup, the profile's Your lists tab) or it
+appears as a list the user made.
+
+**The "Add podcasts…" bar** reuses `/api/search` rather than adding a second
+search. Debounced 250ms, and requests are superseded by sequence number so a
+slow early response can't overwrite a fast later one — that flicker is easy to
+ship by accident.
+
+**NOT VERIFIED: the add path end to end.** The bar renders only for the
+profile's owner and the test browser was signed out, so typing-then-adding was
+never exercised against a real session. Typecheck, lint and both pages at HTTP
+200 are all that's confirmed. **Sign in and add one podcast before building
+anything on top of this.**
+
+**Still not built** from the original spec: the calendar tab (should read
+`LogEntry.listenedDate`, which is real data already being written), and wiring
+the "Add to next listening +" button on podcast and episode pages — it is still
+a handler-less `<button>`, though `/api/next-listening` exists and works.
+
 ### 2026-08-21 — SPEC (not built): real trending episodes on Explore
 
 Replaces the hardcoded `popularEpisodes` array in `src/app/explore/page.tsx` —

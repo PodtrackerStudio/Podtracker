@@ -88,6 +88,26 @@ Most pages render from hardcoded constants, not the database. Auth and follows a
 
 `DEMO_USERNAME = "sasha"` in `src/app/home/page.tsx` and `src/app/user/[username]/page.tsx` forces the populated design so it stays viewable while the data is mock. `sasha` is not a real database user — don't try to make it one.
 
+## Gotchas that cost real time — read before debugging
+
+- **Run the dev server from the project directory.** Started from
+  `C:\Users\sasha` it serves a *different* app: `/` returns 200 while
+  `/explore` and `/login` 404, which reads as a broken router. Check
+  `preview_list`'s `cwd` before diagnosing anything else.
+- **Restart the dev server after any Prisma migration.** A running server holds
+  a stale client and throws `Unknown argument <newField>` even though the
+  migration applied and the schema is correct.
+- **`fetchPodcastFeed`'s in-memory parsed cache is load-bearing — do not remove
+  it.** Podcast feeds exceed Next's 2MB fetch-cache limit, so Next caches *none*
+  of them, and the XML re-parses on every render. Feeds are huge (JRE's carries
+  ~2,700 episodes, ~3.5s to parse, single-threaded so they queue). Without the
+  cache the trending-episodes page took **175s**; with it, 0.3s warm.
+- **Episode-link resolution does not scale.** `getTrendingEpisodes` resolves
+  entries to episode pages by parsing each show's feed. Fine for the 8-item
+  Explore row (7 of 8 resolve); at 100 items it spans ~40 shows and times out
+  past 280s even cached. The full list passes `resolveEpisodeLinks: false` and
+  links to shows. Don't "fix" it by raising `MAX_FEEDS`.
+
 ## Known gaps — do NOT "fix" these
 
 All of these are deliberate or already known. Fixing them unasked wastes a turn and can destroy working code.
