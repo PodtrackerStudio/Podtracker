@@ -6,7 +6,6 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { episodeKeyFromGuid } from "@/lib/episodeKey";
 import { getNextListening } from "@/lib/nextListening";
-import { AddPodcastsBar } from "@/components/AddPodcastsBar";
 import styles from "./profile.module.css";
 
 // A seeded demo account kept around to show what a populated profile looks
@@ -445,21 +444,30 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               </div>
 
               <div>
-                <h3 className={styles.bottomColTitle}>Next listening</h3>
-                {/* Only the owner can add to their own queue. */}
-                {isOwnProfile && <AddPodcastsBar />}
+                {/* A plain list thumbnail, like any other list. The whole
+                    gallery links through to the Next listening page — the
+                    "Add podcasts…" bar and the All media menu live there, not
+                    here (Sasha, 2026-08-26). */}
+                <h3 className={styles.bottomColTitle}>
+                  <Link href={`/user/${username}/next-listening`} className={styles.distHeadingLink}>
+                    Next listening
+                  </Link>
+                </h3>
                 {nextListening.length === 0 ? (
                   <p className={styles.nextListeningEmpty}>Nothing queued yet.</p>
                 ) : (
-                  <div className={styles.listGallery}>
+                  <Link href={`/user/${username}/next-listening`} className={styles.listGallery}>
                     {nextListening.slice(0, 6).map((item) => (
-                      <Link href={item.href} key={item.itemId} title={item.title}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img className={styles.listGalleryImg} src={item.coverUrl ?? "/default-avatar.webp"} alt={item.title} />
-                      </Link>
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        className={styles.listGalleryImg}
+                        src={item.coverUrl ?? "/default-avatar.webp"}
+                        alt={item.title}
+                        key={item.itemId}
+                      />
                     ))}
                     {nextListening.length > 6 && <div className={styles.listGalleryMore}>+{nextListening.length - 6}</div>}
-                  </div>
+                  </Link>
                 )}
               </div>
             </section>
