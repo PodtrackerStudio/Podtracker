@@ -3,6 +3,54 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
 
+/** How many covers the picker stacks on a row before it shows a "+N". */
+const COVERS_PER_ROW = 4;
+
+/**
+ * The signed-in user's lists, for the "Add to list" picker.
+ *
+ * Shaped for the row the Figma draws — avatar, title, author, a stack of the
+ * first few covers — rather than returning whole `List` rows and making the
+ * client dig the covers out of nested includes.
+ *
+ * Next listening is excluded: it is a `List` with `isWatchlist`, it has its own
+ * button right next to this one, and it is not a list the user made.
+ */
+export async function GET() {
+  const user = await getCurrentUser();
+  // Not an error — the picker uses this to offer a login link instead.
+  if (!user) return NextResponse.json({ lists: [], loggedIn: false });
+
+  const lists = await db.list.findMany({
+    where: { userId: user.id, isWatchlist: false },
+    orderBy: { createdAt: "desc" },
+    include: {
+      items: {
+        orderBy: { position: "asc" },
+        take: COVERS_PER_ROW,
+        include: { podcast: true, episode: { include: { podcast: true } } },
+      },
+      _count: { select: { items: true } },
+    },
+  });
+
+  return NextResponse.json({
+    loggedIn: true,
+    // The owner is the same on every row — these are the viewer’s own lists —
+    // and avatarUrl is often a base64 data URI running to ~90KB, so repeating
+    // it per row would multiply the payload for nothing.
+    owner: { name: user.displayName, avatarUrl: user.avatarUrl },
+    lists: lists.map((list) => ({
+      id: list.id,
+      title: list.title,
+      itemCount: list._count.items,
+      covers: list.items
+        .map((i) => i.podcast?.coverUrl ?? i.episode?.coverUrl ?? i.episode?.podcast?.coverUrl ?? null)
+        .filter((c): c is string => Boolean(c)),
+    })),
+  });
+}
+
 type IncomingItem = { externalId?: string; episodeKey?: string | null };
 
 /**

@@ -71,6 +71,76 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-26 — "Add to list" works: a dropdown picker, not a page
+
+- **Branch:** `main`
+- **Requested by:** Sasha — make "Add to list" open a dropdown of the user's
+  lists, each looking like the Popular Lists row in his Figma. Explicitly **not**
+  a new page: "don't make it open a new tab, rather a dropdown menu with the
+  same list type as the search bar".
+- **Status:** Complete.
+
+**What changed**
+
+- **`AddToListButton`** replaces the handler-less `<button>` on both the
+  podcast page and the episode page. It opens a dropdown of the viewer's own
+  lists; picking one POSTs to `/api/lists/items`. Click-away and Escape close
+  it, the same as the search and "Add podcasts…" menus.
+- **Each row is the Figma's list row** — circular avatar, title over author
+  name, and an overlapping stack of the first four covers with a `+N` when
+  there are more. `addToList.module.css` mirrors `.listCard` / `.listGallery`
+  from `podcast.module.css` so the same list reads the same wherever it appears.
+- **`GET /api/lists`** returns the viewer's lists shaped for that row. It
+  excludes `isWatchlist`, so Next listening never appears as something to add
+  to — it has its own button immediately to the right.
+- Three states beyond the list itself: `Loading…`, a **log-in link** when there
+  is no session (the endpoint answers `{ loggedIn: false }` rather than 401,
+  because not being signed in isn't an error here), and **"No lists yet.
+  Create one."** when the user has none. A "Create a new list" row sits at the
+  bottom when they do.
+- After a successful add the cached lists are dropped, so the next open
+  refetches rather than showing a cover stack and count from before the add.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/AddToListButton.tsx` | Added — the picker |
+| `src/components/addToList.module.css` | Added — dropdown and row styles |
+| `src/app/api/lists/route.ts` | Added `GET` — the viewer's lists with covers |
+| `src/app/podcast/[id]/page.tsx` | Modified — uses the picker; dropped the now-unused `PlusIcon` import |
+| `src/app/podcast/[id]/episode/[epId]/page.tsx` | Modified — same, passing `episodeKey` |
+
+**Why**
+
+`owner` is returned **once at the top level**, not repeated on every list row.
+`User.avatarUrl` holds a base64 data URI — Sasha's is ~91KB — so putting it on
+each row would have multiplied the response by the number of lists for no
+reason. The lists are always the viewer's own, so one owner is all there is.
+
+The lists are fetched on **first open**, not on mount. Most visitors never press
+this button, and when they do the lists need to be current rather than as of
+page load.
+
+There is no "already in this list" marking on the rows. It would mean resolving
+`externalId` (and, for an episode, the hashed guid) to a stored row on every
+open, and the POST already answers `alreadyThere`, which the picker reports as
+"Already in <list>." Worth adding if it turns out people click blind.
+
+**Follow-ups**
+
+- **Not click-tested logged in** — the picker was exercised logged out (opens
+  on both pages, offers the log-in link, closes on Escape) and `GET /api/lists`
+  returns `{ loggedIn: false, lists: [] }`. The row rendering was checked
+  against the real data behind it: `shows I listen to` has six items, **all six
+  with real cover URLs**, and its owner resolves to "Sasha". Signing in and
+  adding one thing would confirm the last step.
+- **A list still can't be emptied.** No remove control on `/list/[id]`, the
+  same as Next listening.
+- Rows show the owner's own name on every line, which is right for a picker of
+  your own lists but would need rethinking if lists ever become collaborative.
+
+
 ### 2026-08-26 — All media menu on the list page, and the write path VERIFIED
 
 - **Branch:** `main`

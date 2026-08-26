@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { MicIcon, PlusIcon } from "@/components/icons";
+import { MicIcon } from "@/components/icons";
 import { RatingWidget } from "@/components/RatingWidget";
 import { ReviewWidget } from "@/components/ReviewWidget";
 import { FollowButton } from "@/components/FollowButton";
 import { NextListeningButton } from "@/components/NextListeningButton";
+import { AddToListButton } from "@/components/AddToListButton";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { getViewerPodcastState } from "@/lib/viewerState";
@@ -137,10 +138,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
               </div>
               <RatingWidget styles={styles} externalId={id} initialTier={viewerState.tier} />
               <ReviewWidget styles={styles} buttonClassName={styles.btnLog} externalId={id} />
-              <button className={styles.btnAddList}>
-                <PlusIcon />
-                Add to list
-              </button>
+              <AddToListButton className={styles.btnAddList} externalId={id} />
               <NextListeningButton
                 className={styles.btnAddList}
                 externalId={id}
