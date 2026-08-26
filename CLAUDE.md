@@ -95,6 +95,15 @@ The Following empty state — "No Favorites… / Add Favorites ⊕" — used to 
   `C:\Users\sasha` it serves a *different* app: `/` returns 200 while
   `/explore` and `/login` 404, which reads as a broken router. Check
   `preview_list`'s `cwd` before diagnosing anything else.
+- **Never run two dev servers at once.** They share `.next`, and Turbopack's
+  build output is not safe to share — they wipe each other's route manifests.
+  The symptom is **static routes serving 200 while every dynamic route
+  (`/podcast/[id]`, `/user/[username]`, `/list/[id]`) 404s**, including pages
+  with no `notFound()` in them. Count `.next/_events_*.json` — one file per
+  running server — before debugging anything else. If port 3000 is busy, that
+  server *is* this project's; reuse it or kill it. Don't work around it with a
+  second instance or `autoPort`. Recovery: kill every `next` process, delete
+  `.next`, start one server.
 - **Restart the dev server after any Prisma migration.** A running server holds
   a stale client and throws `Unknown argument <newField>` even though the
   migration applied and the schema is correct.

@@ -71,6 +71,60 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-26 — INCIDENT: every dynamic route 404'd (my fault, no code damage)
+
+- **Branch:** `main`
+- **Status:** Resolved. No source change was involved either way.
+
+**What happened**
+
+Static routes (`/`, `/explore`, `/login`) kept serving 200 while **every
+dynamic route 404'd** — `/podcast/[id]`, `/user/[username]`, `/list/[id]`,
+`/review/[id]`, including pages that had rendered minutes earlier and pages
+containing no `notFound()` call at all.
+
+**Cause: three `next dev` servers running against one `.next` directory.** The
+original dev server had been running since 12:09. Chasing what looked like a
+dead database connection, I ran `preview_start` twice more, which launched two
+further `next dev` processes **in the same project directory** (ports 55994 and
+50936). Turbopack's build output is not safe to share — they wiped each other's
+route manifests. `.next/server/` and `app-paths-manifest.json` were simply gone,
+which is exactly "static routes work, dynamic ones 404".
+
+The `.next/_events_<pid>.json` files are the tell: three of them, two stamped
+18:48, one per concurrently running server.
+
+**The misdiagnosis that led there.** DB-backed pages started 404ing while the
+database itself verified healthy from a script, so I read it as the dev server
+holding dead Neon connections. It was already the manifest corruption; the
+correlation with "DB-backed" was really "dynamic route".
+
+**Fix**
+
+Killed all three Next processes, deleted `.next` (gitignored build output),
+started one server. Verified afterwards: `/podcast/360084272`,
+`/user/Alexkny08`, `/list/…`, `/review/…` all 200; `/following` redirects to
+`/login`; real episode pages 200 and an unresolvable key still 404s, so the
+previous commit's behaviour is intact.
+
+**No code was damaged.** `git status` was clean throughout — every source change
+this session was already committed and pushed, and `tsc` and `eslint` were clean
+before, during and after.
+
+**Rule to keep**
+
+**Never start a second dev server in this project.** If port 3000 is taken, that
+server *is* this project's server — reuse it, or kill it and start one. Do not
+work around a busy port with `autoPort` or a second instance; two Next dev
+processes sharing `.next` corrupt each other. If pages start 404ing for no
+reason, count `.next/_events_*.json` before debugging anything else.
+
+**Follow-ups**
+
+- The dev server was restarted from scratch, so the first hit on each route
+  recompiles and is slow (`/explore` took 13.6s cold). Normal.
+
+
 ### 2026-08-26 — Unresolvable episodes 404 instead of faking one
 
 - **Branch:** `main`
