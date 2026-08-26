@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ChevronLeftIcon, ChevronRightIcon, MicIcon } from "@/components/icons";
@@ -43,6 +44,10 @@ const lists = [
 export default async function EpisodePage({ params }: { params: Promise<{ id: string; epId: string }> }) {
   const { id, epId } = await params;
   const episode = await getEpisodeDetail(id, epId);
+  // An episode key that matches nothing in the show's feed used to render a
+  // fabricated stand-in, which made every broken episode link look like a
+  // working one. 404 so they are visible (Sasha, 2026-08-26).
+  if (!episode) notFound();
 
   return (
     <>

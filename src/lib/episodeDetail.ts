@@ -16,8 +16,6 @@ export type EpisodeDetail = {
   /** Route keys of the neighbours, for the Previous / Next controls. */
   previousId: string | null;
   nextId: string | null;
-  /** False when this is the built-in placeholder rather than feed data. */
-  isLive: boolean;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -151,27 +149,6 @@ export async function getEpisodeList(podcastId: string): Promise<EpisodeList> {
   };
 }
 
-// Mirrors placeholderDetail in podcastDetail.ts — the legacy hardcoded slugs
-// ("jre", "modern-wisdom", …) still linked from Similar podcasts have no feed
-// behind them, and a rendered stand-in beats a 500.
-function placeholder(podcastId: string, episodeKey: string): EpisodeDetail {
-  return {
-    id: episodeKey,
-    guid: `placeholder-${episodeKey}`,
-    podcastId,
-    podcastTitle: "Modern Wisdom",
-    title: "Inside Modern Politics – Ezra Klein",
-    date: "June 1, 2026",
-    duration: "2h 14m",
-    coverUrl: "https://picsum.photos/seed/epcover/300/300",
-    description:
-      "Chris Williamson sits down with Ezra Klein — journalist, author, and co-founder of Vox — to dig into the state of modern politics, the Democratic Party's identity crisis, media polarization, and what it actually takes to change someone's mind.",
-    previousId: null,
-    nextId: null,
-    isLive: false,
-  };
-}
-
 /**
  * Everything the episode page needs, from the show's own RSS feed.
  *
@@ -180,20 +157,30 @@ function placeholder(podcastId: string, episodeKey: string): EpisodeDetail {
  * an hour by `fetchPodcastFeed`, so this is one request per show per hour
  * however many episode pages get opened.
  *
- * Never throws, matching `getPodcastDetail`: an unreachable API degrades to the
- * placeholder rather than 500ing.
+ * **Returns null rather than a stand-in.** It used to answer any key it could
+ * not resolve with a fabricated "Inside Modern Politics – Ezra Klein" episode,
+ * so a broken link was indistinguishable from a working one — four separate
+ * pages shipped links built from database cuids and nothing ever visibly
+ * failed. The caller 404s instead (Sasha, 2026-08-26).
+ *
+ * A feed being temporarily unreachable also comes back null, and so 404s. That
+ * is the one thing lost: an outage now reads as "no such episode". It is still
+ * better than inventing one, and the alternative — a 500 — is no more useful to
+ * a reader.
  */
-export async function getEpisodeDetail(podcastId: string, episodeKey: string): Promise<EpisodeDetail> {
-  if (!/^\d+$/.test(podcastId)) return placeholder(podcastId, episodeKey);
+export async function getEpisodeDetail(podcastId: string, episodeKey: string): Promise<EpisodeDetail | null> {
+  // Legacy slug ids ("jre", "modern-wisdom") are not iTunes ids and have no
+  // feed behind them.
+  if (!/^\d+$/.test(podcastId)) return null;
 
   const podcast = await lookupPodcast(podcastId).catch(() => null);
-  if (!podcast?.feedUrl) return placeholder(podcastId, episodeKey);
+  if (!podcast?.feedUrl) return null;
 
   const feed = await fetchPodcastFeed(podcast.feedUrl).catch(() => null);
-  if (!feed) return placeholder(podcastId, episodeKey);
+  if (!feed) return null;
 
   const index = feed.episodes.findIndex((e) => episodeKeyFromGuid(e.guid) === episodeKey);
-  if (index === -1) return placeholder(podcastId, episodeKey);
+  if (index === -1) return null;
 
   const episode = feed.episodes[index];
   // Feeds are newest-first, so the *newer* neighbour is the lower index.
@@ -212,6 +199,5 @@ export async function getEpisodeDetail(podcastId: string, episodeKey: string): P
     description: summaryOnly(episode.description),
     previousId: older ? episodeKeyFromGuid(older.guid) : null,
     nextId: newer ? episodeKeyFromGuid(newer.guid) : null,
-    isLive: true,
   };
 }

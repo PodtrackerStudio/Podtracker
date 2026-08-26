@@ -71,6 +71,96 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-26 — Unresolvable episodes 404 instead of faking one
+
+- **Branch:** `main`
+- **Requested by:** Sasha — 404 rather than the placeholder, and audit the site
+  for anything clickable that lands on a placeholder.
+- **Status:** Complete.
+
+**What changed**
+
+- **`getEpisodeDetail` returns `EpisodeDetail | null`** and the episode page
+  calls `notFound()`. `placeholder()` — the fabricated "Inside Modern Politics
+  – Ezra Klein" episode — is deleted, along with `EpisodeDetail.isLive`, which
+  existed only to flag it.
+- Null now comes back for all four unresolvable cases: a non-numeric show id
+  (legacy slugs), a show with no feed, an unparseable feed, and a key matching
+  nothing in the feed.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/episodeDetail.ts` | Modified — returns null, `placeholder()` and `isLive` deleted |
+| `src/app/podcast/[id]/episode/[epId]/page.tsx` | Modified — `notFound()` on null |
+
+**Why**
+
+Verified: `/podcast/1322200189/episode/89db86107635` (real) → 200;
+`/podcast/1322200189/episode/<cuid>`, `/podcast/modern-wisdom/episode/1109`
+and the old `/podcast/the-joe-rogan-experience/episode/1109` → **404**, and the
+string "Ezra Klein" no longer appears in any of them.
+
+**The one thing lost:** a feed being temporarily unreachable also 404s, so an
+outage reads as "no such episode". Accepted deliberately — the alternative was
+inventing an episode, and a 500 is no more useful to a reader. `getEpisodeList`
+still degrades to an empty list rather than 404ing, since a show with a broken
+feed is still a real show.
+
+**Site audit — anything clickable that lands on a placeholder**
+
+Footer links (About Us, Contact us, socials) excluded at Sasha's request.
+
+*Reachable today — 2:*
+
+1. **`/podcast/[id]` "All episodes →"** (`page.tsx:212`) is `href="#"` and
+   always renders. It duplicates the "Full episode list" button above it, which
+   works — so the fix is to point it at `/podcast/${podcast.id}/episodes` or
+   drop it.
+2. **The profile's external link** (`user/[username]/page.tsx:339`) renders the
+   user's `externalLink` text inside `href="#"`. Neither account has one set
+   today, so nothing shows; it appears the moment anyone saves one in Settings.
+
+*Not reachable by clicking, but present:*
+
+3. **`podcastDetail.placeholderDetail()`** is the show-level twin of the
+   episode one just removed: any `/podcast/<non-numeric-id>` renders a
+   fabricated "Modern Wisdom" page by Chris Williamson. Nothing links to that
+   shape any more — Similar podcasts was removed 2026-08-20 — so it is only
+   reachable by typing a URL. Same argument for 404ing it; left alone because
+   it is Sasha's call.
+4. **`/person/[slug]`** is entirely mock (`lib/creators.ts`) and its links point
+   at legacy slugs (`/podcast/modern-wisdom`, `/podcast/rewatchables`, …) which
+   land on the show placeholder above. Nothing links into person pages.
+5. **The `sasha` demo branch** in `/user/[username]` is dead code — `/user/sasha`
+   404s, because `sasha` is not a database user, so the branch and its `href="#"`
+   and `/podcast/modern-wisdom` links never execute.
+
+*Gated behind `HAS_COMMUNITY_DATA` — inert now, live dead-ends the day it flips:*
+
+- Explore: two "See more →" links
+- Podcast page: "MORE" on a review, the Popular Lists cards, "See all reviews",
+  "See all lists"
+- Episode page: "MORE" on a review, the Popular Lists cards, two "See More"
+  buttons
+
+Verified clean: `/`, `/home`, `/explore`, `/genres` have no non-footer dead
+links. `/home` is 50 lines now — the mock feed and its demo branch are gone, so
+CLAUDE.md's "Feed content is mock" note is stale.
+
+**Follow-ups**
+
+- Items 1 and 2 above are Sasha's to fix; 3 is a decision.
+- **The dev server on port 3000 lost its database connection mid-session** —
+  every DB-backed page started 404ing while the database itself was verified
+  healthy from a script. It belongs to another chat session and could not be
+  restarted from here; starting one on another port worked but the browser pane
+  refuses to navigate to non-3000 localhost ports. So the audit's DB-backed
+  pages (`/user/…`, `/list/…`, `/review/…`) were checked by reading the code
+  rather than clicking. Restarting the dev server clears it.
+
+
 ### 2026-08-26 — Logged episodes linked to the Ezra Klein placeholder
 
 - **Branch:** `main`
