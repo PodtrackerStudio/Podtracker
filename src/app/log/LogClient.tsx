@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SearchBox } from "@/components/SearchBox";
+import { AddPodcastsBar } from "@/components/AddPodcastsBar";
 import { LogReviewPopup } from "@/components/LogReviewPopup";
 import type { SearchItem } from "@/lib/search";
 import styles from "./log.module.css";
@@ -10,15 +10,17 @@ import styles from "./log.module.css";
 /**
  * "+ Log podcast": search, pick, then the review popup.
  *
- * Both halves are the existing components rather than lookalikes — `SearchBox`
- * is the nav's search with a select handler instead of navigation, and
- * `LogReviewPopup` is the same screen "Add Log / Review" opens on a podcast
- * page. That was Sasha's instruction: copy the nav search, then show the review
- * screen.
+ * Both halves are existing components rather than lookalikes.
  *
- * Episodes come through as well as shows, because the nav search returns both
- * once a query reaches past a show's name. Picking an episode logs the episode;
- * picking a show logs the show. `/api/log` already accepted either.
+ * **The search is the Next listening bar**, not the nav's — Sasha's call, and
+ * the reason is the scope control. The nav search only surfaces episodes once a
+ * query reaches past a show's name, so "joe rogan" gives you the show and no
+ * way to reach its episodes. This bar carries All media / Shows only /
+ * Episodes only, so both are always reachable. Here it runs in pick mode: it
+ * hands the chosen item back instead of adding it to anything.
+ *
+ * `LogReviewPopup` is the same screen "Add Log / Review" opens on a podcast
+ * page. Picking an episode logs the episode; picking a show logs the show.
  */
 export function LogClient({ username }: { username: string }) {
   const router = useRouter();
@@ -27,13 +29,12 @@ export function LogClient({ username }: { username: string }) {
   return (
     <>
       <div className={styles.searchRow}>
-        <SearchBox onSelect={setPicked} placeholder="Search a show or episode…" />
+        <AddPodcastsBar onSelect={setPicked} placeholder="Search a show or episode…" />
       </div>
       <p className={styles.hint}>Pick what you listened to.</p>
 
       {/* Picking opens the popup straight away — there is no in-between
-          confirmation step, so `picked` being set and the popup being open are
-          the same thing. Closing it without saving returns to the search. */}
+          confirmation step. Closing it without saving returns to the search. */}
       {picked && (
         <LogReviewPopup
           externalId={picked.type === "episode" ? picked.showExternalId : picked.id}

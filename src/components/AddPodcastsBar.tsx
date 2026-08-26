@@ -35,11 +35,20 @@ export function AddPodcastsBar({
   endpoint = "/api/next-listening",
   extraBody,
   collectionName = "Next listening",
+  onSelect,
+  placeholder = "Add podcasts...",
 }: {
   endpoint?: string;
   extraBody?: Record<string, string>;
   /** Named in the confirmation messages and the input's accessible label. */
   collectionName?: string;
+  /**
+   * Given, picking a result hands the item back instead of posting it — how
+   * "+ Log podcast" reuses this bar to choose what to log. `endpoint`,
+   * `extraBody` and `collectionName` are then unused.
+   */
+  onSelect?: (item: SearchItem) => void;
+  placeholder?: string;
 } = {}) {
   const router = useRouter();
   const [value, setValue] = useState("");
@@ -105,6 +114,17 @@ export function AddPodcastsBar({
 
   async function add(item: SearchItem) {
     if (busyId) return;
+
+    // Pick mode: the caller decides what happens next, so nothing is written
+    // here and there is no confirmation to show.
+    if (onSelect) {
+      setValue("");
+      setResults([]);
+      setOpen(false);
+      onSelect(item);
+      return;
+    }
+
     setBusyId(item.id);
     setMessage(null);
     try {
@@ -147,8 +167,8 @@ export function AddPodcastsBar({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onFocus={() => value.trim() && setOpen(true)}
-        placeholder="Add podcasts..."
-        aria-label={`Add podcasts to ${collectionName}`}
+        placeholder={placeholder}
+        aria-label={onSelect ? placeholder : `Add podcasts to ${collectionName}`}
       />
 
       {/* Stays open with no results too, so the scope control is still

@@ -12,23 +12,11 @@
   margin-bottom: 40px;
 }
 
-/* The nav search sizes itself to the nav bar, so it gets a wider box here.
-   `.nav-search-wrap` and `.nav-search` are global — see globals.css. */
+/* The bar is used at its own size, not stretched — it is meant to be the same
+   control as on the Next listening page, and it sizes itself. */
 .searchRow {
   display: flex;
   justify-content: center;
-}
-.searchRow :global(.nav-search-wrap) {
-  width: 100%;
-  max-width: 520px;
-}
-.searchRow :global(.nav-search) {
-  width: 100%;
-}
-/* The dropdown is a fixed 320px in the nav; here it should track the wider
-   input rather than sitting narrow under it. */
-.searchRow :global(.search-dropdown) {
-  width: 100%;
 }
 
 .hint {
@@ -37,7 +25,6 @@
   font-size: 15px;
   margin-top: 18px;
 }
-
 
 @media (max-width: 900px) {
   .main {

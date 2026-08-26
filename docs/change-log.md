@@ -69,30 +69,40 @@ rejected. This is the part that saves the most time later.
 
 ---
 
-## Entries
+## Entries
 
 ### 2026-08-26 — "+ Log podcast" works: search, pick, review popup
 
 - **Branch:** `main`
 - **Requested by:** Sasha — the nav's Log podcast button does nothing useful.
-  Send the user to a search bar copied from the nav; once they pick a show,
-  show the same popup that writing a review opens.
+  Send the user to a search bar, then show the same popup writing a review
+  opens. **Corrected mid-task:** the first build used the nav's search bar; he
+  asked for the Next listening one instead, so that both shows and episodes are
+  reachable.
 - **Status:** Complete.
 
 **What changed**
 
 - **`/log`** — new page. Login-gated (a log belongs to a user), a heading, and
-  the nav's search bar. Picking a result opens the review popup.
+  a search bar. Picking a result opens the review popup.
 - **The nav button points at `/log`** instead of `/explore`. It used to dump you
   on Explore to go find a show and log from its own page.
 - **`LogReviewPopup` extracted from `ReviewWidget`.** Sasha asked for *the same*
   screen, so it is literally the same component rather than one built to match.
   `ReviewWidget` is now just the button that opens it, and lost its unused
   `styles` prop (which was the long-standing eslint warning).
-- **`SearchBox` takes an optional `onSelect`.** Given one, picking a result
-  hands the item back instead of navigating, and Enter takes the top match
-  rather than going to `/search`. Without it the nav behaves exactly as before.
-  Same component, same classes — "literally copy it from the nav bar".
+- **The search is `AddPodcastsBar` — the Next listening bar — in a new pick
+  mode.** Given an `onSelect`, it hands the chosen item back instead of posting
+  it anywhere; without one it behaves exactly as it does on Next listening and
+  on a list page. It also takes a `placeholder` now.
+
+**Why the nav's search bar was the wrong one.** The first attempt used
+`SearchBox`, which was the literal reading of "copy it from the nav bar". But
+the nav search only surfaces episodes once a query reaches past a show's name —
+type "joe rogan" and you get the show with no way to reach its episodes, because
+it has no scope control. The Next listening bar carries All media / Shows only /
+Episodes only, so both kinds are always reachable, which is what "both shows and
+episodes" needs. `SearchBox` was reverted to exactly what it was.
 
 **Files touched**
 
@@ -103,18 +113,16 @@ rejected. This is the part that saves the most time later.
 | `src/app/log/log.module.css` | Added |
 | `src/components/LogReviewPopup.tsx` | Added — the popup, extracted verbatim |
 | `src/components/ReviewWidget.tsx` | Rewritten as the button; `styles` prop dropped |
-| `src/components/SearchBox.tsx` | Modified — optional `onSelect`, wider placeholder |
+| `src/components/AddPodcastsBar.tsx` | Modified — optional `onSelect` pick mode and `placeholder` |
 | `src/components/SiteNav.tsx` | Modified — Log podcast → `/log` |
 | `src/app/podcast/[id]/page.tsx`, `src/app/podcast/[id]/episode/[epId]/page.tsx` | Modified — dropped the `styles` prop from `ReviewWidget` |
 
 **Why**
 
-**Episodes are pickable too, not only shows.** Sasha said "once they choose a
-show", but the nav search returns episodes once a query reaches past a show's
-name, and copying that search bar brings the behaviour with it. Picking an
-episode logs the episode; picking a show logs the show. `/api/log` already
-accepted either, so this cost nothing and is strictly more useful — logging
-*which episode* is the point of a diary. Flag if unwanted.
+**Shows and episodes are both loggable.** Picking an episode logs the episode;
+picking a show logs the show. `/api/log` already accepted either, so the whole
+cost was choosing a search bar whose scope control makes both reachable —
+logging *which episode* is the point of a diary.
 
 **After a successful save the page goes to the user's diary.** Not specified.
 The popup's own behaviour is to close, which on a podcast page leaves you where
@@ -125,9 +133,13 @@ entry just written.
 **Follow-ups**
 
 - **Not click-tested logged in** — `/log` redirects to `/login` without a
-  session. Verified: the page compiles and redirects, the podcast page's "Add
-  Log / Review" still opens the popup after the extraction (date, Change date,
-  Submit all present), and `tsc`/`eslint` are clean.
+  session, and `AddPodcastsBar` only renders for an owner, so neither could be
+  seen logged out. Verified instead: the page compiles and redirects, the
+  podcast page's "Add Log / Review" still opens the popup after the extraction
+  (date, Change date, Submit all present, clicked), `/api/search?scope=episodes`
+  returns JRE's episodes for "joe rogan" — the thing the scope control exists to
+  reach — and the Next listening and list pages still render with the modified
+  bar. `tsc` clean, `eslint` down to one pre-existing warning.
 - The popup still captures **no rating** — logs written from it store
   `tier: null`. Unchanged behaviour, and Sasha's rule is that a rating isn't
   required to log, but it means the log flow can't set one.
