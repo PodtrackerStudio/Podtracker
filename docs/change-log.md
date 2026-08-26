@@ -96,11 +96,14 @@ search. Debounced 250ms, and requests are superseded by sequence number so a
 slow early response can't overwrite a fast later one — that flicker is easy to
 ship by accident.
 
-**NOT VERIFIED: the add path end to end.** The bar renders only for the
-profile's owner and the test browser was signed out, so typing-then-adding was
-never exercised against a real session. Typecheck, lint and both pages at HTTP
-200 are all that's confirmed. **Sign in and add one podcast before building
-anything on top of this.**
+**VERIFIED 2026-08-26.** Sasha signed in and added items; confirmed directly
+against Postgres. Two watchlists exist (one per account he uses), carrying
+"#2542 - Steve Hilton" (episode), "The Joe Rogan Experience", "The Rest Is
+History" and "Modern Wisdom". Search, add, ensurePodcast/ensureEpisode and the
+ListItem write all work end to end.
+
+Note: one watchlist per user means an item added from one login will not appear
+under the other. That is correct behaviour, but it looks like data loss.
 
 **Still not built** from the original spec: the calendar tab (should read
 `LogEntry.listenedDate`, which is real data already being written), and wiring
