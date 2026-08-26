@@ -76,7 +76,7 @@ Most pages render from hardcoded constants, not the database. Auth and follows a
 |---|---|
 | `/` landing | **Pre-launch version only.** Real. |
 | `/home` | Both states built — empty vs populated, branched on `PodcastFollow` count. Feed content is mock. |
-| `/following` | Populated only, from hardcoded `FollowingGrid`. |
+| `/following` | **Real.** Lists the shows you follow; both empty and populated states work. |
 | `/explore` | Built, hardcoded data. |
 | `/user/[username]` | Demo branch for `sasha`, real data otherwise. |
 | `/login`, `/signup` | Real — bcrypt, sessions, Postgres. No nav bar by design. |
@@ -84,7 +84,8 @@ Most pages render from hardcoded constants, not the database. Auth and follows a
 **Designed but never built** — these exist as Figma frames only:
 
 1. **Landing v1 (post-launch).** Adds Popular reviews, Popular Lists, and a footer. To be swapped in once there's a real user base, so nothing renders empty before then.
-2. **Following empty state** — "No Favorites… / Add Favorites ⊕". Can't currently render, because `FollowingGrid` is a constant and never empty.
+
+The Following empty state — "No Favorites… / Add Favorites ⊕" — used to be listed here as unbuildable. It renders now: the page reads `PodcastFollow`, so following nothing shows it.
 
 `DEMO_USERNAME = "sasha"` in `src/app/home/page.tsx` and `src/app/user/[username]/page.tsx` forces the populated design so it stays viewable while the data is mock. `sasha` is not a real database user — don't try to make it one.
 
@@ -113,16 +114,15 @@ Most pages render from hardcoded constants, not the database. Auth and follows a
 All of these are deliberate or already known. Fixing them unasked wastes a turn and can destroy working code.
 
 - ~~Four pre-existing TypeScript errors in `EpisodeListClient.tsx` / `TopRatedClient.tsx`~~ — **fixed** in commit `8283d58` ("Type the added array so the production build passes"). `npx tsc --noEmit` is clean as of 2026-08-13.
-- **`AddFavoriteButton.tsx` and `FavoriteCard.tsx` in `src/components/` are unused.** They are **not** dead code. They hold the working search-and-add and remove logic, preserved for when `/following` gets wired to the `favorite` table. Do not delete.
-- **`src/app/api/favorites/route.ts` is unused** for the same reason. Keep it.
-- **The old `/user/[username]/favorites` page was deleted on purpose.** Favorites in the profile sub-nav points at `/following` — they're the same feature. Consequence: there is currently no way to add or remove a favorite anywhere in the UI.
-- **"Add to list" and "Add to next listening"** on the podcast and episode pages are buttons with no `onClick`. They have never worked. Sasha is building the backing flows himself.
+- **`AddFavoriteButton.tsx` and `FavoriteCard.tsx` in `src/components/` are unused.** They are **not** dead code. They hold search-and-add and remove logic kept for a per-show favourite control. `/following` is wired now, but through the Add Favorites popup rather than these. Do not delete.
+- ~~**`src/app/api/favorites/route.ts` is unused**~~ — **live as of 2026-08-26.** It takes an `externalId` (it used to take a database `podcastId` no client ever had), and favouriting **also follows**, because `/following` lists follows.
+- **The old `/user/[username]/favorites` page was deleted on purpose.** Favorites in the profile sub-nav points at `/following` — they're the same feature. Adding is reachable again through the Add Favorites popup; there is still no per-show *remove* control.
+- ~~**"Add to list" and "Add to next listening"** are buttons with no `onClick`~~ — both work as of 2026-08-26. Next listening is a direct toggle; "Add to list" opens a picker of your lists.
 - **"+ Log podcast"** in the nav links to `/explore`. There's no log-an-episode flow yet.
 - **Review cards deliberately omit the podcast and episode name.** That information is reachable by hovering the artwork — the shared `media-thumb` popup pattern. Don't add the titles back.
 
 ## Next steps Sasha has named
 
-- Wire `/following` to the `favorite` table so both designed states work and favoriting is reachable again.
 - Explore will use **Spotify charts** for popularity until there's a real user base. Credentials aren't available yet; `src/lib/popularPodcasts.ts` currently uses the iTunes Search API as a stand-in.
 - Swap in landing v1 once there are roughly 5–10 users generating data.
 

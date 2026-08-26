@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PlusIcon } from "./icons";
 import { AddPodcastsPopup, type PopupShow } from "./AddPodcastsPopup";
 
@@ -28,7 +29,16 @@ export function AddPodcastsButton({
   /** Apple chart rows, fetched by the server component that renders this. */
   shows: PopupShow[];
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  // The page behind is server-rendered from the database, so it has to be
+  // refetched once the popup has written to it — otherwise you close the picker
+  // onto the same empty state you opened it from.
+  function close() {
+    setOpen(false);
+    router.refresh();
+  }
 
   return (
     <>
@@ -37,7 +47,7 @@ export function AddPodcastsButton({
         {label}
         {iconAfter && <PlusIcon size={iconSize} />}
       </button>
-      {open && <AddPodcastsPopup title={popupTitle} shows={shows} onClose={() => setOpen(false)} />}
+      {open && <AddPodcastsPopup title={popupTitle} shows={shows} onClose={close} />}
     </>
   );
 }

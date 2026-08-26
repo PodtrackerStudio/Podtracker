@@ -97,3 +97,11 @@
 .seeMoreBtn:hover {
   color: var(--text);
 }
+
+/* Keeps "Add Favorites" reachable below a populated grid, centred the same way
+   it is in the empty state. */
+.addRow {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0 60px;
+}

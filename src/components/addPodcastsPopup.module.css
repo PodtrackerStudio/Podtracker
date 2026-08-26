@@ -80,3 +80,55 @@
     gap: 40px 32px;
   }
 }
+
+/* The card is the positioning context for the tick and the busy label. */
+.card {
+  position: relative;
+}
+.card:disabled {
+  cursor: default;
+}
+.card:disabled:hover img {
+  transform: none;
+}
+
+/* Added covers dim slightly and take a tick, so a 48-cover grid still shows at
+   a glance what has already been picked. */
+.card[aria-pressed="true"] img {
+  opacity: 0.55;
+}
+.addedBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--recommend);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addingBadge {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.68);
+  color: #fff;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.error {
+  max-width: 1120px;
+  margin: -40px auto 32px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--dont);
+}

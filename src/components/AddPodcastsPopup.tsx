@@ -1,22 +1,22 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { CheckIcon } from "./icons";
 import styles from "./addPodcastsPopup.module.css";
 
 /**
  * The "Add podcasts" picker. Sasha's design is a full-bleed panel: a heading
  * over a 4-across grid of show covers.
  *
- * The shows are **placeholders** — his words. They get replaced when the API
- * connection lands, at which point this grid becomes search results rather than
- * a fixed list.
+ * **Picking a show now works.** It used to be a grid of buttons with no
+ * `onClick` — favouriting wrote a row whose `podcastId` was a foreign key to a
+ * `Podcast` record and nothing created those. `ensurePodcast` on the endpoint
+ * solved that, so a card posts to `/api/favorites`, which favourites **and
+ * follows** the show so it lands on `/following`.
  *
- * Picking a show does nothing yet: favouriting writes a row whose `podcastId`
- * is a foreign key to a `Podcast` record, and nothing creates those. Wiring the
- * click is part of the deferred write-layer batch, not something to bolt on
- * here — see docs/change-log.md.
+ * The panel stays open after a pick, because the point of a 48-cover grid is
+ * choosing several. Added covers get a tick and can't be clicked again.
  */
-
 
 export type PopupShow = { id: string; title: string; artworkUrl: string };
 
@@ -31,6 +31,9 @@ export function AddPodcastsPopup({
   onClose: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [added, setAdded] = useState<string[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Esc closes, and the page behind must not scroll while this is open.
   // Sasha's frame shows no close control, so these are the only ways out —
@@ -49,6 +52,29 @@ export function AddPodcastsPopup({
     };
   }, [onClose]);
 
+  async function add(show: PopupShow) {
+    if (busyId || added.includes(show.id)) return;
+    setBusyId(show.id);
+    setError(null);
+    try {
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ externalId: show.id }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(data?.error ?? "Could not add that.");
+        return;
+      }
+      setAdded((prev) => [...prev, show.id]);
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className={styles.backdrop} onClick={onClose} role="presentation">
       <div
@@ -64,13 +90,33 @@ export function AddPodcastsPopup({
           ×
         </button>
         <h2 className={styles.title}>{title}</h2>
+
+        {error && <p className={styles.error}>{error}</p>}
+
         <div className={styles.grid}>
-          {shows.map((show) => (
-            <button className={styles.card} key={show.id} type="button" title={show.title}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={show.artworkUrl} alt={show.title} />
-            </button>
-          ))}
+          {shows.map((show) => {
+            const isAdded = added.includes(show.id);
+            return (
+              <button
+                className={styles.card}
+                key={show.id}
+                type="button"
+                title={show.title}
+                onClick={() => add(show)}
+                disabled={isAdded || busyId !== null}
+                aria-pressed={isAdded}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={show.artworkUrl} alt={show.title} />
+                {isAdded && (
+                  <span className={styles.addedBadge} aria-hidden="true">
+                    <CheckIcon size={22} />
+                  </span>
+                )}
+                {busyId === show.id && <span className={styles.addingBadge}>Adding…</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

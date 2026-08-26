@@ -71,6 +71,88 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-26 — Following shows what you follow, and Add Favorites writes
+
+- **Branch:** `main`
+- **Requested by:** Sasha — shows he follows weren't appearing on `/following`;
+  the shows in the Add Favorites popup should actually be added, and picking one
+  should auto-follow it.
+- **Status:** Complete.
+
+**What changed**
+
+- **`/following` reads `PodcastFollow`.** It used to branch on
+  `db.favorite.count()` and then render `FollowingGrid`, which was **twelve
+  hardcoded shows**. Both halves were wrong at once: the branch asked about
+  favourites, and the populated state showed shows the user had nothing to do
+  with. Confirmed against the database — Sasha followed three shows and had
+  zero favourites, so the page showed "No Favorites…" no matter what he
+  followed.
+- **`FollowingGrid` takes its shows as a prop** and only lays them out. "See
+  More" now appears only when there are more than eight.
+- **The Add Favorites popup writes.** Its cards were `<button>`s with no
+  `onClick`. They post to `/api/favorites`; the panel stays open so several can
+  be picked, added covers dim and take a tick, and closing refreshes the page
+  behind so what was just added is there.
+- **Favouriting follows.** `/api/favorites` now writes `Favorite` **and**
+  `PodcastFollow` in one transaction. DELETE removes both.
+- **`/api/favorites` takes an `externalId`.** It used to take a database
+  `podcastId`, which no client ever has — the browser only ever sees iTunes ids
+   — so it was uncallable from anywhere. It runs `ensurePodcast` itself now,
+  exactly like `/api/follow`.
+- **The picker stays reachable when the grid is populated**, mirroring "Create
+  list" on the profile's lists tab. Without it, adding one show removed the only
+  way to add a second.
+- `CLAUDE.md` updated: the `/following` row in Build status, the "Following
+  empty state can't render" note, the two "favorites code is unused" gaps, the
+  "Add to list / Add to next listening never worked" gap, and the now-done
+  "Wire `/following` to the favorite table" next step.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/following/page.tsx` | Modified — reads `PodcastFollow`, branches on it, keeps the picker reachable |
+| `src/app/following/FollowingGrid.tsx` | Modified — takes `shows`; the twelve hardcoded shows are gone |
+| `src/app/following/following.module.css` | Modified — `.addRow` |
+| `src/app/api/favorites/route.ts` | Modified — `externalId` + `ensurePodcast`; favourite and follow together |
+| `src/components/AddPodcastsPopup.tsx` | Modified — cards add, with tick / busy / error states |
+| `src/components/addPodcastsPopup.module.css` | Modified — `.addedBadge`, `.addingBadge`, `.error` |
+| `src/components/AddPodcastsButton.tsx` | Modified — refreshes the page on close |
+| `CLAUDE.md` | Modified — statements this made false |
+
+**Why**
+
+**`/following` lists follows, not favourites.** CLAUDE.md's next-step said to
+wire it to the `favorite` table; Sasha's instruction here supersedes that, and
+it is the reading that makes his three asks consistent — a show followed from a
+podcast page has to appear, and a show added through Add Favorites has to appear
+too, which is why favouriting follows. The `Favorite` row is still written, so
+"things I picked as favourites" stays separable from "everything I follow" if
+that distinction is ever wanted; nothing reads it today.
+
+DELETE removes the follow as well as the favourite. Removing only the favourite
+would leave the show sitting on the one page either row feeds, which reads as
+the button not working.
+
+The popup does not close on a pick. The point of a 48-cover grid is choosing
+several, so the panel stays and the picked covers mark themselves instead.
+
+**Follow-ups**
+
+- **Not click-tested logged in.** Verified without a session: `/following`
+  still redirects to `/login`, `/api/favorites` 401s, and the page's query and
+  mapping were run against the real database — `Alexkny08` gets one card
+  (The Joe Rogan Experience), `alexanderknysh` gets two (The Daily, JRE), all
+  with covers and valid hrefs. All twelve ids in Apple's chart resolve through
+  the iTunes lookup `ensurePodcast` uses, so every popup card can be added.
+- **No per-show remove.** `AddFavoriteButton.tsx` / `FavoriteCard.tsx` still
+  hold that logic unused. Unfollowing from a podcast page takes a show off
+  `/following`, but leaves any `Favorite` row behind — the only asymmetry left.
+- The popup's shows are Apple's top 48. There is no search in it, so anything
+  outside the chart has to be followed from its own page.
+
+
 ### 2026-08-26 — "Add to list" works: a dropdown picker, not a page
 
 - **Branch:** `main`
