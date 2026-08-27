@@ -1,6 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+/**
+ * The tiers you can set, matching `RatingWidget` exactly.
+ *
+ * `DIDNT_FINISH` is deliberately absent, as it is there: the enum has it and
+ * the profile distribution and landing-page legend display it, but no control
+ * on the site sets it. Adding it here would make the two rating controls
+ * disagree — that is a design decision, not a code one.
+ */
+const RATING_TIERS = [
+  { api: "HIGHLY_RECOMMEND", label: "Highly Recommend", colorVar: "--highly-recommend" },
+  { api: "RECOMMEND", label: "Recommend", colorVar: "--recommend" },
+  { api: "OK", label: "OK", colorVar: "--ok" },
+  { api: "DONT_RECOMMEND", label: "Don't Recommend", colorVar: "--dont" },
+] as const;
+
+type TierApi = (typeof RATING_TIERS)[number]["api"];
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -57,9 +74,47 @@ export function LogReviewPopup({
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [tier, setTier] = useState<TierApi | null>(null);
+  const [tierMenuOpen, setTierMenuOpen] = useState(false);
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const tierWrapRef = useRef<HTMLDivElement>(null);
+
+  // The existing rating is fetched rather than passed in: only the show page
+  // loads one server-side, in a different shape, and /log picks its target in
+  // the browser. One path keeps the two from drifting. Until it lands the row
+  // reads "Add rating", which is also the answer when there is none.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const qs = new URLSearchParams({ externalId, ...(episodeKey ? { episodeKey } : {}) });
+        const res = await fetch(`/api/rate?${qs}`);
+        const data = await res.json();
+        // Never clobber a choice made while the request was in flight.
+        if (!cancelled && data?.tier) setTier((current) => current ?? data.tier);
+      } catch {
+        // Leave it as "Add rating"; the rating just isn't prefilled.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [externalId, episodeKey]);
+
+  // Click-away closes the tier menu, matching the other dropdowns on the site.
+  useEffect(() => {
+    if (!tierMenuOpen) return;
+    function onDown(e: MouseEvent) {
+      if (tierWrapRef.current && !tierWrapRef.current.contains(e.target as Node)) setTierMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [tierMenuOpen]);
+
+  const selectedTier = RATING_TIERS.find((t) => t.api === tier) ?? null;
 
   async function submit() {
     setSaving(true);
@@ -71,6 +126,9 @@ export function LogReviewPopup({
         body: JSON.stringify({
           externalId,
           episodeKey,
+          // /api/log writes the LogEntry snapshot and upserts the current
+          // rating in one transaction, so no separate /api/rate call.
+          tier,
           reviewText: text.trim() || null,
           listenedDate: selectedDate.toISOString(),
         }),
@@ -107,7 +165,7 @@ export function LogReviewPopup({
           ✕
         </button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, position: "relative" }}>
           <span style={{ fontSize: 14, color: "var(--text-muted)" }}>{formatDate(selectedDate)}</span>
           <button
             style={{ background: "none", border: "none", fontFamily: "inherit", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", textDecoration: "underline", padding: 0 }}
@@ -183,6 +241,106 @@ export function LogReviewPopup({
                   );
                 })}
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Rating sits directly under the date. Unrated reads "Add rating" in
+            black PT Serif Caption (Sasha, 2026-08-26); once set it becomes the
+            tier in its own colour, in the Londrina face `.rating-label` gives
+            every tier label on the site. Either way the same menu opens. */}
+        <div ref={tierWrapRef} style={{ position: "relative", marginBottom: 16 }}>
+          <button
+            onClick={() => setTierMenuOpen((v) => !v)}
+            aria-expanded={tierMenuOpen}
+            aria-haspopup="listbox"
+            className={selectedTier ? "rating-label" : undefined}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              fontSize: 18,
+              fontFamily: selectedTier ? undefined : "var(--font-display), Georgia, 'Times New Roman', serif",
+              color: selectedTier ? `var(${selectedTier.colorVar})` : "var(--text)",
+            }}
+          >
+            {selectedTier ? selectedTier.label : "Add rating"}
+            <span aria-hidden="true" style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              ▾
+            </span>
+          </button>
+
+          {tierMenuOpen && (
+            <div
+              role="listbox"
+              style={{
+                position: "absolute",
+                top: "calc(100% + 6px)",
+                left: 0,
+                background: "#fff",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.13)",
+                padding: "6px 0",
+                zIndex: 300,
+                minWidth: 200,
+              }}
+            >
+              {RATING_TIERS.map((t) => (
+                <button
+                  key={t.api}
+                  role="option"
+                  aria-selected={t.api === tier}
+                  className="rating-label"
+                  onClick={() => {
+                    setTier(t.api);
+                    setTierMenuOpen(false);
+                  }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    background: t.api === tier ? "#f1f1f1" : "none",
+                    border: "none",
+                    padding: "7px 14px",
+                    fontSize: 16,
+                    cursor: "pointer",
+                    color: `var(${t.colorVar})`,
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+              {/* Logging without judging is allowed, so the rating has to be
+                  removable again once given. */}
+              {tier && (
+                <button
+                  onClick={() => {
+                    setTier(null);
+                    setTierMenuOpen(false);
+                  }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    background: "none",
+                    border: "none",
+                    borderTop: "1px solid var(--border)",
+                    marginTop: 4,
+                    padding: "8px 14px",
+                    fontFamily: "var(--font-display), Georgia, 'Times New Roman', serif",
+                    fontSize: 14,
+                    cursor: "pointer",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  No rating
+                </button>
+              )}
             </div>
           )}
         </div>

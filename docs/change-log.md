@@ -69,7 +69,67 @@ rejected. This is the part that saves the most time later.
 
 ---
 
-## Entries
+## Entries
+
+### 2026-08-26 — The log/review popup carries a rating
+
+- **Branch:** `main`
+- **Requested by:** Sasha — put the rating right under the date in the review
+  popup. Already rated: show it, adjustable from a dropdown. Not rated: "Add
+  rating" in black PT Serif Caption, same dropdown.
+- **Status:** Complete.
+
+**What changed**
+
+- **A rating row in `LogReviewPopup`, directly under the date.** Unrated it
+  reads **"Add rating"** in `var(--text)` and `--font-display` (PT Serif
+  Caption), exactly as asked. Once set it becomes the tier in its own colour,
+  in the Londrina face `.rating-label` gives every tier label on the site. The
+  same menu opens either way.
+- **`GET /api/rate?externalId=&episodeKey=`** — the viewer's current rating, so
+  the popup opens showing a rating already given.
+- **Submitting saves both.** `/api/log` already accepted a `tier` and wrote the
+  `LogEntry` snapshot plus an upserted current rating in one transaction, so no
+  second request was needed — the popup just stopped sending `null`.
+- **"No rating"** appears in the menu once a tier is picked. Logging without
+  judging is explicitly allowed, so a rating chosen by accident has to be
+  removable before submitting.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/LogReviewPopup.tsx` | Modified — rating row, tier menu, sends `tier` |
+| `src/app/api/rate/route.ts` | Added `GET` — current rating, read-only |
+
+**Why**
+
+**The `GET` deliberately does not call `ensurePodcast` / `ensureEpisode`.** Those
+materialise rows and exist for writes; calling them here would create a
+`Podcast` row every time someone merely opened the popup. A show that was never
+rated has no row, which is simply `tier: null`. Verified: hitting the endpoint
+with a nonexistent id left the table at 19 podcasts and created nothing.
+
+**The rating is fetched, not passed in.** Only the podcast page loads one
+server-side (`viewerState.tier`), in the UI-key shape rather than the enum, the
+episode page loads none, and `/log` picks its target in the browser. One path
+avoids three shapes drifting apart. The cost is that the row reads "Add rating"
+for the length of a local fetch before showing an existing rating.
+
+**`DIDNT_FINISH` is not in the menu**, matching `RatingWidget`. The enum has it
+and the landing-page legend and profile distribution both display it, but **no
+control on the site sets it** — so it is currently unreachable. Adding it here
+would have made the two rating controls disagree. Worth a decision.
+
+**Follow-ups**
+
+- Whether "Didn't finish" should be settable, and if so in both controls.
+- Verified logged out on the podcast page: the popup opens, the row sits under
+  the date, unrated renders `rgb(17,17,17)` in `PT Serif Caption`, picking
+  "Recommend" switches it to `rgb(40,186,96)` in Londrina via `.rating-label`,
+  and "No rating" returns it. **Not** verified: that submitting actually
+  persists the tier — that needs a session.
+
 
 ### 2026-08-26 — "+ Log podcast" works: search, pick, review popup
 

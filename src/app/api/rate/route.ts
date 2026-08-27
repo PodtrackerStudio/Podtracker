@@ -1,10 +1,53 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
+import { ensurePodcast, ensureEpisode, episodeKeyFromGuid } from "@/lib/ensureRecords";
 import { RatingTier } from "@/generated/prisma/enums";
 
 const TIERS = new Set<string>(Object.values(RatingTier));
+
+/**
+ * The viewer's current rating of a show or episode, if any.
+ *
+ * The log/review popup needs it to open showing a rating you already gave
+ * rather than "Add rating". Pages that load it server-side pass it straight in;
+ * `/log` picks its target in the browser, so it asks here.
+ *
+ * **Read-only on purpose — no `ensurePodcast` / `ensureEpisode`.** Those exist
+ * for writes; calling them here would create rows just because someone opened a
+ * popup. Nothing rated means nothing stored, so a missing row is simply `null`.
+ */
+export async function GET(request: Request) {
+  const user = await getCurrentUser();
+  // Not an error: a signed-out viewer has no rating to show.
+  if (!user) return NextResponse.json({ tier: null });
+
+  const { searchParams } = new URL(request.url);
+  const externalId = searchParams.get("externalId");
+  const episodeKey = searchParams.get("episodeKey");
+  if (!externalId) return NextResponse.json({ tier: null });
+
+  const podcast = await db.podcast.findUnique({ where: { externalId }, select: { id: true } });
+  if (!podcast) return NextResponse.json({ tier: null });
+
+  if (episodeKey) {
+    const episodes = await db.episode.findMany({ where: { podcastId: podcast.id }, select: { id: true, externalId: true } });
+    const match = episodes.find((e) => e.externalId && episodeKeyFromGuid(e.externalId) === episodeKey);
+    if (!match) return NextResponse.json({ tier: null });
+
+    const rating = await db.episodeRating.findUnique({
+      where: { userId_episodeId: { userId: user.id, episodeId: match.id } },
+      select: { tier: true },
+    });
+    return NextResponse.json({ tier: rating?.tier ?? null });
+  }
+
+  const rating = await db.podcastRating.findUnique({
+    where: { userId_podcastId: { userId: user.id, podcastId: podcast.id } },
+    select: { tier: true },
+  });
+  return NextResponse.json({ tier: rating?.tier ?? null });
+}
 
 /**
  * Rate a show or an episode.
