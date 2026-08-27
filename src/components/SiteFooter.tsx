@@ -1,13 +1,19 @@
+import Link from "next/link";
+
 export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="footer-links">
-        <a href="#">About Us</a>
+        {/* About Us goes to the landing page's "What is Podtracker?" section —
+            Sasha's call, rather than a page of its own. **Signed-in users are
+            redirected off `/` to `/home`**, so this only lands for signed-out
+            visitors; a fragment never reaches the server, so that redirect
+            cannot know to make an exception. See the change log. */}
+        <Link href="/#what-is-podtracker">About Us</Link>
         <a href="#">Contact us</a>
-        {/* The donation page needs a way in. The footer is the conventional home
-            for it and leaves the nav untouched — move it if Sasha wants it more
-            prominent. */}
-        <a href="/donate">Donate</a>
+        {/* Also in the nav now, top right. Kept here too: the footer is where
+            people look for a donate link on a page that isn't the home page. */}
+        <Link href="/donate">Donate</Link>
       </div>
       <div className="footer-social">
         <a href="#">f</a>

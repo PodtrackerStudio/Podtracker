@@ -57,8 +57,8 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* WHAT IS */}
-      <section className={styles.whatIsSection}>
+      {/* WHAT IS — the footer's About Us anchors here. */}
+      <section id="what-is-podtracker" className={styles.whatIsSection}>
         <h2 className={styles.sectionTitle}>What is Podtracker?</h2>
         <div className={styles.whatIsBox}>
           We are a social platform dedicated to providing a community for podcast listeners to track and organize

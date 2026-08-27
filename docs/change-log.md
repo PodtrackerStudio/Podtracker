@@ -71,6 +71,62 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-27 — Footer About Us points at "What is Podtracker?"
+
+- **Branch:** `main`
+- **Requested by:** Sasha — About Us in the footer should take you to the
+  landing page's "What is Podtracker?" section, and Donate should do the same
+  kind of thing.
+- **Status:** Complete, with one limitation that needs a decision — see below.
+
+**What changed**
+
+- **`About Us` → `/#what-is-podtracker`.** It was `href="#"` and did nothing.
+  The landing section carries that `id` now.
+- **`Donate` already worked** (`/donate`, added with the donation page in
+  `fdaa71d`) and is unchanged. It is also in the nav as of `e46922c`.
+- Both are `next/link` rather than `<a>` now — eslint's
+  `no-html-link-for-pages` rejects a raw anchor to a real route, and it is
+  right to: client-side navigation is the point of having a router. `Contact us`
+  and the four social links stay raw `<a href="#">`; they are placeholders
+  Sasha said he would handle.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/SiteFooter.tsx` | Modified — About Us anchors to the landing section; both real links use `next/link` |
+| `src/app/page.tsx` | Modified — `id="what-is-podtracker"` on the What-is section |
+
+**Why**
+
+Verified by clicking, not just by reading the href: from `/donate`, About Us
+navigates to `/` and lands with the section's top at viewport `0`
+(`scrollY: 903`). Hash scrolling across a client-side navigation is the part
+that could plausibly have failed, so it was worth exercising.
+
+**⚠️ It only works for signed-out visitors.** `src/app/page.tsx` opens with
+`if (user) redirect("/home")`, so a signed-in user clicking About Us is bounced
+to `/home` and never sees the section. **A fragment is never sent to the
+server**, so that redirect has no way to know an exception is wanted — this is
+not fixable inside the redirect.
+
+The options, none taken because the page's design is Sasha's call:
+
+1. An `/about` route rendering the same section, extracted into a shared
+   component so there is one source of truth. Works for everyone.
+2. Let `/` render for signed-in users instead of redirecting. Changes the
+   signed-in home experience, so almost certainly wrong.
+3. Leave it. The footer link is dead weight for signed-in users.
+
+**Follow-ups**
+
+- Pick one of the three above. Option 1 is the only one that actually works for
+  everybody.
+- `Contact us` and the four social links are still `href="#"`, as Sasha said
+  he'd handle those.
+
+
 ### 2026-08-27 — Donate reachable from the nav, not just the footer
 
 - **Branch:** `main`
