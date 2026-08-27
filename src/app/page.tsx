@@ -4,14 +4,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { getCurrentUser } from "@/lib/auth";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import { TypedText } from "./TypedText";
+import { WhatIsPodtracker } from "./WhatIsPodtracker";
 import styles from "./landing.module.css";
-
-const features = [
-  "Rate episodes and allow other users to know whether a show or episode is worth watching or a skip.",
-  "Create lists to organize episodes or shows based on your own selected categories.",
-  "Write reviews for episodes and share your thoughts to the world.",
-  "Follow accounts and discover new podcasts in the process.",
-];
 
 const ratingTiers = [
   { name: "Highly recommend", color: "var(--highly-recommend)" },
@@ -57,22 +51,9 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* WHAT IS — the footer's About Us anchors here. */}
-      <section id="what-is-podtracker" className={styles.whatIsSection}>
-        <h2 className={styles.sectionTitle}>What is Podtracker?</h2>
-        <div className={styles.whatIsBox}>
-          We are a social platform dedicated to providing a community for podcast listeners to track and organize
-          their listening activity and share their recommendations on what they&apos;ve been listening to with other
-          users.
-        </div>
-        <div className={styles.featuresGrid}>
-          {features.map((f) => (
-            <div className={styles.featureItem} key={f}>
-              {f}
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* WHAT IS — shared with /about, which is where the footer's About Us
+          goes. Same component, so the two can't drift. */}
+      <WhatIsPodtracker />
 
       {/* RATINGS EXPLAINED */}
       <section>

@@ -4,12 +4,11 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="footer-links">
-        {/* About Us goes to the landing page's "What is Podtracker?" section —
-            Sasha's call, rather than a page of its own. **Signed-in users are
-            redirected off `/` to `/home`**, so this only lands for signed-out
-            visitors; a fragment never reaches the server, so that redirect
-            cannot know to make an exception. See the change log. */}
-        <Link href="/#what-is-podtracker">About Us</Link>
+        {/* /about renders the same What is Podtracker? section the landing page
+            shows. It used to anchor into the landing page, which redirects
+            signed-in users to /home — so About Us was dead for anyone with an
+            account. */}
+        <Link href="/about">About Us</Link>
         <a href="#">Contact us</a>
         {/* Also in the nav now, top right. Kept here too: the footer is where
             people look for a donate link on a page that isn't the home page. */}

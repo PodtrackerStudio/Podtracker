@@ -71,6 +71,70 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-27 — About Us is its own page, and still part of the landing page
+
+- **Branch:** `main`
+- **Requested by:** Sasha — About Us is just the "What is Podtracker?" section,
+  not the whole landing page. Make it a page of its own **as well as** part of
+  the landing page.
+- **Status:** Complete. Closes the limitation the previous entry left open.
+
+**What changed**
+
+- **`WhatIsPodtracker` extracted** to `src/app/WhatIsPodtracker.tsx` — the
+  intro box and the four feature tiles, with the `features` array that only it
+  used. It imports `landing.module.css`, so the styles stay in one place rather
+  than being copied.
+- **`/about`** renders that section alone, with `SiteNav` and `SiteFooter` like
+  every other page. The landing page is the one page without a nav, and this
+  isn't the landing page.
+- **The landing page renders the same component** in the same slot. One source
+  of truth, so the two cannot drift.
+- **Footer `About Us` → `/about`**, replacing the `/#what-is-podtracker` anchor
+  added earlier today.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/WhatIsPodtracker.tsx` | Added — the shared section |
+| `src/app/about/page.tsx` | Added |
+| `src/app/about/about.module.css` | Added — vertical padding only |
+| `src/app/page.tsx` | Modified — renders the component; `features` moved out |
+| `src/components/SiteFooter.tsx` | Modified — About Us → `/about` |
+
+**Why**
+
+**This is the fix for yesterday's limitation.** The anchor version only worked
+signed out, because `/` redirects a signed-in user to `/home` and a fragment
+never reaches the server, so that redirect could not be taught to make an
+exception. A route anyone can open was the only option that works for both, and
+it is what Sasha chose.
+
+The section needed no layout wrapper: `.whatIsBox` and `.featuresGrid` already
+carry their own `max-width` and `margin: 0 auto`, so `about.module.css` supplies
+nothing but the vertical padding the landing page's neighbouring sections used
+to give it.
+
+`headingAs` defaults to `h2` and `/about` passes `h1`. On the landing page the
+title is one section heading among four; on `/about` it is the page's only
+heading, and a page with no `h1` is a real accessibility gap. Styling is
+identical either way — `.sectionTitle` does the work.
+
+`id="what-is-podtracker"` stays on the section. It is harmless on `/about` and
+still anchors the landing page, so an existing `/#what-is-podtracker` link
+carries on working.
+
+**Follow-ups**
+
+- Verified: `/about` renders the heading as `H1`, all four tiles, nav and footer
+  present, and the footer's About Us resolves to `/about`. The landing page
+  still shows all four sections in order with the section as `H2` and four
+  tiles, so the extraction changed nothing there.
+- `Contact us` and the four social links are still `href="#"`, as Sasha said
+  he'd handle those.
+
+
 ### 2026-08-27 — Footer About Us points at "What is Podtracker?"
 
 - **Branch:** `main`

@@ -1,0 +1,11 @@
+/* The section brings its own max-widths and centring, so this only supplies the
+   vertical rhythm the landing page's surrounding sections normally give it. */
+.main {
+  padding: 56px 24px 96px;
+}
+
+@media (max-width: 900px) {
+  .main {
+    padding: 32px 24px 64px;
+  }
+}
