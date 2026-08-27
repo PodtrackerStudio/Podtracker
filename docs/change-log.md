@@ -71,6 +71,75 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-27 — Donation page
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — a donation page styled like the
+  rest of the site, well spaced, with $1 / $5 / $10 / $25 / $50 / $100 and a
+  custom amount.
+- **Status:** Complete as a page. **It does not take payments** — see below.
+
+**What changed**
+
+- `src/app/donate/page.tsx` — **new.** `/donate`. SiteNav + centred column +
+  SiteFooter, the same shell as every other page.
+- `src/app/donate/DonateForm.tsx` — **new.** Client component holding the
+  selected amount.
+- `src/app/donate/donate.module.css` — **new.**
+- `src/components/SiteFooter.tsx` — a "Donate" link beside About Us / Contact
+  us, so the page is reachable at all.
+
+**No Figma frame covers this page, so nothing was invented**
+
+Every value is lifted from `settings.module.css`, this app's existing centred
+form page: the same 720px column, the same `padding: 40px 24px 80px`, the same
+40px centred heading, the same field and status-message treatments. Colours are
+documented tokens only — `--btn-primary-blue` for the selected amount and the
+call to action, plus `--border`, `--text-muted`, `--hr`. **Raise the layout with
+Sasha rather than treating it as settled.**
+
+Six presets sit in a 3-column grid — two clean rows, so none is orphaned on a
+half-empty row — with "Custom amount" spanning all three beneath.
+
+**It deliberately does not pretend to take money**
+
+No payment provider is wired up. Submitting shows, in the existing status-message
+style: *"Payments aren't connected yet, so nothing has been charged."* A button
+that silently does nothing reads as a broken checkout, and one that looked like
+it charged would be worse. Connecting Stripe is separate work.
+
+**Accessibility**
+
+Real `<input type="radio">` elements, visually hidden with the same technique as
+`.typedSrOnly` in `landing.module.css`, with the styled boxes as their labels —
+so arrow-key navigation between amounts works and screen readers announce a
+radio group. Focus stays visible via `:focus-visible` on the box, since the
+input itself is hidden.
+
+**Verified**
+
+`/donate` returns 200; `tsc --noEmit` and `eslint` clean. Exercised in Chromium:
+preset selection updates the button ("Donate $25"), Custom reveals the input and
+keeps the button disabled until the value is valid, `7.5` renders as `$7.50`,
+`0` and `999999` both disable it, submitting shows the not-connected message,
+and ArrowRight from $1 moves to $5. Column centred at 720px with symmetrical
+24px gutters; the page's own content causes no horizontal overflow at 1440,
+1024, 768 or 390px.
+
+**Follow-ups**
+
+- **Payments are not connected.** The page captures an intent and nothing else.
+- **Pre-existing, not caused by this page:** every page rendering `SiteNav`
+  overflows horizontally below ~768px — `nav-links` by 20px at 768px, and
+  `nav-search-wrap` by 398px at 390px. Reproduced identically on `/explore` and
+  `/podcast/[id]`; the nav has no breakpoints at all. Left alone because the
+  responsive design is Sasha's call, but the site is currently unusable on a
+  phone.
+- The copy ("built and run by a small team", and the not-a-charity line) is
+  placeholder and needs checking before launch — the charity line especially, as
+  it is a factual claim about the business.
+- The link went in the footer because that leaves the nav untouched; move it if
+  it should be more prominent.
 ### 2026-08-26 — The log/review popup carries a rating
 
 - **Branch:** `main`

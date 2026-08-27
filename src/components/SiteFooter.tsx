@@ -4,6 +4,10 @@ export function SiteFooter() {
       <div className="footer-links">
         <a href="#">About Us</a>
         <a href="#">Contact us</a>
+        {/* The donation page needs a way in. The footer is the conventional home
+            for it and leaves the nav untouched — move it if Sasha wants it more
+            prominent. */}
+        <a href="/donate">Donate</a>
       </div>
       <div className="footer-social">
         <a href="#">f</a>
