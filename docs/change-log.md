@@ -69,7 +69,58 @@ rejected. This is the part that saves the most time later.
 
 ---
 
-## Entries
+## Entries
+
+### 2026-08-27 — Donate reachable from the nav, not just the footer
+
+- **Branch:** `main`
+- **Requested by:** Sasha — "make a section for it in the top right so that a
+  user can just click to access it directly", about the `/donate` page pulled in
+  from the collaborator's `fdaa71d`.
+- **Status:** Complete.
+
+**What changed**
+
+- **A `Donate` link, last in `.nav-links`**, so it is the rightmost item in the
+  nav. Added to **both** branches of `SiteNav` — signed in it follows Logout,
+  signed out it follows Explore. A donation link that only appears once you have
+  an account would defeat the point.
+- The footer link stays. Its own comment said "move it if Sasha wants it more
+  prominent"; having both is normal for a donate link, and the footer is where
+  people look for it on other pages.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/SiteNav.tsx` | Modified — `Donate` at the end of both branches |
+
+**Why**
+
+Rendered as a **plain nav link**, identical to Home / Following / Explore. No
+Figma frame covers a Donate nav item, so nothing was invented — no pill, no
+accent colour. Say so if it should stand out; `.nav-cta` and `.nav-log-btn` are
+the existing treatments for a nav item that should.
+
+No `active` state was wired for it. The nav's `active` prop covers the three
+main sections, and adding a fourth would mean editing the collaborator's
+`donate/page.tsx` for a bold weight nobody asked for.
+
+**Measured, because the nav has no responsive handling at all** — it is one flex
+row, `gap: 24px`, no wrapping and no media query anywhere in `globals.css`. At
+1280px the signed-in nav (the crowded branch) now uses **1075px of 1169px
+available**, so it fits with ~94px to spare, and `nav.scrollWidth` does not
+exceed `clientWidth`. Height is still 100px, per the design note.
+
+**Follow-ups**
+
+- **The nav will overflow below roughly 1200px**, and did before this too — one
+  more item makes it slightly worse. There is no media query for `.site-nav`,
+  so at narrow widths items squeeze rather than wrap or collapse. Worth a
+  decision before launch; a mobile nav is a design question, not a code one.
+- Verified logged out only, since the signed-in branch needs a session. The
+  signed-in nav was measured by simulating it in the DOM and restoring it.
+
 
 ### 2026-08-27 — Donation page
 

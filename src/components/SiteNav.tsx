@@ -43,6 +43,7 @@ export async function SiteNav({ active }: SiteNavProps) {
               Log podcast
             </Link>
             <LogoutButton />
+            <Link href="/donate">Donate</Link>
           </>
         ) : (
           <>
@@ -53,6 +54,7 @@ export async function SiteNav({ active }: SiteNavProps) {
             <Link href="/explore" className={active === "explore" ? "active" : undefined}>
               Explore
             </Link>
+            <Link href="/donate">Donate</Link>
           </>
         )}
       </div>
