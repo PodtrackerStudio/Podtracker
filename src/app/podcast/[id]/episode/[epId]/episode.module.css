@@ -250,6 +250,9 @@
 .micBtn.ratedDont svg path {
   fill: var(--dont);
 }
+.micBtn.ratedDidnt svg path {
+  fill: var(--didnt-finish);
+}
 .btnLog {
   background: none;
   border: 1px solid var(--border);

@@ -3,18 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * The tiers you can set, matching `RatingWidget` exactly.
+ * The tiers you can set, matching `RatingWidget` exactly — keep the two lists
+ * in step, or the same rating becomes settable in one place and not the other.
  *
- * `DIDNT_FINISH` is deliberately absent, as it is there: the enum has it and
- * the profile distribution and landing-page legend display it, but no control
- * on the site sets it. Adding it here would make the two rating controls
- * disagree — that is a design decision, not a code one.
+ * Order follows the landing page's "Ratings explained". `DIDNT_FINISH` is
+ * included as of 2026-08-26 (Sasha): it was in the enum, the legend and the
+ * profile distribution, but nothing on the site could set it.
  */
 const RATING_TIERS = [
   { api: "HIGHLY_RECOMMEND", label: "Highly Recommend", colorVar: "--highly-recommend" },
   { api: "RECOMMEND", label: "Recommend", colorVar: "--recommend" },
   { api: "OK", label: "OK", colorVar: "--ok" },
   { api: "DONT_RECOMMEND", label: "Don't Recommend", colorVar: "--dont" },
+  { api: "DIDNT_FINISH", label: "Didn't Finish", colorVar: "--didnt-finish" },
 ] as const;
 
 type TierApi = (typeof RATING_TIERS)[number]["api"];

@@ -3,29 +3,24 @@
 import { useState } from "react";
 import { MicIcon } from "./icons";
 
+/**
+ * The five tiers, in the order the landing page's "Ratings explained" lists
+ * them. `didnt` was missing until 2026-08-26: the enum, the legend and the
+ * profile distribution all had it, but no control on the site could set it.
+ * The colour lives here rather than in a ternary chain so a sixth tier — or a
+ * recoloured one — is a single edit.
+ */
 const TIERS = [
-  { key: "highly", label: "Highly Recommend" },
-  { key: "recommend", label: "Recommend" },
-  { key: "ok", label: "OK" },
-  { key: "dont", label: "Don't Recommend" },
+  { key: "highly", label: "Highly Recommend", api: "HIGHLY_RECOMMEND", colorVar: "--highly-recommend", ratedClass: "ratedHighly" },
+  { key: "recommend", label: "Recommend", api: "RECOMMEND", colorVar: "--recommend", ratedClass: "ratedRecommend" },
+  { key: "ok", label: "OK", api: "OK", colorVar: "--ok", ratedClass: "ratedOk" },
+  { key: "dont", label: "Don't Recommend", api: "DONT_RECOMMEND", colorVar: "--dont", ratedClass: "ratedDont" },
+  { key: "didnt", label: "Didn't Finish", api: "DIDNT_FINISH", colorVar: "--didnt-finish", ratedClass: "ratedDidnt" },
 ] as const;
 
 type TierKey = (typeof TIERS)[number]["key"];
 
-const tierClass: Record<TierKey, string> = {
-  highly: "ratedHighly",
-  recommend: "ratedRecommend",
-  ok: "ratedOk",
-  dont: "ratedDont",
-};
-
-/** UI keys → the RatingTier enum the API and database use. */
-const TIER_TO_API: Record<TierKey, string> = {
-  highly: "HIGHLY_RECOMMEND",
-  recommend: "RECOMMEND",
-  ok: "OK",
-  dont: "DONT_RECOMMEND",
-};
+const byKey = (key: TierKey) => TIERS.find((t) => t.key === key)!;
 
 /**
  * Rating only — no diary entry. Logging a listen is `ReviewWidget`.
@@ -69,7 +64,7 @@ export function RatingWidget({
       const res = await fetch("/api/rate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ externalId, episodeKey, tier: TIER_TO_API[pending] }),
+        body: JSON.stringify({ externalId, episodeKey, tier: byKey(pending).api }),
       });
       if (!res.ok) {
         // Put the old rating back rather than leave the button showing one the
@@ -90,7 +85,7 @@ export function RatingWidget({
 
   return (
     <>
-      <button className={`${styles.micBtn} ${rating ? styles[tierClass[rating]] : ""}`} onClick={openPopup}>
+      <button className={`${styles.micBtn} ${rating ? styles[byKey(rating).ratedClass] : ""}`} onClick={openPopup}>
         <MicIcon />
         Rate
       </button>
@@ -133,7 +128,7 @@ export function RatingWidget({
               <svg viewBox="0 0 24 24" width={48} height={48} xmlns="http://www.w3.org/2000/svg">
                 <path
                   d="M12 1C10.34 1 9 2.34 9 4v7c0 1.66 1.34 3 3 3s3-1.34 3-3V4c0-1.66-1.34-3-3-3zm-1 17.93V21h-2v2h6v-2h-2v-2.07A8.001 8.001 0 0020 12h-2a6 6 0 01-12 0H4a8.001 8.001 0 007 7.93z"
-                  fill={pending ? `var(--${pending === "dont" ? "dont" : pending === "ok" ? "ok" : pending === "recommend" ? "recommend" : "highly-recommend"})` : "#9ca3af"}
+                  fill={pending ? `var(${byKey(pending).colorVar})` : "#9ca3af"}
                 />
               </svg>
             </div>
@@ -149,7 +144,7 @@ export function RatingWidget({
                   fontWeight: 500,
                   cursor: "pointer",
                   padding: "4px 0",
-                  color: `var(--${t.key === "dont" ? "dont" : t.key === "ok" ? "ok" : t.key === "recommend" ? "recommend" : "highly-recommend"})`,
+                  color: `var(${t.colorVar})`,
                 }}
               >
                 {t.label}

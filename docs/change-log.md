@@ -69,7 +69,7 @@ rejected. This is the part that saves the most time later.
 
 ---
 
-## Entries
+## Entries
 
 ### 2026-08-26 — The log/review popup carries a rating
 
@@ -101,6 +101,9 @@ rejected. This is the part that saves the most time later.
 | --- | --- |
 | `src/components/LogReviewPopup.tsx` | Modified — rating row, tier menu, sends `tier` |
 | `src/app/api/rate/route.ts` | Added `GET` — current rating, read-only |
+| `src/components/RatingWidget.tsx` | Modified — "Didn't Finish" added; colour/class moved onto the tier list |
+| `src/lib/viewerState.ts` | Modified — `DIDNT_FINISH` maps to a tier key instead of null |
+| `src/app/podcast/[id]/podcast.module.css`, `src/app/podcast/[id]/episode/[epId]/episode.module.css` | Modified — `.micBtn.ratedDidnt` |
 
 **Why**
 
@@ -116,19 +119,31 @@ episode page loads none, and `/log` picks its target in the browser. One path
 avoids three shapes drifting apart. The cost is that the row reads "Add rating"
 for the length of a local fetch before showing an existing rating.
 
-**`DIDNT_FINISH` is not in the menu**, matching `RatingWidget`. The enum has it
-and the landing-page legend and profile distribution both display it, but **no
-control on the site sets it** — so it is currently unreachable. Adding it here
-would have made the two rating controls disagree. Worth a decision.
+**"Didn't Finish" is now settable, in both controls** (Sasha, asked for straight
+after seeing the first version). It was in the enum, the landing page's "Ratings
+explained" legend and the profile's rating distribution, but **nothing on the
+site could set it**, so it was an unreachable tier. Added to `RatingWidget` and
+to the popup together — one without the other would mean a rating you can set in
+one place and not the other.
+
+Three things had to move with it, none obvious from the list itself:
+
+- `.micBtn.ratedDidnt` in **both** `podcast.module.css` and
+  `episode.module.css`, or a "Didn't Finish" rating leaves the mic uncoloured.
+- `viewerState.API_TO_TIER`, which mapped four tiers and fell through to `null`
+  — so an existing `DIDNT_FINISH` rating would have rendered the mic as unrated.
+- `RatingWidget`'s colours, which were two nested ternary chains ending in
+  "…otherwise highly-recommend". A fifth tier would have silently come out pink.
+  Colour and CSS class now live on the tier list itself.
 
 **Follow-ups**
 
-- Whether "Didn't finish" should be settable, and if so in both controls.
-- Verified logged out on the podcast page: the popup opens, the row sits under
-  the date, unrated renders `rgb(17,17,17)` in `PT Serif Caption`, picking
-  "Recommend" switches it to `rgb(40,186,96)` in Londrina via `.rating-label`,
-  and "No rating" returns it. **Not** verified: that submitting actually
-  persists the tier — that needs a session.
+- Verified logged out on the podcast page: the popup opens, the rating row sits
+  under the date, unrated renders `rgb(17,17,17)` in `PT Serif Caption`, picking
+  a tier switches it to that tier's colour in Londrina via `.rating-label`, and
+  "No rating" returns it. Both menus list all five tiers at exactly the design
+  system's values, and the mic fill follows `--didnt-finish`. **Not** verified:
+  that submitting persists the tier — that needs a session.
 
 
 ### 2026-08-26 — "+ Log podcast" works: search, pick, review popup

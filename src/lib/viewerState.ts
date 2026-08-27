@@ -2,13 +2,16 @@ import { db } from "./db";
 import { getCurrentUser } from "./auth";
 
 /** UI tier keys, matching RatingWidget's. */
-export type TierKey = "highly" | "recommend" | "ok" | "dont";
+export type TierKey = "highly" | "recommend" | "ok" | "dont" | "didnt";
 
+// A tier missing here maps to null, so the mic shows unrated for a rating that
+// does exist — which is what happened to DIDNT_FINISH until it became settable.
 const API_TO_TIER: Record<string, TierKey> = {
   HIGHLY_RECOMMEND: "highly",
   RECOMMEND: "recommend",
   OK: "ok",
   DONT_RECOMMEND: "dont",
+  DIDNT_FINISH: "didnt",
 };
 
 export type ViewerPodcastState = {
