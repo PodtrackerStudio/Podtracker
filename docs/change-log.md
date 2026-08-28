@@ -71,6 +71,75 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-27 — Trending episodes 404'd: a hiccup was being reported as "no such episode"
+
+- **Branch:** `main`
+- **Requested by:** Sasha — "the trending episodes have to actually lead to
+  episodes".
+- **Status:** Complete.
+
+**What was wrong**
+
+Every episode link on Explore 404'd. **The links were correct.** Checked
+directly against the feeds: `5452adaffabf` is episode index **0** of The Daily,
+`e9d6f1df404d` index 0 of Pardon My Take, `25c5d4847a26` index 0 of Up First.
+The same URLs returned 200 minutes later with no code change.
+
+`getEpisodeDetail` returned `EpisodeDetail | null`, and the page turned every
+null into `notFound()`. That conflated two different things:
+
+- **no episode has this key** — a dead link, correctly a 404
+- **iTunes or the feed host didn't answer just now** — transient, and a 404
+  tells the reader an episode that exists does not
+
+Explore resolves up to twelve feeds concurrently to build that row, and the
+burst was enough to make the next lookup fail. So the links Explore had *just*
+produced were dead by the time anyone clicked one — the failure was most likely
+where it hurt most. The 404s came back in ~150ms, far too fast to have fetched
+anything, which is what gave it away.
+
+This was the tradeoff recorded in yesterday's entry ("a feed being temporarily
+unreachable also comes back null, and so 404s") as acceptable. It wasn't.
+
+**What changed**
+
+- **`getEpisodeDetail` returns a three-way `EpisodeLookup`** — `ok`,
+  `not-found`, `unavailable` — instead of a nullable. Only a feed that was read
+  successfully and contains no match is `not-found`.
+- **The page 404s on `not-found` and throws on `unavailable`**, so an outage
+  renders an error rather than claiming the episode doesn't exist. A wrong 404
+  is worse than an error page: it is what a search engine deindexes on.
+- **Two retries, ~250ms then ~600ms**, on the lookup and the feed fetch. Scoped
+  to this path deliberately — the podcast page degrades to a placeholder and the
+  list pages never touch a feed, so nowhere else turns a hiccup into a wrong
+  answer.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/episodeDetail.ts` | Modified — `EpisodeLookup`, `withRetry`, three-way return |
+| `src/app/podcast/[id]/episode/[epId]/page.tsx` | Modified — 404 only on `not-found` |
+
+**Why not just retry and keep the nullable?**
+
+Retrying makes the failure rarer; it cannot make it impossible. As long as
+"unreachable" and "absent" share a return value, an outage will eventually be
+reported as a dead episode. The retry is the reliability fix; the three-way
+result is the correctness one, and only the second is load-bearing.
+
+**Follow-ups**
+
+- Verified: **all 8** trending episode links on Explore return 200 and one
+  renders as the real episode ("A Historic Settlement Over Social Media
+  Addiction", The Daily, Aug 27, 28m). A deliberately bogus key still 404s, so
+  dead links are still visible. Spot-checked the full episode list and several
+  show pages — all 200.
+- `getPodcastDetail` still answers an unreachable API with its "Modern Wisdom"
+  placeholder, the same class of lie this entry removes for episodes. Nothing
+  links to it any more, but it is worth the same treatment.
+
+
 ### 2026-08-27 — Contact us opens a mail draft; the footer has no dead links left
 
 - **Branch:** `main`

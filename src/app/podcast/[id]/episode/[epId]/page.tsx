@@ -43,11 +43,17 @@ const lists = [
 
 export default async function EpisodePage({ params }: { params: Promise<{ id: string; epId: string }> }) {
   const { id, epId } = await params;
-  const episode = await getEpisodeDetail(id, epId);
-  // An episode key that matches nothing in the show's feed used to render a
-  // fabricated stand-in, which made every broken episode link look like a
-  // working one. 404 so they are visible (Sasha, 2026-08-26).
-  if (!episode) notFound();
+  const result = await getEpisodeDetail(id, epId);
+
+  // 404 only when the feed was read and genuinely has no such episode. An
+  // upstream hiccup throws instead, so a working episode is never reported as
+  // nonexistent — that bug made every trending episode on Explore 404 on
+  // 2026-08-27 while the same URLs worked minutes later.
+  if (result.status === "not-found") notFound();
+  if (result.status === "unavailable") {
+    throw new Error(`Could not reach the feed for podcast ${id} — the episode may still exist.`);
+  }
+  const episode = result.episode;
 
   return (
     <>

@@ -150,6 +150,45 @@ export async function getEpisodeList(podcastId: string): Promise<EpisodeList> {
 }
 
 /**
+ * Why this is a three-way result and not `EpisodeDetail | null`.
+ *
+ * It used to be nullable, and the page turned every null into `notFound()`.
+ * That conflated two very different things: **"no episode has this key"** and
+ * **"iTunes or the feed host did not answer just now"**. The second is
+ * transient, and a 404 for it tells the reader an episode that exists does not.
+ *
+ * It bit for real on 2026-08-27: every trending episode on Explore 404'd, and
+ * the same URLs returned 200 minutes later untouched. Explore resolves up to
+ * twelve feeds concurrently to build that row, and the burst was enough to make
+ * the next lookup fail — so the links Explore had just produced were dead by
+ * the time anyone clicked one.
+ */
+export type EpisodeLookup =
+  | { status: "ok"; episode: EpisodeDetail }
+  | { status: "not-found" }
+  | { status: "unavailable" };
+
+/**
+ * Two extra attempts, ~250ms then ~600ms.
+ *
+ * Scoped to this path on purpose. The podcast page degrades to a placeholder
+ * and the list pages never touch a feed, so nowhere else turns a hiccup into a
+ * wrong answer; making every caller slower on failure would buy nothing.
+ */
+async function withRetry<T>(attempt: () => Promise<T>): Promise<T | null> {
+  const delays = [250, 600];
+  for (let i = 0; i <= delays.length; i++) {
+    try {
+      return await attempt();
+    } catch {
+      if (i === delays.length) return null;
+      await new Promise((r) => setTimeout(r, delays[i]));
+    }
+  }
+  return null;
+}
+
+/**
  * Everything the episode page needs, from the show's own RSS feed.
  *
  * The whole feed is searched rather than the four-episode "Recent episodes"
@@ -157,30 +196,29 @@ export async function getEpisodeList(podcastId: string): Promise<EpisodeList> {
  * an hour by `fetchPodcastFeed`, so this is one request per show per hour
  * however many episode pages get opened.
  *
- * **Returns null rather than a stand-in.** It used to answer any key it could
- * not resolve with a fabricated "Inside Modern Politics – Ezra Klein" episode,
- * so a broken link was indistinguishable from a working one — four separate
- * pages shipped links built from database cuids and nothing ever visibly
- * failed. The caller 404s instead (Sasha, 2026-08-26).
- *
- * A feed being temporarily unreachable also comes back null, and so 404s. That
- * is the one thing lost: an outage now reads as "no such episode". It is still
- * better than inventing one, and the alternative — a 500 — is no more useful to
- * a reader.
+ * **It no longer answers an unrecognised key with a stand-in.** It used to
+ * return a fabricated "Inside Modern Politics – Ezra Klein" episode, so a broken
+ * link was indistinguishable from a working one — four separate pages shipped
+ * links built from database cuids and nothing ever visibly failed.
  */
-export async function getEpisodeDetail(podcastId: string, episodeKey: string): Promise<EpisodeDetail | null> {
+export async function getEpisodeDetail(podcastId: string, episodeKey: string): Promise<EpisodeLookup> {
   // Legacy slug ids ("jre", "modern-wisdom") are not iTunes ids and have no
-  // feed behind them.
-  if (!/^\d+$/.test(podcastId)) return null;
+  // feed behind them. Genuinely nothing to find, so not a retry case.
+  if (!/^\d+$/.test(podcastId)) return { status: "not-found" };
 
-  const podcast = await lookupPodcast(podcastId).catch(() => null);
-  if (!podcast?.feedUrl) return null;
+  const podcast = await withRetry(() => lookupPodcast(podcastId));
+  if (!podcast) return { status: "unavailable" };
+  // A show that resolves but publishes no feed has no episodes to show. That
+  // is an answer, not an outage.
+  if (!podcast.feedUrl) return { status: "not-found" };
 
-  const feed = await fetchPodcastFeed(podcast.feedUrl).catch(() => null);
-  if (!feed) return null;
+  const feed = await withRetry(() => fetchPodcastFeed(podcast.feedUrl!));
+  if (!feed) return { status: "unavailable" };
 
   const index = feed.episodes.findIndex((e) => episodeKeyFromGuid(e.guid) === episodeKey);
-  if (index === -1) return null;
+  // The feed was read successfully and nothing in it matches, so this really is
+  // a dead link — the one case that should 404.
+  if (index === -1) return { status: "not-found" };
 
   const episode = feed.episodes[index];
   // Feeds are newest-first, so the *newer* neighbour is the lower index.
@@ -188,16 +226,19 @@ export async function getEpisodeDetail(podcastId: string, episodeKey: string): P
   const older = feed.episodes[index + 1];
 
   return {
-    id: episodeKey,
-    guid: episode.guid,
-    podcastId,
-    podcastTitle: podcast.title,
-    title: episode.title,
-    date: formatDate(episode.publishedAt),
-    duration: formatDuration(episode.durationSeconds),
-    coverUrl: episode.coverUrl ?? podcast.artworkUrl,
-    description: summaryOnly(episode.description),
-    previousId: older ? episodeKeyFromGuid(older.guid) : null,
-    nextId: newer ? episodeKeyFromGuid(newer.guid) : null,
+    status: "ok",
+    episode: {
+      id: episodeKey,
+      guid: episode.guid,
+      podcastId,
+      podcastTitle: podcast.title,
+      title: episode.title,
+      date: formatDate(episode.publishedAt),
+      duration: formatDuration(episode.durationSeconds),
+      coverUrl: episode.coverUrl ?? podcast.artworkUrl,
+      description: summaryOnly(episode.description),
+      previousId: older ? episodeKeyFromGuid(older.guid) : null,
+      nextId: newer ? episodeKeyFromGuid(newer.guid) : null,
+    },
   };
 }
