@@ -1,4 +1,13 @@
 import Link from "next/link";
+import { FacebookIcon, XIcon, InstagramIcon, TikTokIcon } from "./icons";
+
+/** Podtracker's accounts, in the order Sasha listed them. */
+const SOCIALS = [
+  { name: "Facebook", href: "https://www.facebook.com/profile.php?id=61593536326155", Icon: FacebookIcon },
+  { name: "X", href: "https://x.com/PodTracker_13", Icon: XIcon },
+  { name: "Instagram", href: "https://www.instagram.com/podtracker_13/", Icon: InstagramIcon },
+  { name: "TikTok", href: "https://www.tiktok.com/@podtracker_13", Icon: TikTokIcon },
+];
 
 export function SiteFooter() {
   return (
@@ -15,10 +24,15 @@ export function SiteFooter() {
         <Link href="/donate">Donate</Link>
       </div>
       <div className="footer-social">
-        <a href="#">f</a>
-        <a href="#">𝕏</a>
-        <a href="#">▶</a>
-        <a href="#">d</a>
+        {/* Were the letters "f", "𝕏", "▶" and "d" — a stand-in for the marks,
+            and one of them was YouTube rather than a network on this list.
+            aria-label carries the name, since the glyph itself says nothing to
+            a screen reader. */}
+        {SOCIALS.map(({ name, href, Icon }) => (
+          <a key={name} href={href} aria-label={name} title={name} target="_blank" rel="noopener noreferrer">
+            <Icon />
+          </a>
+        ))}
       </div>
     </footer>
   );

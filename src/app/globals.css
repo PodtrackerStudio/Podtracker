@@ -244,11 +244,15 @@ footer.site-footer {
   gap: 14px;
   align-items: center;
 }
+/* The brand marks inherit currentColor, so the grey lives here rather than in
+   each icon: real-looking marks that sit back, per Sasha. --text-muted is the
+   existing token, so no new colour is introduced. */
 .footer-social a {
   color: var(--text-muted);
   text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.15s;
 }
 .footer-social a:hover {
   color: var(--text);

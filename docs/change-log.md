@@ -71,6 +71,68 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-27 — Real social marks in the footer, linked to the accounts
+
+- **Branch:** `main`
+- **Requested by:** Sasha — swap the footer placeholders for Facebook, X,
+  Instagram and TikTok, "as real as possible, just slightly grayer", then link
+  them to the accounts.
+- **Status:** Complete.
+
+**What changed**
+
+- **Four brand marks** as SVG icon components in `icons.tsx`: `FacebookIcon`,
+  `XIcon`, `InstagramIcon`, `TikTokIcon`. Single paths on a 24×24 grid so they
+  sit at the same optical weight beside each other, rendered at 18px (X at 17 —
+  its mark is optically wider, and 18 made it read larger than the rest).
+- **They were the letters `f`, `𝕏`, `▶` and `d`** — text stand-ins, and one of
+  them was YouTube, which isn't on Sasha's list.
+- **Linked to the real accounts**, opening in a new tab with
+  `rel="noopener noreferrer"`.
+
+| | |
+| --- | --- |
+| Facebook | `facebook.com/profile.php?id=61593536326155` |
+| X | `x.com/PodTracker_13` |
+| Instagram | `instagram.com/podtracker_13/` |
+| TikTok | `tiktok.com/@podtracker_13` |
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/icons.tsx` | Added the four brand marks |
+| `src/components/SiteFooter.tsx` | Modified — `SOCIALS` list drives the row; real hrefs |
+| `src/app/globals.css` | Modified — `.footer-social a` carries the colour, not text styling |
+
+**Why**
+
+**"Slightly grayer" is done with `currentColor`, not baked into the icons.**
+Every mark inherits its colour from `.footer-social a`, which is
+`var(--text-muted)` — `#555555`, an **existing token**, so no new colour enters
+the palette. They darken to `var(--text)` on hover, which the letters already
+did. Brand colours were deliberately not used: Sasha wants them recognisable but
+sitting back.
+
+The row is driven by a `SOCIALS` array rather than four hand-written anchors, so
+adding a fifth network or changing a URL is one line and can't get out of step
+with its `aria-label`.
+
+`aria-label` carries the network name on each link. A glyph announces nothing to
+a screen reader, and the letters it replaced were no better.
+
+**New tab**, unlike every other link on the site: these leave Podtracker
+entirely, and a footer link that navigates away from the app loses whatever the
+user was doing. Say so if you'd rather they open in place.
+
+**Follow-ups**
+
+- Verified all four render as SVGs at `rgb(85,85,85)` with the right hrefs,
+  `target="_blank"` and `rel="noopener noreferrer"`, and confirmed visually in
+  the footer.
+- `Contact us` is still `href="#"` — the last placeholder in the footer.
+
+
 ### 2026-08-27 — About Us is its own page, and still part of the landing page
 
 - **Branch:** `main`
