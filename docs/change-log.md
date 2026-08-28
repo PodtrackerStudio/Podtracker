@@ -71,6 +71,44 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-27 — Contact us opens a mail draft; the footer has no dead links left
+
+- **Branch:** `main`
+- **Requested by:** Sasha — "fix contact us, just add our email".
+- **Status:** Complete.
+
+**What changed**
+
+- **`Contact us` → `mailto:podtracker13@gmail.com`.** It was the last
+  `href="#"` in the footer.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/SiteFooter.tsx` | Modified — Contact us is a mailto |
+
+**Why**
+
+A `mailto`, not a contact form: nothing on this site can send mail, and a form
+that silently went nowhere is worse than no form. It stays a plain `<a>` —
+eslint's `no-html-link-for-pages` only objects to raw anchors pointing at
+*routes*, and `next/link` has no business wrapping a `mailto`.
+
+No `target="_blank"`, unlike the social marks. A `mailto` hands off to the mail
+client rather than navigating, so a new tab would open and be left blank.
+
+**The footer is now fully wired.** `document.querySelectorAll('footer a[href="#"]')`
+returns **0** — About Us → `/about`, Contact us → the mailbox, Donate →
+`/donate`, and the four social marks → the real accounts.
+
+**Follow-ups**
+
+- None for the footer. Remaining `href="#"` links elsewhere are the mock
+  "Popular lists" and "See more" rows on Explore and the podcast/episode pages,
+  all of which sit behind `HAS_COMMUNITY_DATA` and don't render.
+
+
 ### 2026-08-27 — Real social marks in the footer, linked to the accounts
 
 - **Branch:** `main`

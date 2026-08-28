@@ -18,7 +18,11 @@ export function SiteFooter() {
             signed-in users to /home — so About Us was dead for anyone with an
             account. */}
         <Link href="/about">About Us</Link>
-        <a href="#">Contact us</a>
+        {/* A mailto, not a contact form — there's no mail-sending backend, and
+            a form that silently went nowhere would be worse than none. No
+            target: mailto hands off to the mail client, so a new tab would just
+            leave a blank one behind. */}
+        <a href="mailto:podtracker13@gmail.com">Contact us</a>
         {/* Also in the nav now, top right. Kept here too: the footer is where
             people look for a donate link on a page that isn't the home page. */}
         <Link href="/donate">Donate</Link>
