@@ -71,6 +71,66 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-28 — The full trending list links to episodes, by resolving on click
+
+- **Branch:** `main`
+- **Requested by:** Sasha — every link on the full trending page must go to the
+  episode, not the show.
+- **Status:** Complete.
+
+**What changed**
+
+- **`/episode/find?show=&title=`** — a page that renders nothing. It parses that
+  one show's feed, matches the title, and redirects to the episode.
+- **`getTrendingEpisodes` points unresolved entries at it** instead of the show
+  page. Entries it *did* resolve at render time keep their real episode URL.
+- `normalise` is exported as `normaliseEpisodeTitle`, so the resolver matches by
+  the identical rule — a title that resolves at render must resolve on click.
+- Dropped `TrendingEpisode.linksToEpisode`. Nothing read it, and after this its
+  meaning was ambiguous: every entry reaches an episode now, just via two
+  different routes.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/episode/find/page.tsx` | Added — resolve one episode, redirect |
+| `src/lib/trendingEpisodes.ts` | Modified — deferred hrefs; exported normaliser; removed dead flag |
+| `src/app/explore/trending-episodes/page.tsx` | Modified — comment now describes what it does |
+
+**Why not just raise `MAX_FEEDS`**
+
+Both CLAUDE.md and this log say don't, and the measurements are why: 100 entries
+span ~40 shows, each a full RSS parse (~3.5s, single-threaded so they queue),
+timing out past 280s. That constraint hasn't changed.
+
+**Two shortcuts were re-tested and still fail.** The chart's `url` carries
+`?i=<episode track id>`, so a batched
+`lookup?id=<ids>&entity=podcastEpisode` looked promising — it returns
+**resultCount 0**, for both the chart `id` field and the `?i=` value. The
+episode *search* endpoint does return `episodeGuid`, but that needs one search
+per entry, which is the same fan-out problem wearing a different hat.
+
+So the cost was inverted rather than reduced: **one feed for the episode someone
+actually opened**, instead of forty for a page they may only scroll past. It
+also removes the concurrent-feed burst that made every trending link 404
+yesterday.
+
+The tradeoff is a redirect hop on click — 0.5–5.4s cold depending on feed size,
+**418ms warm**, since `fetchPodcastFeed` caches the parse for an hour. Real
+episode URLs would be better for sharing and indexing; that is the price of not
+parsing forty feeds up front.
+
+**Follow-ups**
+
+- Verified: the page renders in **1.2s** with **100 of 100** entries pointing at
+  an episode and **zero** plain show links. Six followed through to real episode
+  pages. An unmatched title redirects to the show page (200, not a 404) and a
+  junk show id 404s.
+- Explore's 8-item row is unchanged — it still resolves at render and carries
+  real episode URLs.
+
+
 ### 2026-08-27 — Trending episodes 404'd: a hiccup was being reported as "no such episode"
 
 - **Branch:** `main`

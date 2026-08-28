@@ -13,13 +13,14 @@ import styles from "../top-podcasts/topPodcasts.module.css";
  * resolve episode links — cached an hour, and shows repeat across the chart.
  */
 export default async function TrendingEpisodesPage() {
-  // resolveEpisodeLinks=false: resolving 100 entries meant parsing dozens of
-  // huge feeds and took the page to 175s. These link to shows; the 8-item
-  // Explore row still resolves to episodes.
-  // Episode-link resolution is OFF here. Measured: 100 entries span ~40 shows,
+  // Resolution at render time stays OFF. Measured: 100 entries span ~40 shows,
   // each a full RSS parse (~3.5s, single-threaded so they queue) — the cold
-  // load timed out past 280s even with parsed feeds cached. These link to
-  // shows; the 8-item Explore row still resolves to episodes.
+  // load timed out past 280s even with parsed feeds cached.
+  //
+  // Entries still lead to episodes. The unresolved ones point at
+  // `/episode/find`, which parses that one show's feed on click and redirects,
+  // so the cost is one feed for the episode someone actually opened instead of
+  // forty for a page they may only scroll past.
   const episodes = await getTrendingEpisodes(100, "us", false);
 
   return (

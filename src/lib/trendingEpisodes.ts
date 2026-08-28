@@ -10,10 +10,11 @@ export type TrendingEpisode = {
   artworkUrl: string;
   /** iTunes show id, parsed out of the chart's url field. */
   showId: string | null;
-  /** Our route: the episode page when the feed match succeeded, else the show. */
+  /**
+   * Always reaches an episode. Either the episode's own URL, when the feed was
+   * matched at render time, or `/episode/find`, which resolves on click.
+   */
   href: string;
-  /** False when we fell back to the show page. */
-  linksToEpisode: boolean;
 };
 
 const CHARTS_BASE = "https://rss.applemarketingtools.com/api/v2";
@@ -35,8 +36,13 @@ function showIdFromUrl(url: string): string | null {
   return url.match(/\/id(\d+)/)?.[1] ?? null;
 }
 
-/** Loose enough to survive punctuation and casing drift between chart and feed. */
-function normalise(title: string): string {
+/**
+ * Loose enough to survive punctuation and casing drift between chart and feed.
+ *
+ * Exported because `/episode/find` matches with the identical rule — a title
+ * that resolves at render time must resolve on click too.
+ */
+export function normaliseEpisodeTitle(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
@@ -123,21 +129,24 @@ export async function getTrendingEpisodes(
   return results.map((r) => {
     const showId = showIdFromUrl(r.url);
     const episodes = showId ? feedsByShow.get(showId) : undefined;
-    const match = episodes?.find((e) => normalise(e.title) === normalise(r.name));
+    const match = episodes?.find((e) => normaliseEpisodeTitle(e.title) === normaliseEpisodeTitle(r.name));
 
-    const linksToEpisode = Boolean(showId && match);
+    // Resolved here, or deferred to /episode/find, which parses that one show's
+    // feed on click. Either way the link reaches an episode — what it can't do
+    // is parse forty feeds to render a page nobody may click through.
+    const href = match
+      ? `/podcast/${showId}/episode/${episodeKeyFromGuid(match.guid)}`
+      : showId
+        ? `/episode/find?show=${showId}&title=${encodeURIComponent(r.name)}`
+        : "#";
+
     return {
       id: r.id,
       title: r.name,
       showName: r.artistName,
       artworkUrl: r.artworkUrl100.replace(/\/\d+x\d+bb\./, "/600x600bb."),
       showId,
-      href: linksToEpisode
-        ? `/podcast/${showId}/episode/${episodeKeyFromGuid(match!.guid)}`
-        : showId
-          ? `/podcast/${showId}`
-          : "#",
-      linksToEpisode,
+      href,
     };
   });
 }
