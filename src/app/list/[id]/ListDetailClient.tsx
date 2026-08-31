@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { MediaThumbCard } from "@/components/MediaThumbCard";
+import { RemoveListItemButton } from "@/components/RemoveListItemButton";
 import type { ListItemView } from "@/lib/lists";
 import styles from "./list.module.css";
 
@@ -43,6 +44,7 @@ export function ListDetailClient({
   totalCount,
   isRanked,
   description,
+  isOwner = false,
 }: {
   /** Already filtered by the All media menu — the count reflects the filter. */
   items: ListItemView[];
@@ -50,6 +52,8 @@ export function ListDetailClient({
   totalCount: number;
   isRanked: boolean;
   description: string | null;
+  /** Only the owner gets the remove control. Re-checked server-side. */
+  isOwner?: boolean;
 }) {
   const [sort, setSort] = useState<SortMode>("listOrder");
   const [page, setPage] = useState(1);
@@ -100,13 +104,16 @@ export function ListDetailClient({
       ) : (
         <div className={styles.grid}>
           {pageItems.map((item, i) => (
-            <div className={styles.cell} key={item.itemId}>
+            <div className={`${styles.cell} media-thumb-cell`} key={item.itemId}>
               <MediaThumbCard
                 href={item.href}
                 cover={item.coverUrl ?? "/default-avatar.webp"}
                 title={item.title}
                 subtitle={item.publishedAt ? formatDate(item.publishedAt) : undefined}
               />
+              {/* Outside the card: a button inside that anchor would be invalid
+                  markup and clicking it would follow the link too. */}
+              {isOwner && <RemoveListItemButton itemId={item.itemId} title={item.title} />}
               {isRanked && <div className={styles.rank}>{(page - 1) * PAGE_SIZE + i + 1}</div>}
             </div>
           ))}

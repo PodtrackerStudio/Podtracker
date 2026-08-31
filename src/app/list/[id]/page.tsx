@@ -80,6 +80,7 @@ export default async function ListDetailPage({
 
         <ListDetailClient
           items={items}
+          isOwner={isOwner}
           totalCount={list.items.length}
           isRanked={list.isRanked}
           description={list.description}

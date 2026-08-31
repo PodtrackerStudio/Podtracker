@@ -3,6 +3,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { AddPodcastsBar } from "@/components/AddPodcastsBar";
+import { RemoveListItemButton } from "@/components/RemoveListItemButton";
 import { FilterMenu, type FilterOption } from "@/components/FilterMenu";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
@@ -71,8 +72,10 @@ export default async function NextListeningPage({
         ) : (
           <div className={styles.grid}>
             {items.map((item) => (
-              <div className={styles.card} key={item.itemId}>
+              <div className={`${styles.card} media-thumb-cell`} key={item.itemId}>
                 <MediaThumbCard href={item.href} cover={item.coverUrl ?? "/default-avatar.webp"} title={item.title} />
+                {/* Only the owner; the endpoint re-checks. */}
+                {isOwnProfile && <RemoveListItemButton itemId={item.itemId} title={item.title} />}
               </div>
             ))}
           </div>

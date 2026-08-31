@@ -71,6 +71,70 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-31 — Remove a podcast from a list, and from Next listening
+
+- **Branch:** `main`
+- **Requested by:** Sasha — a remove control, from three options offered: a ✕ on
+  the cover revealed on hover. Wanted on Next listening too.
+- **Status:** Built. **Not click-tested** — the dev server is still holding the
+  pre-443 database client, so every list page 500s until it is restarted.
+
+**What changed**
+
+- **`DELETE /api/lists/items`**, taking a **`ListItem` id**. Every page that
+  renders a tile already has it (`ListItemView.itemId`), and it names the row
+  exactly — a list holding the same show twice can't lose the wrong one.
+- **`RemoveListItemButton`** — a ✕ over the top-right of the cover, invisible
+  until the cell is hovered, plus `:focus-visible` so it is reachable by
+  keyboard and always visible under `@media (hover: none)`, where there is no
+  hover to reveal it.
+- Wired into **`/list/[id]`** (owner only, `isOwner` threaded through
+  `ListDetailClient`) and **`/user/[username]/next-listening`** (owner only, via
+  the existing `isOwnProfile`).
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/api/lists/items/route.ts` | Added `DELETE` |
+| `src/components/RemoveListItemButton.tsx` | Added |
+| `src/app/globals.css` | Added `.media-thumb-cell` / `.media-thumb-remove` |
+| `src/app/list/[id]/page.tsx`, `.../ListDetailClient.tsx` | Modified — `isOwner`, the control, `media-thumb-cell` |
+| `src/app/user/[username]/next-listening/page.tsx` | Modified — same control |
+
+**Why**
+
+**One endpoint serves both pages.** Unlike `POST`, the `DELETE` does *not*
+exclude the watchlist: Next listening is a `List` too and needs the identical
+control, and what matters here is ownership, not which kind of list it is. A
+missing row returns `ok` rather than 404 — two clicks on the same tile
+shouldn't error.
+
+**`position` is left alone on the surviving rows.** It only has to order them,
+not be contiguous, and renumbering would rewrite a curator's ranking every time
+they removed something.
+
+**The button is rendered outside the `MediaThumbCard` anchor.** A `<button>`
+inside an `<a>` is invalid markup, and the click would follow the link as well
+as remove. That is why the cell — not the card — is the positioning context,
+which is also why the styles are in `globals.css`: the cell is styled from a
+different CSS module on each of the two pages, so the hover that reveals the
+button can't live in either.
+
+`z-index: 101` clears the hover popup's `100`. Without it the popup, which opens
+upward over the cover, would sit over the button on the way to it.
+
+**Follow-ups**
+
+- **Restart the dev server, then click one.** Verified so far: `tsc` and
+  `eslint` clean, and `DELETE` returns `Not logged in.` without a session — the
+  auth guard fires before anything is read. The owner path and the 403 for
+  someone else's list are unverified.
+- No confirmation step, per Sasha — removal is immediate.
+- The `getCurrentUser` try/catch is **still** outstanding, and is why the
+  unrestarted server shows a 500 rather than a degraded page.
+
+
 ### 2026-08-31 — Postgres over port 443, so restrictive wifi doesn't break the app
 
 - **Branch:** `main`

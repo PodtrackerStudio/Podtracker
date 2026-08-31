@@ -342,3 +342,61 @@ footer.site-footer {
 .media-thumb-tier-dont {
   color: var(--dont);
 }
+
+/* ── Remove control on a list tile ───────────────────────────────────────────
+   Lives here rather than in a CSS module because the hover that reveals it
+   belongs to the cell wrapping `.media-thumb`, and that cell is styled from a
+   different module on each page. Wrap a tile in `.media-thumb-cell` and drop a
+   `.media-thumb-remove` button beside the card. */
+.media-thumb-cell {
+  position: relative;
+}
+
+.media-thumb-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  /* Above the hover popup's z-index: 100 — otherwise the popup, which opens
+     over the cover, would cover the button on the way to it. */
+  z-index: 101;
+
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+
+  /* Hidden until the tile is hovered, so a grid still reads as covers. */
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+/* Revealed by hovering the whole cell — you can't hover a control you can't
+   see — and kept visible while it itself has focus, for keyboard users. */
+.media-thumb-cell:hover .media-thumb-remove,
+.media-thumb-remove:focus-visible {
+  opacity: 1;
+}
+
+.media-thumb-remove:hover {
+  background: var(--dont);
+}
+
+.media-thumb-remove:disabled {
+  cursor: default;
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Touch has no hover, so leave it visible rather than unreachable. */
+@media (hover: none) {
+  .media-thumb-remove {
+    opacity: 1;
+  }
+}
