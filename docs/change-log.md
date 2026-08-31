@@ -71,6 +71,79 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-31 — Neon idle-suspend crashes every page (diagnosis; fix NOT applied)
+
+- **Branch:** `main`
+- **Requested by:** Sasha — localhost showed a Next runtime error page. He asked
+  whether being on guest wifi was the cause.
+- **Status:** Diagnosed only. **No source change made**; a fix is proposed and
+  awaiting his decision.
+
+**The symptom**
+
+```
+Runtime PrismaClientKnownRequestError — Server
+Invalid `db.session.findUnique()` invocation
+Server has closed the connection.
+  src/lib/auth.ts (45:36)  getCurrentUser
+  src/app/page.tsx (19:16) LandingPage
+```
+
+**What it was: the Neon compute had gone to sleep**, and the wake-up was
+timing out. Four consecutive connection attempts died with `read ECONNRESET`
+after ~19.3s each — suspiciously identical, which is what made it look
+deliberate rather than flaky. Minutes later the same connection string
+succeeded in 580ms.
+
+**It was not the guest wifi**, though that was a reasonable guess and worth
+ruling out properly:
+
+| Check | Result |
+| --- | --- |
+| TCP to Neon on **5432** and 443 | both connect |
+| DNS for the DB host | resolves to a real AWS us-east-2 EC2 address; no captive-portal hijack |
+| `sslmode=verify-full` (what `.env` uses) | 580ms once awake — cert path fine, so no TLS interception |
+| `sslmode=require` / `rejectUnauthorized: false` | ~450ms; **no better than verify-full**, so certificate checking was never the problem |
+
+Comparing the TLS modes is what settled it: if a middlebox were intercepting,
+`require` would have worked while `verify-full` failed. Both behaved the same,
+so the cause was upstream, not in the path.
+
+**The real bug this exposed — worth fixing, not yet fixed**
+
+`getCurrentUser` in `src/lib/auth.ts` has **no error handling**, and nearly
+every page calls it. So a database blip does not degrade the site, it takes
+down all of it — including the landing page, whose content barely needs the
+database.
+
+`getViewerPodcastState` already gets this right, and says so in its own comment:
+*"Never throws: a database blip should leave the controls at their default, not
+take down a page whose content came from the API."* `getCurrentUser` should
+match.
+
+Proposed: wrap the session lookup in `try/catch` and return `null` on a database
+error. **Trade-off, which is why it wasn't done unilaterally:** during an outage
+a signed-in user would render as signed-out rather than seeing a crash page.
+That is a visible behaviour change, so it is Sasha's call.
+
+**Files touched**
+
+None. Three throwaway diagnostic scripts (`scratch-dbping*.mjs`,
+`scratch-tlstest.mjs`) were written at the repo root so they could resolve
+`node_modules`, then deleted.
+
+**Follow-ups**
+
+- **Decide on the `getCurrentUser` try/catch.** Until then, a sleeping database
+  means a full-page runtime error on every route.
+- If this recurs, the tell is `ECONNRESET` with a *consistent* multi-second
+  delay. Ping the database directly before suspecting the network — and note
+  that TCP reachability and an HTTPS check against the Neon host prove nothing,
+  because Postgres is a separate port and a separate handshake.
+- Related: [[database-is-shared-neon]] — this is the same cloud instance the
+  collaborator uses, so a suspend affects both of you.
+
+
 ### 2026-08-28 — The full trending list links to episodes, by resolving on click
 
 - **Branch:** `main`
