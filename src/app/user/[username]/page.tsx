@@ -5,6 +5,7 @@ import { PlusIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { episodeHref } from "@/lib/episodeKey";
+import { ProfileCalendar, type ListenedEntry } from "./ProfileCalendar";
 import { getNextListening } from "@/lib/nextListening";
 import styles from "./profile.module.css";
 
@@ -272,7 +273,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const viewer = await getCurrentUser();
   const isOwnProfile = viewer?.id === profileUser.id;
 
-  const [followersCount, followingIds, logEntries, podcastRatings, episodeRatings, nextListening] = await Promise.all([
+  const [followersCount, followingIds, logEntries, podcastRatings, episodeRatings, nextListening, allLogs] = await Promise.all([
     db.follow.count({ where: { followingId: profileUser.id } }),
     db.follow.findMany({ where: { followerId: profileUser.id }, select: { followingId: true } }),
     db.logEntry.findMany({
@@ -286,6 +287,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     db.podcastRating.findMany({ where: { userId: profileUser.id } }),
     db.episodeRating.findMany({ where: { userId: profileUser.id } }),
     getNextListening(profileUser.id),
+    // Every log, for the calendar — the six above are the recent strip and
+    // are capped, so they can’t drive a month grid.
+    db.logEntry.findMany({
+      where: { userId: profileUser.id },
+      orderBy: { listenedDate: "desc" },
+      select: { id: true, listenedDate: true, episode: { select: { title: true } }, podcast: { select: { title: true } } },
+    }),
   ]);
 
   const followingCount = followingIds.length;
@@ -306,6 +314,14 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   for (const r of allRatings) distributionCounts[r.tier]++;
 
   const hasActivity = logEntries.length > 0 || allRatings.length > 0;
+
+  // Episode title where there is one, else the show — the same fallback the
+  // diary and the recent strip use. The date stays ISO; the calendar turns it
+  // into a day in the viewer's timezone, which is where it was chosen.
+  const listenedEntries: ListenedEntry[] = allLogs.map((l) => ({
+    date: l.listenedDate.toISOString(),
+    title: l.episode?.title ?? l.podcast?.title ?? "Untitled",
+  }));
 
   return (
     <>
@@ -472,6 +488,17 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                     {nextListening.length > 6 && <div className={styles.listGalleryMore}>+{nextListening.length - 6}</div>}
                   </Link>
                 )}
+              </div>
+
+              {/* The third column of `.bottomGrid`, which stood empty on a real
+                  profile — the calendar existed only in the demo branch. */}
+              <div>
+                <h3 className={styles.bottomColTitle}>
+                  <Link href={`/user/${username}/diary`} className={styles.distHeadingLink}>
+                    Calendar
+                  </Link>
+                </h3>
+                <ProfileCalendar entries={listenedEntries} />
               </div>
             </section>
           </>

@@ -71,6 +71,70 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-31 — The profile calendar reads real logs
+
+- **Branch:** `main`
+- **Requested by:** Sasha — build the calendar; the design and placement were
+  already settled in the 2026-08-21 spec.
+- **Status:** Complete.
+
+**What changed**
+
+- **`ProfileCalendar`** replaces `demoListenedDays` + `juneWeeks`, which were a
+  hardcoded June 2026 rendered only for `DEMO_USERNAME`. It reads
+  `LogEntry.listenedDate`, which has been real and written for a while.
+- **The `<` and `>` buttons work.** They had no handlers at all; the demo was a
+  single fixed month.
+- **It fills the third column of `.bottomGrid`.** That grid is
+  `1fr 1fr 1fr`, and a real profile only ever filled two — the calendar cell
+  stood empty. The heading links to the full diary, matching how Ratings
+  distribution and Next listening already link out.
+- Markup and classes are the demo's, unchanged: `.calendar`, `.calendarGrid`,
+  `.dayCell`, `.listened`, `.multi`, `.muted`, `.tooltip`,
+  `.tooltipEpisodeList`. A day with one log shows its title on hover; more than
+  one gets `.multi` and a `<ul>`.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/user/[username]/ProfileCalendar.tsx` | Added |
+| `src/app/user/[username]/page.tsx` | Modified — full log query, entry shaping, third column |
+
+**Why**
+
+**Days are computed in the browser's timezone, not the server's.** The log popup
+sends `selectedDate.toISOString()` from a locally chosen date, so reading it
+back as UTC would shift every log to the previous day for anyone east of
+Greenwich. Doing it client-side is symmetric with how the date was created. It
+happens not to bite in US timezones, which is exactly why it would have gone
+unnoticed.
+
+**A second query, not a bigger one.** The existing `logEntries` is `take: 6` for
+the recent strip; reusing it would have silently capped the calendar at six
+days. The new query selects only date and title.
+
+**Every entry is passed to the client and grouped there**, so the arrows are
+instant rather than a round-trip per month. Fine at diary scale; the thing to
+paginate if anyone ever logs tens of thousands.
+
+**Muted cells never carry listens.** A trailing "1" from next month sits beside
+this month's "1" in the same grid, so the lookup is skipped for muted cells
+rather than keyed on the number alone.
+
+**Follow-ups**
+
+- Verified against real data: `/user/Alexkny08` renders 42 cells (6×7) with
+  **3 days marked**, matching the three August logs in Postgres exactly —
+  Aug 20, 26 and 31. `tsc` and `eslint` clean.
+- The demo branch still has `demoListenedDays` and `juneWeeks`. Left alone:
+  `/user/sasha` 404s, so that whole branch is unreachable, and deleting it is a
+  separate cleanup.
+- The calendar shows the current month on load with no indication that earlier
+  months hold anything. If that matters, a dot on months with activity would
+  need a design call.
+
+
 ### 2026-08-31 — Remove a podcast from a list, and from Next listening
 
 - **Branch:** `main`
