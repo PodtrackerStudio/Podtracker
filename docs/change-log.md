@@ -71,6 +71,78 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-08-31 — Postgres over port 443, so restrictive wifi doesn't break the app
+
+- **Branch:** `main`
+- **Requested by:** Sasha — he's on his university's *guest* wifi (the student
+  one isn't working for him) and asked to move to port 443 "unless that ruins
+  something".
+- **Status:** Complete. Driver verified against the live database; the app needs
+  a dev-server restart to pick it up.
+
+**What changed**
+
+`src/lib/db.ts` swaps `@prisma/adapter-pg` + `pg` for `@prisma/adapter-neon` +
+`@neondatabase/serverless`, which tunnels the Postgres protocol over a WebSocket
+to Neon's proxy on **443** instead of connecting to 5432.
+
+**The measurement that justified it** — same host, same minute:
+
+| Port | Result |
+| --- | --- |
+| 443 | connect **0.06s**, TLS 0.16s |
+| 5432 | TCP handshake **7.7s**, then `ECONNRESET` at **19.3s** — six attempts, all identical |
+
+Identical DNS, identical path. The guest network allows 443 and throttles 5432.
+**This corrects the previous entry's conclusion**: that one recorded a Neon
+idle-suspend, because at the time the database really did answer in 580ms once
+warm. The port comparison is the test that separates the two, and it wasn't run
+then. Both diagnoses were right about their own moment; this is the durable
+cause.
+
+After the swap: **connected in 2282ms over 443, on the same wifi**, and an
+explicit `begin`/`commit` round-trip succeeded.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/db.ts` | Rewritten — Neon WebSocket adapter |
+| `package.json`, `package-lock.json` | Added `@prisma/adapter-neon`, `@neondatabase/serverless` |
+
+**Why**
+
+**It must be the WebSocket `Pool`, not the HTTP `neon()` driver.** The HTTP one
+cannot do interactive transactions, and `/api/log` and `/api/favorites` both use
+`db.$transaction` — a log that wrote the diary entry but silently dropped the
+rating is exactly the class of quiet wrong this codebase avoids. `poolQueryViaFetch`
+is pinned to `false` so nothing silently downgrades that path later.
+
+`PrismaNeon` takes the pool **config**, not a constructed `Pool`; passing an
+instance type-errors, which is what the first attempt did.
+
+**Two things this does not fix**
+
+1. **`prisma migrate` and `prisma studio` still use 5432.** They go through
+   `prisma.config.ts` and Prisma's own engine, which the driver adapter does not
+   touch. On a network that blocks 5432 the app runs but migrations don't — so
+   schema changes need a different network.
+2. **A dev server already running keeps the old client.** `globalForPrisma.prisma`
+   survives hot reloads by design, so `src/lib/db.ts` changing isn't enough:
+   `/user/[username]` still 500'd until restart. Close and reopen `run-dev.bat`.
+
+**Follow-ups**
+
+- **App-level verification is still pending Sasha's restart.** Verified so far:
+  the driver connects and transacts over 443 against the live database, `tsc`
+  and `eslint` are clean.
+- `@prisma/adapter-pg` and `pg` are still in `package.json`. Left in deliberately
+  — nothing imports them now, but removing them is a separate change and `pg` is
+  what the diagnostic scripts in this log used.
+- The `getCurrentUser` try/catch from the previous entry is **still not done**,
+  and is what turned this into a whole-site crash rather than a degraded page.
+
+
 ### 2026-08-31 — Neon idle-suspend crashes every page (diagnosis; fix NOT applied)
 
 - **Branch:** `main`
