@@ -69,7 +69,7 @@ rejected. This is the part that saves the most time later.
 
 ---
 
-## Entries
+## Entries
 
 ### 2026-09-02 — Likes on reviews and lists
 
@@ -134,9 +134,23 @@ different modules.
 - **"Popular reviews" can now be a real query**, which was the point of this.
   Still gated behind `HAS_COMMUNITY_DATA` and still fabricated until someone
   writes it against `Like`.
-- **Ranking decay is undecided.** Ordering by raw like count forever pins the
-  first popular review at the top permanently; most sites decay by age. Worth
-  settling before that section is built, not after.
+- **Ranking window: 7 days. Decided by Sasha, 2026-09-02 — don't re-litigate.**
+  "Popular reviews" and "Popular lists" rank by likes received in the **last 7
+  days**, not all-time. Ordering by raw count forever pins the first popular
+  review at the top permanently and nothing new can displace it; a window is
+  what Letterboxd does ("Popular reviews this week"). He first suggested two
+  days; seven was chosen because a short window shows an empty section on a
+  quiet day while the user base is small. It is one interval to change.
+
+  This is a `WHERE Like.createdAt > now() - interval '7 days'` on the ranking
+  query — **not** a refresh cycle. Which leads to:
+
+- **Nothing on this site needs periodic regeneration, and no page ever needs a
+  code change to show new data.** Worth stating plainly because it came up: the
+  app has **no caching directives at all**, and 15 pages call `getCurrentUser`,
+  which reads cookies and so forces per-request rendering. Every query re-runs
+  on every load. A "refresh every N days" concept has no place here; if
+  database load ever justifies caching, the unit is minutes, not days.
 
 
 ### 2026-08-31 — The profile calendar reads real logs
