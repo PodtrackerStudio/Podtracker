@@ -120,3 +120,11 @@
   color: var(--text-muted);
   padding: 40px 0;
 }
+
+/* The middle column of the meta row: description with the like heart under it. */
+.descriptionCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}

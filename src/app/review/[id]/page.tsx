@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { episodeHref } from "@/lib/episodeKey";
 import { Comments } from "@/components/Comments";
+import { LikeButton } from "@/components/LikeButton";
 import styles from "./review.module.css";
 
 /** RatingTier enum → the label and colour class the design uses. */
@@ -52,14 +53,21 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
         })
       : null;
 
-  const [viewer, comments] = await Promise.all([
+  const [viewer, comments, likeCount] = await Promise.all([
     getCurrentUser(),
     db.comment.findMany({
       where: { logEntryId: entry.id },
       include: { user: true },
       orderBy: { createdAt: "asc" },
     }),
+    db.like.count({ where: { logEntryId: entry.id } }),
   ]);
+
+  // Asked separately because it depends on `viewer`, which the block above
+  // is still resolving.
+  const likedByViewer = viewer
+    ? Boolean(await db.like.findFirst({ where: { userId: viewer.id, logEntryId: entry.id }, select: { id: true } }))
+    : false;
 
   const tier = rating?.tier ?? entry.tier ?? null;
   const display = tier ? TIER_DISPLAY[tier] : null;
@@ -101,7 +109,13 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
               <span className={styles.date}>Date: {dateFormatter.format(entry.listenedDate)}</span>
             </div>
 
-            {display && <div className={`${styles.tier} ${styles[display.className]} rating-label`}>{display.label}</div>}
+            {/* Tier and heart share a row, as the frame shows. The tier can be
+                absent — a review doesn't require a rating — and the heart
+                stands alone then. */}
+            <div className={styles.tierRow}>
+              {display && <div className={`${styles.tier} ${styles[display.className]} rating-label`}>{display.label}</div>}
+              <LikeButton logEntryId={entry.id} initialCount={likeCount} initialLiked={likedByViewer} signedIn={Boolean(viewer)} />
+            </div>
 
             <p className={styles.body}>{entry.reviewText}</p>
           </div>

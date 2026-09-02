@@ -400,3 +400,45 @@ footer.site-footer {
     opacity: 1;
   }
 }
+
+/* ── Like heart on a review or a list ────────────────────────────────────────
+   Colours are from Sasha's frames: F12C2C liked, 9E9E9E unliked. Global rather
+   than a CSS module because the same control sits on two pages styled from
+   different modules. */
+.like-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.like-heart {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 0;
+  color: #9e9e9e;
+  transition: transform 0.12s ease, color 0.12s ease;
+}
+.like-heart svg path {
+  fill: currentColor;
+}
+.like-heart.liked {
+  color: #f12c2c;
+}
+.like-heart:hover:not(:disabled) {
+  transform: scale(1.12);
+}
+/* Signed out, the heart is a label rather than a control. */
+.like-heart:disabled {
+  cursor: default;
+}
+
+.like-count {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  color: var(--text);
+  white-space: nowrap;
+}

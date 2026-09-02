@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { RemoveListItemButton } from "@/components/RemoveListItemButton";
+import { LikeButton } from "@/components/LikeButton";
 import type { ListItemView } from "@/lib/lists";
 import styles from "./list.module.css";
 
@@ -45,6 +46,7 @@ export function ListDetailClient({
   isRanked,
   description,
   isOwner = false,
+  like,
 }: {
   /** Already filtered by the All media menu — the count reflects the filter. */
   items: ListItemView[];
@@ -54,6 +56,8 @@ export function ListDetailClient({
   description: string | null;
   /** Only the owner gets the remove control. Re-checked server-side. */
   isOwner?: boolean;
+  /** Like state for the list itself, resolved on the server. */
+  like?: { listId: string; count: number; likedByViewer: boolean; signedIn: boolean };
 }) {
   const [sort, setSort] = useState<SortMode>("listOrder");
   const [page, setPage] = useState(1);
@@ -84,7 +88,19 @@ export function ListDetailClient({
         <div className={styles.episodeCount}>
           {items.length} {items.length === 1 ? "podcast" : "podcasts"}
         </div>
-        <div className={styles.description}>{description}</div>
+        {/* Description with the heart beneath it, centred — the frame puts the
+            likes between the item count and the sort menu. */}
+        <div className={styles.descriptionCol}>
+          <div className={styles.description}>{description}</div>
+          {like && (
+            <LikeButton
+              listId={like.listId}
+              initialCount={like.count}
+              initialLiked={like.likedByViewer}
+              signedIn={like.signedIn}
+            />
+          )}
+        </div>
         <div className={styles.sortColumn}>
           <label htmlFor="list-sort" className={styles.sortLabel}>
             Sort by

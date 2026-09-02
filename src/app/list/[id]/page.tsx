@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { AddPodcastsBar } from "@/components/AddPodcastsBar";
 import { FilterMenu, type FilterOption } from "@/components/FilterMenu";
 import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { getListForView } from "@/lib/lists";
 import { ListDetailClient } from "./ListDetailClient";
 import styles from "./list.module.css";
@@ -48,6 +49,13 @@ export default async function ListDetailPage({
   const viewer = await getCurrentUser();
   const isOwner = viewer?.id === list.ownerId;
 
+  const [likeCount, likedByViewer] = await Promise.all([
+    db.like.count({ where: { listId: list.id } }),
+    viewer
+      ? db.like.findFirst({ where: { userId: viewer.id, listId: list.id }, select: { id: true } }).then(Boolean)
+      : Promise.resolve(false),
+  ]);
+
   const media = ["shows", "episodes"].includes(sp.media ?? "") ? sp.media : "all";
   const items =
     media === "shows"
@@ -84,6 +92,7 @@ export default async function ListDetailPage({
           totalCount={list.items.length}
           isRanked={list.isRanked}
           description={list.description}
+          like={{ listId: list.id, count: likeCount, likedByViewer, signedIn: Boolean(viewer) }}
         />
       </main>
 

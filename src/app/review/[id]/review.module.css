@@ -96,3 +96,18 @@
     max-width: 200px;
   }
 }
+
+/* Tier and like heart on one row, per the frame. `gap` rather than a margin on
+   the tier, so the heart sits correctly when a review has no rating. */
+.tierRow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+/* The tier's own bottom margin dates from when it was a block on its own line;
+   inside the row it would push the heart out of alignment. */
+.tierRow .tier {
+  margin-bottom: 0;
+}

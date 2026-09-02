@@ -49,6 +49,7 @@ model User {
   podcastFollows PodcastFollow[]
   favorites      Favorite[]
   comments       Comment[]
+  likes          Like[]
 
   followedBy Follow[] @relation("following")
   following  Follow[] @relation("follower")
@@ -265,6 +266,7 @@ model LogEntry {
   podcast Podcast? @relation(fields: [podcastId], references: [id], onDelete: Cascade)
   episode Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
   comments Comment[]
+  likes    Like[]
 
   @@index([userId, listenedDate])
   @@index([podcastId])
@@ -289,6 +291,7 @@ model List {
   user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   items    ListItem[]
   comments Comment[]
+  likes    Like[]
 
   @@index([userId])
 }
@@ -329,4 +332,30 @@ model ListItem {
   @@index([listId, position])
   @@index([podcastId])
   @@index([episodeId])
+}
+
+// A like on a review or a list. Exactly one of logEntryId / listId is set —
+// the same either-or pattern Comment uses, enforced in the application layer.
+//
+// **Reviews and lists only.** Sasha's call: podcasts and episodes are rated,
+// not liked, and he may add likes for them later.
+//
+// The two composite uniques are what make a like idempotent. They work despite
+// the nullable columns because Postgres treats NULLs as distinct: a review like
+// has listId NULL, so only (userId, logEntryId) constrains it, and vice versa.
+model Like {
+  id         String   @id @default(cuid())
+  userId     String
+  logEntryId String?
+  listId     String?
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logEntry LogEntry? @relation(fields: [logEntryId], references: [id], onDelete: Cascade)
+  list     List?     @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, logEntryId])
+  @@unique([userId, listId])
+  @@index([logEntryId])
+  @@index([listId])
 }

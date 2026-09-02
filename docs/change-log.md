@@ -71,6 +71,74 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-02 — Likes on reviews and lists
+
+- **Branch:** `main`
+- **Requested by:** Sasha, with two Figma frames ("How a review looks like",
+  "How a list looks like"). Grey heart unliked, red once pressed — the frames
+  show both side by side only to illustrate the states, not as two controls.
+  **Reviews and lists only**; podcasts and episodes are rated, not liked, and he
+  may add them later.
+- **Status:** Built and migrated. **Needs a dev-server restart** before it can
+  be click-tested — see below.
+
+**What changed**
+
+- **`Like` model + migration `20260902175303_add_likes`**, applied to Neon.
+  Mirrors `Comment`'s either-or: nullable `logEntryId` / `listId`, exactly one
+  set.
+- **`/api/likes`** — `POST` / `DELETE`, one target per call.
+- **`LikeButton`** — optimistic toggle with the count beside it, matching Follow
+  and "Add to next listening". Signed-out visitors see the heart and count but
+  can't toggle.
+- Wired into **`/review/[id]`** (on the tier row, per the frame) and
+  **`/list/[id]`** (under the description, between the item count and the sort
+  menu).
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `prisma/schema.prisma` | Added `Like`; back-relations on `User`, `LogEntry`, `List` |
+| `prisma/migrations/20260902175303_add_likes/` | Added |
+| `src/app/api/likes/route.ts` | Added |
+| `src/components/LikeButton.tsx` | Added |
+| `src/app/globals.css` | Added `.like-wrap` / `.like-heart` / `.like-count` |
+| `src/app/review/[id]/page.tsx`, `review.module.css` | Modified — like query, `.tierRow` |
+| `src/app/list/[id]/page.tsx`, `ListDetailClient.tsx`, `list.module.css` | Modified — like query, `.descriptionCol` |
+
+**Why**
+
+**The two composite uniques are what make a like idempotent**, and they work
+*despite* the nullable columns because Postgres treats NULLs as distinct: a
+review like has `listId` NULL, so only `(userId, logEntryId)` constrains it, and
+the reverse for lists. One partial index each would be tidier but Prisma can't
+express those in the schema.
+
+**`resolveTarget` rejects both-or-neither** rather than guessing, and refuses a
+`isWatchlist` list — Next listening is a `List`, but it isn't published, so
+there is nothing there to like.
+
+Colours are the frames': `#F12C2C` liked, `#9E9E9E` unliked. One SVG path
+recoloured by state, not two shapes, so an outline and a fill can't drift apart.
+Global CSS again, because the same control sits on two pages styled from
+different modules.
+
+**Follow-ups**
+
+- **Restart the dev server, then click both hearts.** Verified so far: the
+  migration applied, `prisma generate` succeeded, `tsc` and `eslint` are clean,
+  and `/api/likes` refuses without a session on both the valid-body and
+  empty-body paths. Both pages currently 500 — the running server holds the
+  pre-migration Prisma client, the documented gotcha in CLAUDE.md.
+- **"Popular reviews" can now be a real query**, which was the point of this.
+  Still gated behind `HAS_COMMUNITY_DATA` and still fabricated until someone
+  writes it against `Like`.
+- **Ranking decay is undecided.** Ordering by raw like count forever pins the
+  first popular review at the top permanently; most sites decay by age. Worth
+  settling before that section is built, not after.
+
+
 ### 2026-08-31 — The profile calendar reads real logs
 
 - **Branch:** `main`
