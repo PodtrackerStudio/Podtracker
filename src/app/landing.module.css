@@ -192,3 +192,44 @@
 .ratingTierName {
   font-size: 26px;
 }
+
+/* The landing page is the first thing a link from Instagram or TikTok opens, so
+   it matters most that it reads on a phone. Four cover columns and two feature
+   columns are desktop values. */
+@media (max-width: 900px) {
+  .podcastGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero {
+    padding: 48px 20px 32px;
+  }
+  .hero h1 {
+    font-size: 32px;
+  }
+  /* Side by side the two buttons squeeze to about 120px each; stacked they stay
+     a full-width tap target. */
+  .heroCta {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0 20px;
+  }
+  .sectionTitle {
+    font-size: 26px;
+  }
+  .podcastGrid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 0 16px 48px;
+  }
+  .whatIsBox,
+  .featuresGrid,
+  .ratingTierList {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

@@ -381,9 +381,55 @@
     grid-template-columns: 1fr;
     text-align: center;
   }
+  /* The title is pinned to column 2 for the desktop three-column row. Left
+     set in a one-column grid it lands in an implicit second column, which is
+     what squeezed "See full list" into a 31px-wide sliver. */
+  .sectionHeaderRow .sectionTitle {
+    grid-column: 1;
+    white-space: normal;
+  }
   .seeFullLink {
     grid-column: 1;
     justify-self: center;
     margin-top: 6px;
+  }
+}
+
+/* Eight columns is a desktop row of cover art; on a phone it renders 30px
+   thumbnails. Stepping down keeps the covers legible at every width. */
+@media (max-width: 1000px) {
+  .coverGrid,
+  .episodeGrid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .curatedGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .listsGrid {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 720px) {
+  .main {
+    padding: 0 16px 60px;
+  }
+  .coverGrid,
+  .episodeGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .sectionTitle {
+    font-size: 24px;
+  }
+  .trendingGrid {
+    gap: 24px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 460px) {
+  .coverGrid,
+  .episodeGrid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }

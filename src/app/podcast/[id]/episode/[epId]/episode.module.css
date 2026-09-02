@@ -515,3 +515,31 @@
 .featuredPerson:hover .featuredPersonRole {
   color: #93c5fd;
 }
+
+/* The other page a shared link opens. Same treatment as the podcast page. */
+@media (max-width: 760px) {
+  .main {
+    padding: 0 16px 48px;
+  }
+  .episodeInfoRow {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-top: 24px;
+    justify-items: center;
+    text-align: center;
+  }
+  .episodeTitle {
+    font-size: 25px;
+  }
+  .actionRow {
+    justify-content: center;
+    gap: 12px;
+  }
+  /* Previous / Next sit at opposite ends of a row; on a narrow screen they
+     collide, so they stack. */
+  .prevNextRow {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+}

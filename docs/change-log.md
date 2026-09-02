@@ -71,6 +71,73 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-02 — The five pages a new visitor sees now work on a phone
+
+- **Branch:** `main`
+- **Requested by:** Sasha — "just start doing it", small features not working on
+  mobile being acceptable.
+- **Status:** Core five done and verified at 375px. The rest of the site still
+  isn't responsive — listed below.
+
+**What changed**
+
+Breakpoints for **landing, Explore, podcast, episode and profile** — the pages a
+link from Instagram or TikTok actually opens.
+
+- **Explore** — a real bug, not just a missing breakpoint. The existing 720px
+  query flipped `.sectionHeaderRow` to one column but left
+  `.sectionHeaderRow .sectionTitle` on `grid-column: 2`, which creates an
+  *implicit* second column. That is what squeezed "See full list" into a 31px
+  sliver 84px tall and pushed the title off-centre. Cover and episode grids step
+  8 → 6 → 4 → 3.
+- **Landing** — covers 4 → 3 → 2, features 2 → 1, hero buttons stack (side by
+  side they squeeze to about 120px each), hero type 46px → 32px.
+- **Podcast / episode** — the `200px 1fr` and `160px 1fr` header grids stack and
+  centre; titles drop to 25px; the episode row's date moves to its own line;
+  Previous/Next stack.
+- **Profile** — both three-column grids stack. The avatar is ordered **first**
+  via `order: -1`, so it reads identity-then-detail like every phone profile.
+  The five-item sub-nav scrolls itself rather than dragging the page.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/explore/explore.module.css` | Fixed the phantom-column bug; grid breakpoints |
+| `src/app/landing.module.css` | Added breakpoints |
+| `src/app/podcast/[id]/podcast.module.css` | Added breakpoints |
+| `src/app/podcast/[id]/episode/[epId]/episode.module.css` | Added breakpoints |
+| `src/app/user/[username]/profile.module.css` | Added breakpoints |
+
+**Why**
+
+Measured at 375px before and after, on the live pages:
+
+| | before | after |
+| --- | --- | --- |
+| Explore cover art | **30px** | 106px |
+| "See full list" | 31 × 84px | 99 × 21px |
+| Podcast title | ~120px column | full width, 25px type |
+
+No page scrolls sideways at 375px. **Desktop is unchanged** — verified at
+1440px: burger hidden, links a row, nav back to 100px, eight cover columns.
+Every rule added sits inside a `max-width` query.
+
+**Follow-ups**
+
+- **Not yet responsive**: lists, following, next listening, ratings, diary,
+  reviews, log, create list, settings, auth, search, the add-podcasts popup.
+  Roughly one more pass of the same mechanical work.
+- **Hover-only affordances are unreachable on touch** and were left alone per
+  Sasha ("small features that don't work on mobile are okay"): the `media-thumb`
+  popup carrying an episode's title and date, the calendar's day tooltips, and
+  the remove ✕ on list tiles — that last one is at least covered by a
+  `(hover: none)` rule that keeps it visible.
+- The profile header measured wider than the viewport (386px against 375px)
+  without the page scrolling. Renders correctly; worth a look if anything odd
+  appears there.
+
+
 ### 2026-09-02 — The nav works on a phone
 
 - **Branch:** `main`

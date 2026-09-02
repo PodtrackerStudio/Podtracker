@@ -739,3 +739,50 @@
 .creatorRow:hover .creatorMore {
   color: var(--link-hover);
 }
+
+/* A shared podcast link is one of the two most likely ways someone arrives from
+   social, so this page has to hold up on a phone. */
+@media (max-width: 760px) {
+  .main {
+    padding: 0 16px 48px;
+  }
+  /* 200px of cover beside the text leaves the title about 120px wide. */
+  .podcastInfo {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-top: 24px;
+    justify-items: center;
+    text-align: center;
+  }
+  .podcastTitle {
+    font-size: 30px;
+    letter-spacing: -0.5px;
+  }
+  .actionRow {
+    justify-content: center;
+    gap: 12px;
+  }
+  /* The date sits at the end of a row that has nowhere left to go once the
+     title wraps; below it instead. */
+  .episodeRow {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .episodeDate {
+    width: 100%;
+    padding-left: 68px;
+  }
+}
+
+@media (max-width: 460px) {
+  .podcastTitle {
+    font-size: 25px;
+  }
+  .episodeCover {
+    width: 46px;
+    height: 46px;
+  }
+  .episodeDate {
+    padding-left: 58px;
+  }
+}
