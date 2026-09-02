@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PlusIcon } from "./icons";
 import { SearchBox } from "./SearchBox";
 import { LogoutButton } from "./LogoutButton";
+import { NavMenu } from "./NavMenu";
 import { getCurrentUser } from "@/lib/auth";
 
 type SiteNavProps = {
@@ -23,7 +24,7 @@ export async function SiteNav({ active }: SiteNavProps) {
         Podtracker
       </Link>
       <SearchBox />
-      <div className="nav-links">
+      <NavMenu>
         {user ? (
           <>
             <Link href="/home" className={active === "home" ? "active" : undefined}>
@@ -57,7 +58,7 @@ export async function SiteNav({ active }: SiteNavProps) {
             <Link href="/donate">Donate</Link>
           </>
         )}
-      </div>
+      </NavMenu>
     </nav>
   );
 }

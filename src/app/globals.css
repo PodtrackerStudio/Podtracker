@@ -442,3 +442,116 @@ footer.site-footer {
   color: var(--text);
   white-space: nowrap;
 }
+
+/* ── Responsive nav ──────────────────────────────────────────────────────────
+   The nav was one flex row with no wrapping and no media query at all. Measured
+   at 1280px the signed-in nav used 1075px of the 1169px available, so it fits a
+   laptop and squeezes from roughly 1150px down — which is every phone.
+
+   1100px is the breakpoint because that is where it measured as breaking, not a
+   round number picked by habit. Above it, nothing below changes anything. */
+
+/* Hidden on desktop; the only new control. */
+.nav-burger {
+  display: none;
+  align-items: center;
+  padding: 4px;
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  line-height: 0;
+}
+
+@media (max-width: 1100px) {
+  nav.site-nav {
+    /* The 100px is a Figma value for the desktop bar. Stacking a menu under it
+       needs the bar itself to stay its own height and the panel to overlay. */
+    height: 72px;
+    padding: 0 20px;
+    gap: 12px;
+    /* The panel is positioned against the bar. */
+    position: relative;
+  }
+
+  .nav-logo-tile {
+    width: 48px;
+    height: 48px;
+  }
+  .nav-logo {
+    font-size: 20px;
+    /* Stops pushing the search and burger off-screen on a narrow phone. */
+    margin-right: 0;
+  }
+
+  .nav-search-wrap {
+    flex: 1;
+    min-width: 0;
+    margin-left: auto;
+  }
+  .nav-search {
+    width: 100%;
+    max-width: 240px;
+    margin-left: auto;
+  }
+
+  .nav-burger {
+    display: inline-flex;
+    margin-left: 0;
+  }
+
+  /* The links become a panel dropping out of the bar rather than a row. */
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: var(--accent-blue);
+    padding: 8px 20px 16px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  }
+  .nav-links.open {
+    display: flex;
+  }
+
+  /* Full-width rows: a tap target should span the panel, not just the word. */
+  .nav-links a,
+  .nav-links button {
+    padding: 12px 4px;
+    font-size: 17px;
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .nav-links a:last-child,
+  .nav-links button:last-child {
+    border-bottom: none;
+  }
+
+  /* The pill treatments read as buttons in a row; stacked, they'd be full-width
+     slabs. Flattened to plain rows so the panel stays one list. */
+  .nav-links a.nav-cta,
+  .nav-links .nav-log-btn {
+    background: none;
+    border-radius: 0;
+    padding: 12px 4px;
+    justify-content: flex-start;
+  }
+}
+
+/* Below this the wordmark and a 240px search can't share a row. The tile goes
+   rather than the wordmark — the wordmark is the brand, the tile is a known
+   divergence from the Figma anyway. */
+@media (max-width: 560px) {
+  .nav-logo-tile {
+    display: none;
+  }
+  .nav-search {
+    max-width: 160px;
+  }
+}

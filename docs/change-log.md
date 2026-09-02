@@ -69,7 +69,78 @@ rejected. This is the part that saves the most time later.
 
 ---
 
-## Entries
+## Entries
+
+### 2026-09-02 — The nav works on a phone
+
+- **Branch:** `main`
+- **Requested by:** Sasha — build the mobile nav, ahead of launch traffic
+  arriving from Instagram and TikTok.
+- **Status:** Nav complete and verified at 375px. **The rest of the site is not
+  responsive** — see the finding below, which is the bigger problem.
+
+**What changed**
+
+- **`NavMenu`** wraps the links so they collapse behind a button below 1100px.
+  Above that nothing changes at all: the button is `display: none` and the links
+  are the same row they always were.
+- Responsive rules for `nav.site-nav` in `globals.css` — the first the nav has
+  ever had. Bar drops to 72px, logo tile to 48px, search flexes, links become a
+  panel dropping out of the bar with full-width rows.
+- Below 560px the **logo tile** is dropped rather than the wordmark: the
+  wordmark is the brand, and the tile is a known Figma divergence anyway.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/NavMenu.tsx` | Added |
+| `src/components/SiteNav.tsx` | Modified — links wrapped in `NavMenu` |
+| `src/app/globals.css` | Added `.nav-burger` and two nav media queries |
+
+**Why**
+
+**1100px is measured, not a round number.** At 1280px the signed-in nav used
+1075px of the 1169px available, so it fits a laptop and squeezes from roughly
+1150px down. Picking 900px — the breakpoint other modules use — would have left
+900–1150px broken.
+
+**The menu closes on click, not on a `usePathname` effect.** Watching the path
+means calling `setState` inside an effect, which `react-hooks/set-state-in-effect`
+rejects and which renders twice. A click handler on the panel that closes when
+the target is inside an `a` or `button` also covers Logout, which is a button.
+
+The pill treatments (`nav-cta`, `nav-log-btn`) are flattened to plain rows in the
+panel. Stacked full-width they read as slabs rather than buttons.
+
+**Verified at 375px**: burger visible, links collapsed, nav 72px, **no
+horizontal page scroll**, and opening it gives four full-width rows ~50px tall —
+a real tap target.
+
+**⚠️ The finding: the nav was the smallest part of the mobile problem**
+
+With the nav fixed, `/explore` at 375px is still unusable, and it is not alone.
+Measured on the live page:
+
+- The podcast grid renders **eight columns of 30px each**. Cover art at 30px is
+  not a cover.
+- "See full list →" is squeezed to **31px wide by 84px tall** — one word per
+  line, four lines.
+- Its header row is a `grid` with `nowrap`, so it is 136px tall for one line of
+  text.
+
+`globals.css` has **one** media query in total besides the two just added. The
+grids on Explore, the profile, the list pages and the podcast pages are fixed
+column counts (`repeat(4, 1fr)`, `1fr 1fr 1fr`) with no breakpoints. The site
+was built desktop-only throughout; the nav was simply the most visible symptom.
+
+**Follow-ups**
+
+- **Page content needs the same treatment**, and it is a bigger job than the nav
+  — every grid, the profile's three-column bottom row, the list meta row, the
+  review header. Worth doing before launch given the traffic will be phones.
+- A dev server was started to verify this; Sasha normally runs his own.
+
 
 ### 2026-09-02 — Likes on reviews and lists
 
