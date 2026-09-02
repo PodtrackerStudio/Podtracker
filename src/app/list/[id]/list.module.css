@@ -128,3 +128,32 @@
   align-items: center;
   gap: 10px;
 }
+
+/* Three-column meta and control rows collapse; the cover grid steps down. */
+@media (max-width: 860px) {
+  .main {
+    padding: 32px 16px 64px;
+  }
+  .metaRow,
+  .controlsRow {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    justify-items: center;
+  }
+  .sortColumn {
+    justify-content: center;
+  }
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px 16px;
+  }
+  .title {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 460px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

@@ -359,3 +359,24 @@
 
 /* ── WHAT IS ── */
 
+
+/* The signed-in landing page, and it had no breakpoints at all. */
+@media (max-width: 900px) {
+  .episodeGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .reviewsGrid,
+  .popularListsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .episodeGrid {
+    grid-template-columns: 1fr;
+  }
+  /* An 80px cover column leaves the review text about 190px wide. */
+  .reviewCard {
+    grid-template-columns: 60px 1fr;
+  }
+}

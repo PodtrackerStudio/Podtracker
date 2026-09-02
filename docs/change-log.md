@@ -71,6 +71,75 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-02 — Mobile pass finished: no page scrolls sideways at 375px
+
+- **Branch:** `main`
+- **Requested by:** Sasha — finish the mobile work after the core five.
+- **Status:** Complete. **All 15 pages verified at 375px.**
+
+**What changed**
+
+Breakpoints for everything the first pass left: **home** (four grids and *no*
+media query at all — and it is the signed-in landing page), **list detail**,
+**following**, the shared **profile sub-pages** (reviews, lists, diary), **create
+list**, **settings** and **search**. Next listening and ratings already had
+900px rules that were adequate.
+
+**Two real overflow bugs, found by measuring rather than looking**
+
+Every page rendered *fine* to the eye, but two still scrolled sideways at 375px —
+403px against a 375px viewport, 28px of overflow:
+
+- **Explore** — `.hoverCard`, a 200px hover popup on the cover art, hanging past
+  the right edge. Now hidden below 720px. Hover doesn't exist on touch, so it
+  was unreachable there anyway.
+- **Profile** — `.profileSubnav` had `overflow-x: auto` from the first pass and
+  it did nothing, because the strip was still 387px wide inside a content-sized
+  `.profileRight`. **`overflow-x` has nothing to clip against without a bound**;
+  `max-width: 100%` on both is what actually fixed it.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/home/home.module.css` | Added breakpoints — had none |
+| `src/app/list/[id]/list.module.css` | Added breakpoints |
+| `src/app/following/following.module.css` | Added breakpoints |
+| `src/app/user/[username]/profileSub.module.css` | Added breakpoints |
+| `src/app/list/create/createList.module.css` | Added — the `280px 1fr` form stacks |
+| `src/app/settings/settings.module.css` | Added — `.fieldRow` stacks |
+| `src/app/search/search.module.css` | Added — covers shrink |
+| `src/app/explore/explore.module.css` | Hides `.hoverCard` on mobile |
+| `src/app/user/[username]/profile.module.css` | Bounds `.profileRight` / `.profileSubnav` |
+
+**Why**
+
+Verified by loading each page in a **375px iframe** and comparing
+`documentElement.scrollWidth` against the viewport, rather than by eye — which
+is how the two 28px overflows were caught at all. Result: **15 of 15 clean**.
+
+**Desktop re-checked at 1440px** after every change: profile header still three
+columns, bottom grid still three, nav back to 100px, burger hidden.
+
+**Also recorded here: Explore's popularity will *blend*, not switch.** Sasha
+asked whether internal interaction counts can replace the iTunes chart once
+there is a user base. They can — `PodcastFollow`, `LogEntry`, the rating tables
+and `ListItem` are all the signal needed. But a straight switch makes discovery
+*worse*: `ensurePodcast` only writes a `Podcast` row when someone interacts, so
+internal ranking can only ever surface shows someone already found — **19 rows
+today**. Agreed approach: a "Popular on Podtracker" section from internal
+counts, alongside a "Trending" section from Apple's chart, so new shows can
+still enter. Below roughly 50–100 users the internal ordering is noise.
+
+**Follow-ups**
+
+- Hover-only affordances stay unreachable on touch, per Sasha: the `media-thumb`
+  popup with an episode's title and date, and the calendar's day tooltips. The
+  Explore hover card is now explicitly hidden rather than merely unreachable.
+- Landscape phones and tablets between 760px and 1100px got the breakpoints but
+  no dedicated eyes-on check.
+
+
 ### 2026-09-02 — The five pages a new visitor sees now work on a phone
 
 - **Branch:** `main`

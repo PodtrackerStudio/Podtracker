@@ -188,3 +188,39 @@
   font-size: 12px;
   color: var(--text-muted);
 }
+
+/* Shared by the reviews, lists, diary and ratings sub-pages. */
+@media (max-width: 860px) {
+  .main {
+    padding: 0 16px 48px;
+  }
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px 16px;
+  }
+  /* Five items set to nowrap; let the strip scroll rather than the page. */
+  .subnav {
+    overflow-x: auto;
+    gap: 16px;
+    padding-bottom: 4px;
+  }
+  .subHeader {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  /* Cover, then title and text — the stacked-cover gallery has no room beside
+     a title on a phone. */
+  .listRow {
+    flex-wrap: wrap;
+  }
+  .reviewRow {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 520px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

@@ -210,3 +210,14 @@
   border-color: #999;
   background: #fff;
 }
+
+/* Paired fields sit side by side; on a phone each would be about 150px. */
+@media (max-width: 640px) {
+  .main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+}
