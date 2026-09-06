@@ -71,6 +71,85 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-06 — Groundwork for Supabase Auth (switch NOT made)
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — prepare the code for Supabase.
+- **Status:** Groundwork complete. **The app still runs its own bcrypt + session
+  auth.** Nothing Supabase-related is active, and none of it has been exercised
+  against a real Supabase project, because there isn't one yet.
+
+**Scope was narrowed deliberately, and here is why**
+
+"Integrate Supabase" could mean auth, the database, or storage. phillipn chose
+**Auth only**, keeping the database on Neon, and chose to **wipe existing
+accounts** rather than migrate them.
+
+The database option was argued against and rejected: `src/lib/db.ts` speaks
+Postgres over a **WebSocket on port 443** because Sasha's university wifi
+throttles 5432 (commit `7e0a6de`, five days earlier). Supabase offers 5432
+direct and 6543 pooled — **neither is 443** — so moving the database there would
+very likely re-break the setup he had just spent a day fixing.
+
+**What changed**
+
+- `@supabase/supabase-js` 2.115 and `@supabase/ssr` 0.12.6 installed.
+- `src/lib/supabase/env.ts` — **new.** The two keys plus `isSupabaseConfigured`.
+- `src/lib/supabase/server.ts` — **new.** Client for Server Components and Route
+  Handlers.
+- `src/lib/supabase/client.ts` — **new.** Client for Client Components.
+- `src/proxy.ts` — **new.** Refreshes the Supabase session; passes every request
+  straight through while the keys are unset.
+- `.env.example` — both variables documented, with a warning that the service
+  role key must never be `NEXT_PUBLIC_`.
+- `docs/supabase-auth-switchover.md` — **new.** The step-by-step switchover.
+
+**The finding that will save the next person an afternoon**
+
+**Next 16 deprecated `middleware.ts` and renamed it to `proxy.ts`**, with the
+exported function renamed from `middleware` to `proxy`
+(`node_modules/next/dist/docs/.../file-conventions/proxy.md`; there is a codemod,
+`npx @next/codemod@canary middleware-to-proxy .`). **Every Supabase SSR guide
+currently published says to create `middleware.ts`.** Followed literally here,
+the file is never invoked, sessions never refresh, and users get logged out with
+nothing in the logs. This is exactly the class of breakage `AGENTS.md` warns
+about, and it is why the docs in `node_modules` were read first.
+
+Proxy also defaults to the **Node.js runtime** in v16, and setting `runtime` in
+a proxy file throws.
+
+**Why nothing was switched over**
+
+Rewriting `auth.ts` now would break login and signup for both phillipn and Sasha
+until a Supabase project exists, and CLAUDE.md is explicit that broken work
+reaching a collaborator is worse than work that hasn't arrived. So the seam is
+prepared and the swap is left as a small, reviewable change.
+
+The seam is narrower than it looks: 29 files call `getCurrentUser()` and 31
+import from `@/lib/auth`, but they all funnel through that one function. Keep its
+signature and return shape and none of those 29 files need to change.
+
+**Verified**
+
+`tsc --noEmit` and `eslint` clean. `npm run build` compiles, 34 pages. With the
+proxy in place and Supabase unconfigured, `/`, `/about`, `/donate`, `/explore`,
+`/login`, `/signup`, `/podcast/[id]`, `/person/[slug]` and `/search` all return
+200, and the dev server reports `proxy.ts: 5ms` per request — it runs, and does
+nothing, as intended.
+
+**Follow-ups**
+
+- The switchover itself. See `docs/supabase-auth-switchover.md`.
+- **Undocumented until now: a plain local Postgres no longer works.** The Neon
+  WebSocket driver expects a Neon endpoint, so a local server fails with a
+  WebSocket `ErrorEvent` and a 500 on every database-backed route while static
+  pages render fine. Confirmed on 2026-09-06 by stashing all local changes and
+  reproducing on a clean tree, so it is `7e0a6de`, not anything added here.
+  Develop against a Neon branch.
+- The Supabase code paths are **unverified**. They are written against the
+  installed versions and this Next version's documented conventions, but no
+  request has ever reached a Supabase project.
+
 ### 2026-09-02 — Mobile pass finished: no page scrolls sideways at 375px
 
 - **Branch:** `main`
