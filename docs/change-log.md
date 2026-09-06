@@ -71,6 +71,80 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-06 — A database outage no longer looks like a wrong password
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — carry on after the Supabase
+  groundwork.
+- **Status:** Complete.
+
+**The bug, as a user experienced it**
+
+phillipn spent a chunk of a session unable to create an account and reasonably
+concluded the signup system was broken. It wasn't: his machine had no
+`DATABASE_URL`. What the app told him was the problem:
+
+1. Click Create account.
+2. Wait **~30 seconds** with no feedback.
+3. *"Something went wrong. Please try again."*
+
+That message is `SignupForm.tsx`'s fallback, reached because the route threw and
+returned a **500 with an empty body**, so `res.json()` yielded nothing to show.
+It reads as "your details were rejected", so the natural response is to retype
+the password and fail again.
+
+**What changed**
+
+- `src/lib/dbError.ts` — **new.** One shared message plus
+  `reportDatabaseFailure(label, error)`, which logs the real error server-side
+  and returns the user-safe text. Shared so login and signup cannot drift.
+- `src/app/api/auth/{login,signup}/route.ts` — the work past validation is
+  wrapped in `try/catch`, returning **503** (the request was fine; the
+  dependency is down) with a message that says it is our side, not theirs.
+- `src/lib/db.ts` — `connectionTimeoutMillis: 10_000` on the Neon pool config.
+  Bounds *connecting*, not query time, so slow queries are unaffected. 10s is
+  deliberately generous because Neon suspends idle databases and a cold start
+  costs a few seconds; a tighter bound would turn a normal wake-up into an error.
+
+**Measured, database unreachable**
+
+| | Before | After |
+| --- | --- | --- |
+| Status | 500, empty body | 503, JSON message |
+| Message | "Something went wrong. Please try again." | "We couldn't reach our database… not with what you entered" |
+| Time (warm) | ~30s | **~20ms** |
+
+The first request after a dev-server start still takes tens of seconds, but that
+is route compilation plus the initial connection attempt, not this path — the
+second request onward is 20ms.
+
+**How the success path was verified without a working database**
+
+It could not be exercised here: since `7e0a6de` the app talks to Postgres over a
+Neon WebSocket, and a plain local Postgres fails outright. So instead the change
+was proved to be *only* a wrapper — stripping comments, blank lines, indentation
+and the added try/catch lines from both new files and diffing against the
+committed versions returns **zero lines present in the old and missing from the
+new**. Every `return`, status code and cookie option survives; the 409
+"already exists" and 401 "incorrect password" branches still return from inside
+the `try` and are unaffected.
+
+**Verified**
+
+`tsc --noEmit` and `eslint` clean; `npm run build` compiles, 34 pages.
+
+**Follow-ups**
+
+- One inaccuracy accepted knowingly: in the login route `verifyPassword` sits
+  inside the `try`, so a malformed stored hash would be reported as a database
+  failure. It cannot happen with bcrypt hashes this app wrote, but it becomes
+  reachable if `passwordHash` ever goes nullable during the Supabase switchover.
+  Revisit then.
+- The other database-backed routes (`/api/log`, `/api/rate`, `/api/favorites`
+  and the rest) still fail the old way. Auth was fixed first because it is where
+  a stranger meets the site; the same treatment would suit the others.
+- Rate limiting on login is still absent.
+
 ### 2026-09-06 — Groundwork for Supabase Auth (switch NOT made)
 
 - **Branch:** `main`

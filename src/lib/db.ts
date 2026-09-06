@@ -34,7 +34,16 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 function createClient() {
   // PrismaNeon takes the pool *config* and owns the pool itself — passing a
   // constructed Pool type-errors.
-  const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
+  const adapter = new PrismaNeon({
+    connectionString: process.env.DATABASE_URL,
+    // Bounds *connecting*, not query time, so a slow query is unaffected.
+    // Without it an unreachable database hangs the request for ~30s before
+    // failing, which on the signup form looked like a broken site rather than
+    // an outage. 10s is deliberately generous: Neon suspends idle databases and
+    // a cold start costs a few seconds, so a tighter bound would turn a normal
+    // wake-up into an error.
+    connectionTimeoutMillis: 10_000,
+  });
   return new PrismaClient({ adapter });
 }
 
