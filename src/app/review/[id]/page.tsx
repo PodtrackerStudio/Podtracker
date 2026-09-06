@@ -33,7 +33,15 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
 
   const entry = await db.logEntry.findUnique({
     where: { id },
-    include: { user: true, episode: { include: { podcast: true } }, podcast: true },
+    include: {
+      // Only the three fields this page renders. `user: true` pulled the whole
+      // row, password hash and email included, into a Server Component that
+      // hands data to Client Components — nothing leaked, but the shape made a
+      // leak one careless prop away.
+      user: { select: { username: true, displayName: true, avatarUrl: true } },
+      episode: { include: { podcast: true } },
+      podcast: true,
+    },
   });
 
   // Log entries without review text are diary entries, not reviews.
@@ -57,7 +65,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     getCurrentUser(),
     db.comment.findMany({
       where: { logEntryId: entry.id },
-      include: { user: true },
+      // Same reasoning as above — these three fields are what a comment shows.
+      include: { user: { select: { username: true, displayName: true, avatarUrl: true } } },
       orderBy: { createdAt: "asc" },
     }),
     db.like.count({ where: { logEntryId: entry.id } }),

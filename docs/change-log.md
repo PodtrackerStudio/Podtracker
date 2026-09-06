@@ -71,6 +71,114 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-06 — Security review of the whole app, and every finding fixed
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — check the code across the app,
+  verify the logic holds together, and make sure account creation doesn't let
+  people take passwords or sensitive data. Then: fix everything found.
+- **Status:** Complete. Five findings, all fixed.
+
+**What the review covered**
+
+All 15 API routes, `src/lib/auth.ts`, the props of every `"use client"`
+component, and the git history.
+
+**What was already right — do not "improve" these**
+
+- Passwords are bcrypt only; `passwordHash` appears in four places, all correct.
+- Every mutating route requires a session and scopes writes to `userId: user.id`.
+  `lists/items` checks `list.userId !== user.id` and returns 403. No IDOR found.
+- No raw SQL anywhere (so no injection), no `dangerouslySetInnerHTML` (no XSS
+  sink).
+- Session tokens are 256 bits, stored only as SHA-256.
+- Cookies are `HttpOnly` + `SameSite=Lax`, `Secure` in production — which also
+  covers most CSRF.
+- Changing a password requires the current one **and** deletes every other
+  session. Keep both.
+- `.env` has never been committed; no secrets in tracked files.
+- **No password hash reaches a browser.** Every Server Component that touches a
+  user builds an explicit narrow object first. `SettingsForm` takes
+  `{ user: User }` but defines its own six-field type.
+
+**The five findings, and the fixes**
+
+1. **No rate limiting — the realistic way in.** Nothing capped guesses against
+   `/api/auth/login`. Added `src/lib/rateLimit.ts` and applied it to login,
+   signup and change-password. Login allows 8 attempts per 15 minutes per
+   IP+account, then blocks for 15 with a 429 and `Retry-After`; signup allows 5
+   per hour per IP. A successful login clears the bucket so a shared office IP
+   can't lock out the next person.
+
+   **Read the file's header before trusting it.** State is in-process, so it
+   resets on restart and is not shared between serverless instances — on Vercel
+   an attacker spread across instances gets one bucket per instance. It raises
+   the cost of brute force; it does not eliminate it. Supabase rate-limits its
+   own auth endpoints, so **delete this file when that migration lands** rather
+   than upgrading it.
+
+2. **Password minimum was 6, with no other rules.** `123456` was accepted. Added
+   `src/lib/passwordPolicy.ts`: minimum **10**, a banned list of the passwords
+   bots try first, rejection of passwords equal to your own email or username,
+   rejection of fewer than four distinct characters, and a 72-byte cap (bcrypt
+   silently truncates past that, which would make two different passwords
+   equivalent). One shared policy — signup and change-password each had their
+   own `length < 6` before, free to drift.
+
+   **Existing accounts are unaffected.** The rule is enforced where a password is
+   *set*, not where one is *checked*, so nobody is locked out.
+
+3. **Login leaked which emails have accounts.** `verifyPassword` only ran when
+   the user existed, so an unknown email answered in milliseconds against ~300ms
+   for a real one — measurable from outside, and enough to test whether an
+   address has an account here. Login now always runs bcrypt, comparing against
+   `TIMING_EQUALISER_HASH` when there is no user, and discards the result.
+
+4. **bcrypt cost 10 → 12.** Measured on this machine: 77ms → 299ms. Four times
+   the work for an attacker guessing offline, unnoticeable on a login. Old
+   hashes still verify — bcrypt stores the cost inside the hash.
+
+5. **Two over-fetches that made a leak one careless line away.** `getCurrentUser`
+   used `include: { user: true }`, handing the full row — password hash included
+   — to all 29 callers, several of which pass user data to Client Components.
+   `review/[id]/page.tsx` did the same twice. All three now use explicit
+   `select`. Nothing was leaking; the shape was the hazard.
+
+   Narrowing `getCurrentUser` made the compiler prove the point: exactly **one**
+   caller broke, `api/account/password`, which legitimately needs the hash. It
+   now fetches it deliberately with `select: { passwordHash: true }`.
+
+**Verified**
+
+`tsc --noEmit`, `eslint` and `npm run build` (34 pages) all clean; the nine main
+routes still return 200.
+
+Behaviour was exercised for real, which the missing database did not prevent —
+the limiter and the policy both run before any database call:
+
+- Eleven login attempts from one IP: attempts 1–8 passed the limiter, **9, 10 and
+  11 returned 429**. A different IP was unaffected.
+- Signup rejected `123456` and `hunter2` on length, `password123` as a common
+  password, and `aaaaaaaaaa` for too few distinct characters — each with its own
+  message.
+- Unit-checked: password equal to your own email is rejected, over-72-byte
+  passwords are rejected, a successful login clears the bucket, and buckets are
+  per-account.
+
+**Follow-ups**
+
+- **Signup still tells you whether an email is registered** ("An account with
+  that email or username already exists"). Fixing this properly means replying
+  the same either way and sending an email instead — there is no mail-sending
+  backend, so it cannot be done yet. Supabase handles it. The *silent* half of
+  this leak, the login timing, is fixed.
+- The banned-password list is a few dozen entries, not a breach corpus. Have I
+  Been Pwned's k-anonymity range API is the real version and needs no account.
+- The rate limiter's in-process limitation, above.
+- Other database routes (`/api/log`, `/api/rate`, `/api/favorites`, …) still lack
+  the try/catch that auth got, and are unlimited. Lower risk — they need a valid
+  session — but the same treatment would suit them.
+
 ### 2026-09-06 — A database outage no longer looks like a wrong password
 
 - **Branch:** `main`

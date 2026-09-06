@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { checkPassword, MIN_PASSWORD_LENGTH } from "@/lib/passwordPolicy";
 import styles from "./auth.module.css";
 
 export function SignupForm() {
@@ -16,8 +17,17 @@ export function SignupForm() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
-    if (!email.trim() || !username.trim() || password.length < 6) {
-      setErrorMsg("Please fill in every field (password needs 6+ characters).");
+    if (!email.trim() || !username.trim() || !password) {
+      setErrorMsg("Please fill in every field.");
+      return;
+    }
+    // The password rules themselves are checked server-side by `checkPassword`
+    // and its message is what gets shown. Duplicating them here would mean two
+    // copies to keep in step, and the client copy can be bypassed anyway — the
+    // only check that counts is the one on the server.
+    const local = checkPassword(password, [email, username]);
+    if (!local.ok) {
+      setErrorMsg(local.error);
       return;
     }
     setErrorMsg(null);
@@ -55,8 +65,8 @@ export function SignupForm() {
           </div>
           <div className={styles.field}>
             <label htmlFor="password">Create password</label>
-            <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-            <div className={styles.fieldHint}>At least 6 characters.</div>
+            <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={MIN_PASSWORD_LENGTH} />
+            <div className={styles.fieldHint}>At least {MIN_PASSWORD_LENGTH} characters.</div>
           </div>
           {errorMsg && <div className={styles.errorMsg}>{errorMsg}</div>}
           <button type="submit" className={styles.btnPrimary} disabled={submitting}>

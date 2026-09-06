@@ -1,13 +1,32 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword, createSession, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { checkPassword } from "@/lib/passwordPolicy";
+import { rateLimit, clientKey, SIGNUP_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
 import { reportDatabaseFailure } from "@/lib/dbError";
 
 export async function POST(request: Request) {
   const { email, username, password } = await request.json();
 
-  if (!email?.trim() || !username?.trim() || !password || password.length < 6) {
-    return NextResponse.json({ error: "Please fill in every field (password needs 6+ characters)." }, { status: 400 });
+  if (!email?.trim() || !username?.trim() || !password) {
+    return NextResponse.json({ error: "Please fill in every field." }, { status: 400 });
+  }
+
+  // Stops one address creating accounts in bulk. Looser than the login limit —
+  // a person filling in a form legitimately retries a few times.
+  const limited = rateLimit(clientKey(request, "signup"), SIGNUP_LIMIT);
+  if (!limited.allowed) {
+    return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, {
+      status: 429,
+      headers: { "Retry-After": String(limited.retryAfterSeconds) },
+    });
+  }
+
+  // Was `password.length < 6` inline here and again in the change-password
+  // route. One shared policy now, so they cannot drift apart.
+  const policy = checkPassword(password, [email, username]);
+  if (!policy.ok) {
+    return NextResponse.json({ error: policy.error }, { status: 400 });
   }
 
   // Everything past validation is a database call, so anything thrown here is a
