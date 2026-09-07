@@ -69,16 +69,18 @@ rejected. This is the part that saves the most time later.
 
 ---
 
-## Entries
+## Entries
 
 ### 2026-09-07 — Supabase Auth is live; password reset exists for the first time
 
 - **Branch:** `main`
 - **Requested by:** phillipn@podtracker.studio — Supabase project created, keys
   in `.env`, "go ahead".
-- **Status:** Complete in code. **Unverified against a real Supabase project** —
-  this container's gateway 403s `supabase.co`, so nobody has yet watched a real
-  signup succeed. phillipn tests first.
+- **Status:** Complete in code, **partially verified against the live project**.
+  Supabase and the database are both confirmed reachable from phillipn's machine
+  (see "First real run" below), but **no signup has yet been observed
+  succeeding**, and the password reset flow is untested end to end. This
+  container's gateway 403s `supabase.co`, so none of it could be exercised here.
 
 **What changed**
 
@@ -140,11 +142,50 @@ wrong on the first pass — an outage reported as 401 says "wrong password", whi
 is the exact confusion fixed a day earlier — so the route now distinguishes a
 credential rejection from a dependency failure.
 
-**What has NOT been verified**
+**First real run (same day) — what it proved, and one defect it exposed**
 
-No request has reached a real Supabase project. Signup, login, logout, password
-change and the whole reset flow are written against the documented API and the
-installed versions, and nothing more.
+phillipn ran it against the live project. Both connections are confirmed
+working, from evidence in the responses rather than assertion:
+
+- **Supabase is reached** — the 400 came back carrying its own
+  `sb-…-code-verifier` cookies, which only exist if the auth call completed.
+- **The database is reached** — a later attempt returned 409 "That username is
+  already taken", which required a successful query against the migrated `User`
+  table.
+
+Two failures, neither a wiring fault:
+
+1. **`test1@example.com` was rejected by Supabase**, which refuses addresses it
+   treats as unroutable. The obvious domain to test with is the one it will not
+   accept.
+2. **`phillipn` was already taken** by a leftover pre-migration `User` row —
+   exactly the orphaned-row case predicted in Follow-ups below. Cleared with
+   `echo 'DELETE FROM "User";' | npx prisma db execute --stdin`, verified to work
+   before it was handed over.
+
+**The defect this exposed, now fixed** (`f3cb019`): the first failure surfaced
+as *"Something went wrong signing you in"* and nothing else. `authErrorMessage`
+had no case for a rejected email, and **the raw Supabase message was logged
+nowhere**, so the one piece of information that would have identified it in
+seconds did not exist anywhere. A five-second diagnosis cost a round trip.
+
+- The raw message and status now go to `console.error` in signup,
+  reset-password and password-change, where a developer is already looking.
+- `authErrorMessage` gained the missing cases: rejected email address, email
+  already registered, and signups disabled for the project.
+- The fallback no longer says "signing you in" — it is shared by signup, login
+  and both password routes, and the wrong verb sends people to the wrong place.
+
+**Lesson worth keeping:** a friendly error message that replaces the underlying
+one, without logging it, is worse than no handling at all. Generalise for the
+person reading the form; keep the original for whoever has to fix it.
+
+**What remains unverified**
+
+A signup has still not been observed *succeeding* end to end, and the password
+reset flow — request the email, follow the link, set a new password — has not
+been exercised at all. Everything up to Supabase accepting the credential is
+now confirmed working.
 
 **Follow-ups**
 
