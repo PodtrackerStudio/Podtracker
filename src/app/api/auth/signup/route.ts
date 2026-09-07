@@ -55,6 +55,12 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
 
     if (error) {
+      // The raw message goes to the server log, always. `authErrorMessage`
+      // deliberately generalises for the person reading the form, and the first
+      // time this fired in anger the useful half — Supabase's own wording — was
+      // nowhere to be found, which made a five-second diagnosis take a round
+      // trip.
+      console.error("[signup] supabase rejected:", error.status, error.message);
       return NextResponse.json({ error: authErrorMessage(error.message) }, { status: 400 });
     }
     if (!data.user) {

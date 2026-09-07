@@ -64,10 +64,24 @@ export function authErrorMessage(message: string | undefined): string {
   if (raw.includes("email not confirmed")) {
     return "Please confirm your email address first — check your inbox for the link.";
   }
-  if (raw.includes("email rate limit") || raw.includes("rate limit")) {
+  if (raw.includes("rate limit")) {
     return "Too many attempts. Please wait a few minutes before trying again.";
+  }
+  // Supabase rejects addresses it considers unroutable, `example.com` among
+  // them, so the obvious placeholder to test with is the one it refuses.
+  if (raw.includes("invalid") && raw.includes("email")) {
+    return "That email address wasn't accepted. Please use a real address you can receive mail at.";
+  }
+  if (raw.includes("already registered") || raw.includes("already been registered")) {
+    return "An account with that email already exists.";
+  }
+  // Signups are switchable off per-project in the Supabase dashboard.
+  if (raw.includes("signups not allowed") || raw.includes("signup is disabled")) {
+    return "New accounts are disabled at the moment.";
   }
   if (raw.includes("password")) return "That password isn't allowed. Please pick another.";
 
-  return "Something went wrong signing you in. Please try again.";
+  // Deliberately not "signing you in" — this is shared by signup, login and the
+  // password routes, and the wrong verb sends people looking in the wrong place.
+  return "Something went wrong. Please try again.";
 }

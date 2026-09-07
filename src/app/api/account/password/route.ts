@@ -56,6 +56,7 @@ export async function POST(request: Request) {
 
   const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
   if (updateError) {
+    console.error("[password-change] supabase rejected:", updateError.message);
     return NextResponse.json({ error: authErrorMessage(updateError.message) }, { status: 400 });
   }
 
