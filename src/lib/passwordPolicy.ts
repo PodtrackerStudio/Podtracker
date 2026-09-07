@@ -44,9 +44,10 @@ export function checkPassword(password: string, identifiers: (string | undefined
     return { ok: false, error: `Password needs to be at least ${MIN_PASSWORD_LENGTH} characters.` };
   }
 
-  // 72 bytes is bcrypt's hard limit: anything past it is silently ignored, so a
-  // longer password would be truncated rather than rejected, which would make
-  // two different passwords equivalent. Rejecting is the honest behaviour.
+  // 72 bytes is bcrypt's hard limit — anything past it is silently ignored,
+  // which would make two different passwords equivalent. This app no longer
+  // hashes passwords itself (Supabase does), but Supabase hashes with bcrypt
+  // too, so the ceiling still applies. Rejecting is the honest behaviour.
   if (Buffer.byteLength(password, "utf8") > 72) {
     return { ok: false, error: "Password is too long — 72 characters at most." };
   }

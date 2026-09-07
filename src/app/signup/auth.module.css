@@ -98,3 +98,49 @@
 .authSwitch a:hover {
   text-decoration: underline;
 }
+
+/* ── PASSWORD RESET ──
+   Added with the Supabase auth switchover (2026-09-07) for /forgot-password and
+   /reset-password. Values are taken from the classes already in this file:
+   .authNote reuses .authSwitch's 14px muted text, and .linkButton is styled to
+   match .authSwitch's links so an inline action reads the same as a link. */
+.authNote {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* A real <button> rather than an <a>, because it performs an action instead of
+   navigating — styled to match the links beside it. */
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+.linkButton:hover {
+  text-decoration: underline;
+}
+
+/* Sits under the password field, right-aligned, the way this pattern is
+   conventionally placed on a login form. */
+.forgotRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+  margin-bottom: 18px;
+}
+.forgotRow a {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.forgotRow a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}

@@ -53,6 +53,9 @@ export function LoginForm() {
             <label htmlFor="password">Password</label>
             <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
+          <div className={styles.forgotRow}>
+            <Link href="/forgot-password">Forgot password?</Link>
+          </div>
           <div className={styles.rememberRow}>
             <input type="checkbox" id="remember" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
             <label htmlFor="remember">Remember me?</label>

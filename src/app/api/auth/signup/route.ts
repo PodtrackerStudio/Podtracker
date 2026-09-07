@@ -1,19 +1,33 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { hashPassword, createSession, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { authErrorMessage } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkPassword } from "@/lib/passwordPolicy";
 import { rateLimit, clientKey, SIGNUP_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
 import { reportDatabaseFailure } from "@/lib/dbError";
 
+/**
+ * Create an account.
+ *
+ * Two systems, in this order, and the order matters:
+ *   1. our `User` table — check the username is free
+ *   2. Supabase — create the credential, which mints the id
+ *   3. our `User` table — write the profile under that id
+ *
+ * The username check comes first because it is the failure that actually
+ * happens. If Supabase created the credential first and step 3 then failed on a
+ * taken username, the person would own an auth account with no profile: unable
+ * to use the site, and unable to sign up again because their email is taken.
+ * Undoing that needs the service-role key, which this app deliberately does not
+ * hold. Checking first makes the bad state unreachable in the common case.
+ */
 export async function POST(request: Request) {
-  const { email, username, password } = await request.json();
+  const { email, username, password } = await request.json().catch(() => ({}));
 
   if (!email?.trim() || !username?.trim() || !password) {
     return NextResponse.json({ error: "Please fill in every field." }, { status: 400 });
   }
 
-  // Stops one address creating accounts in bulk. Looser than the login limit —
-  // a person filling in a form legitimately retries a few times.
   const limited = rateLimit(clientKey(request, "signup"), SIGNUP_LIMIT);
   if (!limited.allowed) {
     return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, {
@@ -22,47 +36,52 @@ export async function POST(request: Request) {
     });
   }
 
-  // Was `password.length < 6` inline here and again in the change-password
-  // route. One shared policy now, so they cannot drift apart.
+  // Our policy, not Supabase's — theirs is a 6-character minimum by default.
   const policy = checkPassword(password, [email, username]);
   if (!policy.ok) {
     return NextResponse.json({ error: policy.error }, { status: 400 });
   }
 
-  // Everything past validation is a database call, so anything thrown here is a
-  // database problem. Without this the route 500s with an empty body and the
-  // form falls back to "Something went wrong", which reads as a rejected
-  // password rather than an outage.
+  const cleanEmail = email.trim();
+  const cleanUsername = username.trim();
+
   try {
-    const existing = await db.user.findFirst({
-      where: { OR: [{ email: email.trim() }, { username: username.trim() }] },
-    });
-    if (existing) {
-      return NextResponse.json({ error: "An account with that email or username already exists." }, { status: 409 });
+    const taken = await db.user.findUnique({ where: { username: cleanUsername }, select: { id: true } });
+    if (taken) {
+      return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
     }
 
-    const user = await db.user.create({
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
+
+    if (error) {
+      return NextResponse.json({ error: authErrorMessage(error.message) }, { status: 400 });
+    }
+    if (!data.user) {
+      return NextResponse.json({ error: "Could not create that account. Please try again." }, { status: 400 });
+    }
+
+    // `session` is null when Supabase is set to confirm email addresses: the
+    // credential exists but nobody is signed in until the link is clicked. The
+    // profile row is still written now, so it is waiting when they return.
+    const needsEmailConfirmation = data.session === null;
+
+    // Supabase's id, not a generated one — see the note on `User.id`.
+    await db.user.create({
       data: {
-        email: email.trim(),
-        username: username.trim(),
-        displayName: username.trim(),
-        passwordHash: await hashPassword(password),
+        id: data.user.id,
+        email: cleanEmail,
+        username: cleanUsername,
+        displayName: cleanUsername,
       },
     });
 
-    const token = await createSession(user.id);
-
-    const response = NextResponse.json({ id: user.id, username: user.username });
-    response.cookies.set(SESSION_COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
+    return NextResponse.json({
+      id: data.user.id,
+      username: cleanUsername,
+      needsEmailConfirmation,
     });
-    return response;
   } catch (error) {
-    // 503, not 500: the request was fine, the dependency is down.
     return NextResponse.json({ error: reportDatabaseFailure("signup", error) }, { status: 503 });
   }
 }

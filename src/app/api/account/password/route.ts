@@ -1,21 +1,21 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { db } from "@/lib/db";
-import { getCurrentUser, verifyPassword, hashPassword, hashToken, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { getCurrentUser, authErrorMessage } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkPassword } from "@/lib/passwordPolicy";
 import { rateLimit, resetRateLimit, clientKey, AUTH_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
-import { reportDatabaseFailure } from "@/lib/dbError";
 
 /**
  * Change the signed-in user's password (Account Settings → Authentication).
+ *
+ * The current password is still required even though Supabase's `updateUser`
+ * does not ask for it. Without that check, anyone who got hold of an unattended
+ * signed-in browser could change the password and take the account outright.
+ * It is verified by attempting a sign-in with it.
  */
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
 
-  // Limited like login, because it takes the current password: without this,
-  // anyone who got hold of a session could guess the password here as fast as
-  // they liked. Keyed on the account, so it follows the user rather than the IP.
   const limitKey = clientKey(request, "password", user.id);
   const limited = rateLimit(limitKey, AUTH_LIMIT);
   if (!limited.allowed) {
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const { currentPassword, newPassword, confirmPassword } = await request.json();
+  const { currentPassword, newPassword, confirmPassword } = await request.json().catch(() => ({}));
 
   if (!currentPassword || !newPassword || !confirmPassword) {
     return NextResponse.json({ error: "Please fill in every field." }, { status: 400 });
@@ -42,44 +42,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: policy.error }, { status: 400 });
   }
 
-  try {
-    // Fetched deliberately, and only the hash. `getCurrentUser` no longer
-    // returns it — see the note there.
-    const credentials = await db.user.findUnique({
-      where: { id: user.id },
-      select: { passwordHash: true },
-    });
-    if (!credentials) {
-      return NextResponse.json({ error: "Not logged in." }, { status: 401 });
-    }
+  const supabase = await createSupabaseServerClient();
 
-    const ok = await verifyPassword(currentPassword, credentials.passwordHash);
-    if (!ok) {
-      return NextResponse.json({ error: "Current password is incorrect." }, { status: 403 });
-    }
-
-    await db.user.update({
-      where: { id: user.id },
-      data: { passwordHash: await hashPassword(newPassword) },
-    });
-
-    // Sign out everywhere else. If the password was changed because someone else
-    // had it, leaving their session alive would defeat the point. The current
-    // session is kept so the user isn't kicked out of the page they're on.
-    const cookieStore = await cookies();
-    const currentToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-    await db.session.deleteMany({
-      where: {
-        userId: user.id,
-        ...(currentToken ? { NOT: { tokenHash: hashToken(currentToken) } } : {}),
-      },
-    });
-
-    // They proved they know the password, so the failed-attempt count is stale.
-    resetRateLimit(limitKey);
-
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    return NextResponse.json({ error: reportDatabaseFailure("password-change", error) }, { status: 503 });
+  // Proves they know the current password. This re-issues the session cookies
+  // for the same user, which is harmless — they are already that user.
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (verifyError) {
+    return NextResponse.json({ error: "Current password is incorrect." }, { status: 403 });
   }
+
+  const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+  if (updateError) {
+    return NextResponse.json({ error: authErrorMessage(updateError.message) }, { status: 400 });
+  }
+
+  resetRateLimit(limitKey);
+  return NextResponse.json({ ok: true });
 }

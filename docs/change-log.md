@@ -71,6 +71,99 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-07 — Supabase Auth is live; password reset exists for the first time
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — Supabase project created, keys
+  in `.env`, "go ahead".
+- **Status:** Complete in code. **Unverified against a real Supabase project** —
+  this container's gateway 403s `supabase.co`, so nobody has yet watched a real
+  signup succeed. phillipn tests first.
+
+**What changed**
+
+- `prisma/schema.prisma` + migration `20260907000000_supabase_auth` — dropped
+  `User.passwordHash` and the whole `Session` model. `User.id` is now the
+  Supabase UUID (`@id`, no default) instead of a generated cuid.
+- `src/lib/auth.ts` — rewritten. `getCurrentUser()` asks Supabase who the
+  request belongs to, then loads the profile by that id.
+- `api/auth/{signup,login,logout}` and `api/account/password` — rewritten onto
+  Supabase.
+- **New:** `api/auth/forgot-password`, `api/auth/reset-password`,
+  `auth/callback`, and the `/forgot-password` and `/reset-password` pages.
+- `LoginForm` gained a "Forgot password?" link; `auth.module.css` gained
+  `.authNote`, `.linkButton` and `.forgotRow`, built from values already there.
+- `bcryptjs` and `@types/bcryptjs` removed.
+
+**Why the seam held**
+
+29 files call `getCurrentUser()` and 31 import from `@/lib/auth`, but they all
+funnel through that one function. Keeping its signature and return shape meant
+**not one of those 29 files changed.** The compiler confirmed the blast radius
+was the four auth routes and nothing else.
+
+**Decisions worth not re-litigating**
+
+- **`getUser()`, never `getSession()`.** `getSession` reads the cookie and trusts
+  it; `getUser` verifies the token with Supabase. The former would let a forged
+  cookie authenticate.
+- **`getCurrentUser` is wrapped in React's `cache`.** Every call is a network
+  round trip to Supabase; without it, a page asking "who is signed in?" from
+  several components pays for each one.
+- **Signup checks the username *before* calling Supabase.** Otherwise a taken
+  username after the credential was created leaves someone owning an auth
+  account with no profile — unusable, and un-signup-able because the email is
+  taken. Undoing that needs the service-role key, which this app deliberately
+  does not hold.
+- **Changing your password still requires the current one**, even though
+  Supabase's `updateUser` doesn't ask. Without it, an unattended signed-in
+  browser is enough to take an account. Verified by attempting a sign-in.
+- **`/forgot-password` answers identically whether or not the address exists.**
+  Otherwise it becomes a tool for testing which emails are registered. The
+  Supabase result is deliberately ignored for the same reason.
+- **`/auth/callback` validates its `next` parameter** is a path on this site and
+  not `//evil.com` — an unchecked redirect target is an open redirect, and the
+  link arrives by email looking entirely genuine.
+
+**Verified here**
+
+`tsc --noEmit` clean, `eslint` clean apart from the pre-existing
+`countedRatings` warning, `npm run build` compiles 39 pages including all five
+new routes. Migration applies cleanly against a local Postgres: `passwordHash`
+gone, `Session` dropped.
+
+**Behaviour during a Supabase outage** was testable because this container
+cannot reach Supabase at all, and it degrades well: every page still returns
+200 (the site treats you as signed out rather than breaking), signup answers in
+0.33s with a clear message, and login returns **503**, not 401. That last one was
+wrong on the first pass — an outage reported as 401 says "wrong password", which
+is the exact confusion fixed a day earlier — so the route now distinguishes a
+credential rejection from a dependency failure.
+
+**What has NOT been verified**
+
+No request has reached a real Supabase project. Signup, login, logout, password
+change and the whole reset flow are written against the documented API and the
+installed versions, and nothing more.
+
+**Follow-ups**
+
+- **Old `User` rows are orphaned.** They keep cuid ids that match no Supabase
+  account, so they cannot be signed into, and their usernames still occupy the
+  unique constraint. The migration deliberately does **not** delete them — a
+  migration that wipes every user is a landmine if it is ever run against real
+  data. Clear them by hand:
+  `npx prisma studio`, or `DELETE FROM "User";` (cascades to all their content).
+- **Supabase dashboard needs two settings** the code cannot set: "Confirm email"
+  off while testing, and the app's origin added under **Redirect URLs**, or the
+  emailed reset link refuses to open.
+- The in-process rate limiter was kept rather than deleted as the earlier plan
+  suggested. Supabase limits its own endpoints, but these routes are still
+  reachable directly and an attacker hammering them costs us the requests
+  either way.
+- Signup still reveals whether an email is registered — Supabase's own
+  `signUp` error says so. `/forgot-password` does not.
+
 ### 2026-09-06 — Security review of the whole app, and every finding fixed
 
 - **Branch:** `main`

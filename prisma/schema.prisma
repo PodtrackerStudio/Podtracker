@@ -29,11 +29,19 @@ enum PersonRole {
 
 // ── USERS & SOCIAL GRAPH ───────────────────────────────
 
+// The profile half of an account. Supabase Auth owns the credential half —
+// email, password and sessions all live in Supabase's own `auth.users`, which
+// this schema does not describe and Prisma never touches.
+//
+// `id` is the Supabase user's UUID, written here at signup rather than
+// generated. No default: a row with a made-up id would belong to nobody, since
+// `getCurrentUser` looks users up by the id Supabase reports. That id is the
+// foreign key for all ten relations below, so it must be the same value on both
+// sides or the whole graph detaches.
 model User {
-  id           String   @id @default(cuid())
+  id           String   @id
   username     String   @unique
   email        String   @unique
-  passwordHash String
   displayName  String
   avatarUrl    String?
   bio          String? // short bio shown under avatar on profile
@@ -41,7 +49,6 @@ model User {
   externalLink String? // e.g. "Youtube.com" link on profile
   createdAt    DateTime @default(now())
 
-  sessions       Session[]
   podcastRatings PodcastRating[]
   episodeRatings EpisodeRating[]
   logEntries     LogEntry[]
@@ -57,16 +64,10 @@ model User {
   @@index([username])
 }
 
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-}
+// The Session model lived here and is gone deliberately (2026-09-07). Sessions
+// are Supabase's now: it issues a JWT, stores the refresh token in a cookie, and
+// `src/proxy.ts` renews it. Do not reinstate a sessions table — two systems both
+// believing they own the session is how people get logged out at random.
 
 // User-follows-user (profile "Followers"/"Following"/"Friends")
 model Follow {
