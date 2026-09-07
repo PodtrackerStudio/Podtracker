@@ -26,3 +26,35 @@ export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
  * auth path.
  */
 export const isSupabaseConfigured = SUPABASE_URL !== "" && SUPABASE_ANON_KEY !== "";
+
+/**
+ * Both values end up in HTTP headers, which may only contain ASCII. A key
+ * carrying anything else makes `fetch` throw while assembling the request —
+ * before it reaches the network — and the failure is deeply misleading: the
+ * Supabase client surfaces it as a normal error with status `0`, so it reads as
+ * the server rejecting you rather than a request that was never sent.
+ *
+ * This happened on the first real setup (2026-09-07). The key had been copied
+ * out of a masked field and carried bullet characters (U+2022), and the symptom
+ * was a 400 that looked for all the world like Supabase refusing the signup.
+ * Several wrong things were investigated first.
+ *
+ * Checked at import so it fails once, loudly, naming the variable — rather than
+ * on every request, as an error about ByteStrings.
+ */
+function assertHeaderSafe(name: string, value: string) {
+  if (!value) return;
+  const bad = value.match(/[^\x20-\x7E]/);
+  if (!bad) return;
+
+  const codePoint = bad[0].codePointAt(0);
+  throw new Error(
+    `${name} contains a character that cannot go in an HTTP header ` +
+      `(U+${codePoint?.toString(16).toUpperCase().padStart(4, "0")} at index ${bad.index}). ` +
+      `This usually means the value was copied from a masked field and picked up ` +
+      `bullet or ellipsis characters. Copy it again with the dashboard's copy button.`,
+  );
+}
+
+assertHeaderSafe("NEXT_PUBLIC_SUPABASE_URL", SUPABASE_URL);
+assertHeaderSafe("NEXT_PUBLIC_SUPABASE_ANON_KEY", SUPABASE_ANON_KEY);

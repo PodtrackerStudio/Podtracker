@@ -180,6 +180,42 @@ seconds did not exist anywhere. A five-second diagnosis cost a round trip.
 one, without logging it, is worse than no handling at all. Generalise for the
 person reading the form; keep the original for whoever has to fix it.
 
+**The first signup failure was not Supabase at all** (2026-09-07)
+
+Hours went into a 400 that looked like Supabase refusing the signup. It wasn't.
+The logged error, once it existed, was:
+
+```
+[signup] supabase rejected: 0 Cannot convert argument to a ByteString because
+the character at index 15 has a value of 8226 which is greater than 255.
+```
+
+**Status `0`, not 400** — the request never left the machine. `fetch` threw while
+assembling the `apikey` header because `NEXT_PUBLIC_SUPABASE_ANON_KEY` contained
+U+2022 bullet characters: the key had been copied out of a masked dashboard
+field rather than with the copy button.
+
+**Why it took so long, worth remembering:**
+
+- The Supabase client reports a local `fetch` failure as an ordinary error with
+  a message, so the route's `if (error)` branch treated it as a rejection and
+  returned 400. A transport failure was indistinguishable from a refusal.
+- Earlier attempts *had* set `sb-…-code-verifier` cookies, which made the
+  connection look proven. Those cookies are written before the request goes out.
+- Every plausible cause was investigated first — a rejected `example.com`
+  address, a leftover username, the email provider toggle. All wrong.
+
+**Guard added** in `src/lib/supabase/env.ts`: both values are checked at import
+for anything outside printable ASCII, and a non-conforming one throws once, by
+name, saying the value was probably copied from a masked field. Verified it
+fires: a key with bullets now reports
+`NEXT_PUBLIC_SUPABASE_ANON_KEY contains a character that cannot go in an HTTP
+header (U+2022 at index 12)`.
+
+**The general lesson:** when a client library reports an error, check whether a
+request was actually made. A status of `0` means it wasn't, and the message is
+about your own process, not the server's answer.
+
 **What remains unverified**
 
 A signup has still not been observed *succeeding* end to end, and the password
