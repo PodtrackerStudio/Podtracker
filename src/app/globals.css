@@ -220,13 +220,18 @@ nav.site-nav {
 /* ── FOOTER (shared across every page) ── */
 footer.site-footer {
   border-top: 1px solid var(--border);
-  padding: 20px 48px;
+  /* 24px rather than 20px: the links and social marks were sitting close enough
+     to the rule above them to read as crowded. */
+  padding: 24px 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 13px;
   color: var(--text-muted);
-  margin-top: 40px;
+  /* Was 40px (phillipn, 2026-09-08 — "move it down more"). The footer sat close
+     under the last section on short pages, so it read as part of the content
+     rather than as the end of the page. */
+  margin-top: 72px;
 }
 .footer-links {
   display: flex;

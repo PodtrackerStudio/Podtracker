@@ -1,6 +1,25 @@
 import { cache } from "react";
 import { db } from "./db";
 import { createSupabaseServerClient } from "./supabase/server";
+import { isSupabaseConfigured } from "./supabase/env";
+
+/**
+ * Says once, loudly, what silently signing everybody out actually means — so a
+ * missing `.env` reads as a setup step rather than as a broken site. Once,
+ * because this is reached on every render and a per-request warning would bury
+ * the request log it sits in.
+ */
+let warnedAboutMissingKeys = false;
+function warnOnceAboutMissingKeys() {
+  if (warnedAboutMissingKeys) return;
+  warnedAboutMissingKeys = true;
+  console.warn(
+    "[auth] NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are not set, " +
+      "so nobody can sign in and every visitor is treated as logged out. " +
+      "The rest of the site works. Add both to .env — they are gitignored, so " +
+      "each machine needs its own copy.",
+  );
+}
 
 /**
  * Who is signed in, or null.
@@ -24,6 +43,19 @@ import { createSupabaseServerClient } from "./supabase/server";
  * their own round trip to Supabase.
  */
 export const getCurrentUser = cache(async () => {
+  // No Supabase keys — nobody can be signed in, so say so instead of throwing.
+  //
+  // `createServerClient` rejects empty credentials, and because this function
+  // runs on **every** page, that exception took the whole site down with a 500:
+  // a checkout without keys rendered nothing at all, with an error pointing at
+  // a library rather than at the missing configuration. Whoever pulls this
+  // branch before setting up their own `.env` — which is gitignored and never
+  // travels — would have hit exactly that.
+  if (!isSupabaseConfigured) {
+    warnOnceAboutMissingKeys();
+    return null;
+  }
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user: authUser },

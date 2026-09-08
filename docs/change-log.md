@@ -71,6 +71,54 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-08 — A missing Supabase key took the whole site down; footer spacing
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — move the footer down; the
+  500-on-every-page bug was found while doing it.
+- **Status:** Complete.
+
+**The bug that mattered, which nobody asked about**
+
+Yesterday's Supabase switchover made **every page return 500 on any machine
+without Supabase keys.** `getCurrentUser()` runs on every page and called
+`createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY)`, which rejects empty
+credentials — so a checkout without a configured `.env` rendered nothing at all,
+with an error naming a library rather than the missing configuration.
+
+`.env` is gitignored and never travels, so **this was waiting for Sasha the
+moment he pulled**, and for any future clone. Found by accident: this container's
+`.env` has no Supabase keys, and a screenshot for the footer work came back with
+no `<footer>` in the DOM because the page had 500'd.
+
+`getCurrentUser()` now returns null when `isSupabaseConfigured` is false — nobody
+can be signed in without keys, so that is the honest answer — and warns once, by
+name, that both variables are unset, that nobody can sign in, and that the rest
+of the site works. Verified: `/`, `/explore`, `/donate`, `/login` and `/signup`
+all return 200 with no keys present, where all five were 500 before.
+
+**Footer**
+
+`footer.site-footer` margin-top 40px → **72px**, padding 20px → **24px**. On
+short pages the links and social marks sat close under the last section and read
+as part of the content rather than the end of the page. Measured: gap from main
+to footer is now 72px, footer height 61px → 69px.
+
+**Verified**
+
+`tsc --noEmit` clean, `eslint` clean apart from the pre-existing
+`countedRatings` warning, `npm run build` compiles 39 pages.
+
+**Follow-ups**
+
+- The four findings from the 2026-09-06 review are still open: the diary/ratings
+  timezone mismatch, `formatCount` rendering 999,500 as "1000k", the like
+  check-then-act race, and the tier-label capitalisation drift.
+- Supabase Auth now works end to end on phillipn's machine — signup succeeded
+  once the **publishable** key (`sb_publishable_…`) replaced the legacy JWT anon
+  key, which that project rejects with `401 Invalid API key`. Worth knowing
+  before anyone reaches for the `eyJ…` key from the dashboard.
+
 ### 2026-09-07 — Supabase Auth is live; password reset exists for the first time
 
 - **Branch:** `main`
