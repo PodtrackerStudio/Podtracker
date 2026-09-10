@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "check:db": "node scripts/check-db.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

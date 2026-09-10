@@ -71,6 +71,67 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-10 — A one-command diagnostic for "we couldn't reach our database"
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — signup was failing with the
+  database-unreachable message; "ok so whats the fix".
+- **Status:** Complete. The cause on his machine is still unknown — this is the
+  tool that identifies it rather than a fix for a specific cause.
+
+**Why a script rather than a fix**
+
+`DB_UNREACHABLE_MESSAGE` is deliberately vague for whoever is signing up, and
+the real error only ever reaches a server log — Vercel's Logs tab, or the
+terminal running the dev server. Neither is much use to a non-expert, and three
+different faults produce the identical screen: wrong credentials, unreachable
+host, and a reachable database with no schema. Guessing between them by
+correspondence wastes a round trip each time.
+
+**`npm run check:db`**
+
+`scripts/check-db.mjs` connects **the way the app does** — `@neondatabase/serverless`
+over a WebSocket on 443 — and not the way the Prisma CLI does, on 5432. That
+distinction matters: a network that blocks 5432 breaks `prisma migrate` while
+the app works perfectly, so a Prisma-based check can report a failure that does
+not exist. This repo has been bitten by that before (2026-08-31).
+
+It reports, in order:
+
+1. Whether `DATABASE_URL` is set and parses, with host, user, database and
+   whether a password is present — **never the password itself**. Output like
+   this gets pasted into chats, which is how the last credential leaked.
+2. Whether it is the pooled string, flagged as a production concern rather than
+   a cause of failure.
+3. Whether a connection succeeds, and if so whether the `User` table exists —
+   a reachable database with no schema fails signup identically.
+
+On failure it classifies the error and prints the fix: authentication rejected
+(rotated password not propagated to both `.env` and Vercel), host unreachable,
+or a missing role/database. Neon's own wording for an unreachable host is
+"Received network error or non-101 status code", which means the WebSocket
+upgrade never completed — matched explicitly, because nothing about that string
+suggests "wrong hostname" to a reader.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `scripts/check-db.mjs` | Added — connection diagnostic |
+| `package.json` | Modified — added the `check:db` script |
+
+**Verification**
+
+Run against this sandbox, where the database is genuinely unreachable: reports
+the variable correctly, masks the password, and — after a fix to the pattern —
+classifies the failure as unreachable rather than falling through to
+"unrecognised". The success and missing-schema branches were not exercised;
+there is no reachable Postgres here.
+
+`npm run lint` and `npx tsc --noEmit` clean.
+
+---
+
 ### 2026-09-10 — SEO round two: structured data and a title on every page
 
 - **Branch:** `main`
