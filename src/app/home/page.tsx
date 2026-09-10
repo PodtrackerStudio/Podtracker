@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
@@ -5,6 +6,11 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { getCurrentUser } from "@/lib/auth";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import styles from "./home.module.css";
+
+export const metadata: Metadata = {
+  title: "Home",
+  robots: { index: false, follow: false },
+};
 
 /**
  * Stripped to popular podcasts (Sasha, 2026-08-18). It previously showed a feed

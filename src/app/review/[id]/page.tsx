@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
@@ -37,6 +38,48 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
  * than `LogEntry.tier`, matching how the profile's reviews tab does it, since a
  * review can exist without a rating and vice versa.
  */
+/**
+ * A review's own title and preview.
+ *
+ * Reviews are the one kind of page here that nothing else on the internet has:
+ * the platforms host the audio, the show's own site hosts the show, and neither
+ * hosts what listeners thought of it. Giving each review a real title is what
+ * lets "<show name> review" find this site rather than a directory listing.
+ */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+
+  const entry = await db.logEntry
+    .findUnique({
+      where: { id },
+      select: {
+        reviewText: true,
+        user: { select: { displayName: true, username: true } },
+        episode: { select: { title: true, podcast: { select: { title: true } } } },
+        podcast: { select: { title: true } },
+      },
+    })
+    .catch(() => null);
+
+  if (!entry?.reviewText) return {};
+
+  const subject = entry.episode?.title ?? entry.podcast?.title ?? entry.episode?.podcast?.title ?? "a podcast";
+  const author = entry.user.displayName || entry.user.username;
+  const body = entry.reviewText.replace(/\s+/g, " ").trim();
+
+  return {
+    title: `${author}'s review of ${subject}`,
+    description: body.length > 200 ? `${body.slice(0, 197).trimEnd()}…` : body,
+    alternates: { canonical: `/review/${id}` },
+    openGraph: {
+      type: "article",
+      title: `${author}'s review of ${subject}`,
+      description: body,
+      url: `/review/${id}`,
+    },
+  };
+}
+
 export default async function ReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 

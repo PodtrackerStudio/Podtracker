@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -5,6 +6,15 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ProfileSubHeader } from "../ProfileSubHeader";
 import styles from "../profileSub.module.css";
+
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
+  return {
+    title: `${username}'s reviews`,
+    description: `Podcast and episode reviews written by ${username} on Podtracker.`,
+    alternates: { canonical: `/user/${username}/reviews` },
+  };
+}
 
 const TIER_LABELS: Record<string, string> = {
   HIGHLY_RECOMMEND: "Highly Recommend",

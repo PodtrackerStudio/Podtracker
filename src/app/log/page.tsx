@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getCurrentUser } from "@/lib/auth";
 import { LogClient } from "./LogClient";
 import styles from "./log.module.css";
+
+export const metadata: Metadata = {
+  title: "Log a podcast",
+  robots: { index: false, follow: false },
+};
 
 /**
  * The "+ Log podcast" flow.

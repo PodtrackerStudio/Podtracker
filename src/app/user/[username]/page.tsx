@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -88,6 +89,29 @@ function ProfileSubnav({ username }: { username: string }) {
       <Link href={`/user/${username}/diary`}>Full diary</Link>
     </div>
   );
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
+
+  if (username === DEMO_USERNAME) {
+    return { title: "Sasha", robots: { index: false, follow: false } };
+  }
+
+  const profile = await db.user
+    .findUnique({ where: { username }, select: { displayName: true, username: true, bio: true } })
+    .catch(() => null);
+  if (!profile) return {};
+
+  const name = profile.displayName || profile.username;
+  const bio = profile.bio?.replace(/\s+/g, " ").trim();
+
+  return {
+    title: name,
+    description: bio || `${name}'s podcast ratings, reviews and diary on Podtracker.`,
+    alternates: { canonical: `/user/${username}` },
+    openGraph: { type: "profile", title: name, description: bio, url: `/user/${username}` },
+  };
 }
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {

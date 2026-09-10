@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -29,6 +30,29 @@ const MEDIA_OPTIONS: FilterOption[] = [
  * page. It reads its selection from the query string, so a filtered list is a
  * linkable URL rather than component state.
  */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+
+  const list = await getListForView(id).catch(() => null);
+  if (!list) return {};
+
+  // Next listening redirects to the owner's page, so this url is never the
+  // destination and should not be the one in an index.
+  if (list.isWatchlist) return { robots: { index: false, follow: false } };
+
+  const count = list.items.length;
+  const description =
+    list.description?.replace(/\s+/g, " ").trim() ||
+    `A list of ${count} ${count === 1 ? "podcast" : "podcasts"} by ${list.ownerName} on Podtracker.`;
+
+  return {
+    title: `${list.title} — a list by ${list.ownerName}`,
+    description,
+    alternates: { canonical: `/list/${id}` },
+    openGraph: { type: "article", title: list.title, description, url: `/list/${id}` },
+  };
+}
+
 export default async function ListDetailPage({
   params,
   searchParams,

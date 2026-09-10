@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { DonateForm } from "./DonateForm";
 import styles from "./donate.module.css";
+
+export const metadata: Metadata = {
+  title: "Support Podtracker",
+  description: "Podtracker is built by a small team and runs on donations. Chip in to keep it going.",
+  alternates: { canonical: "/donate" },
+};
 
 export default function DonatePage() {
   return (

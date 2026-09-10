@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/JsonLd";
+import { staticSiteOrigin } from "@/lib/siteUrl";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ChevronLeftIcon, ChevronRightIcon, MicIcon } from "@/components/icons";
@@ -41,6 +44,56 @@ const lists = [
 // `HAS_COMMUNITY_DATA` (imported above) renders Sasha's no-users episode design
 // when false — the right-hand Figma frame — and the with-users one when true.
 
+/**
+ * Per-episode titles and previews.
+ *
+ * **This is the largest search surface the site has.** There are a hundred-odd
+ * show pages and tens of thousands of episode pages behind them, and "<episode
+ * title> review" is a search with almost no competition — the podcast's own
+ * site rarely ranks for it and the platforms do not host reviews at all.
+ * Shipping every one of these with no title threw all of it away.
+ *
+ * A failed lookup returns empty metadata rather than throwing: the page itself
+ * decides whether that is a 404 or a retry, and metadata generation should not
+ * pre-empt that decision.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string; epId: string }>;
+}): Promise<Metadata> {
+  const { id, epId } = await params;
+
+  const result = await getEpisodeDetail(id, epId).catch(() => null);
+  if (!result || result.status !== "ok") return {};
+  const episode = result.episode;
+
+  const plain = episode.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const description = plain.length > 200 ? `${plain.slice(0, 197).trimEnd()}…` : plain;
+
+  const title = `${episode.title} — ${episode.podcastTitle}`;
+  const canonical = `/podcast/${id}/episode/${epId}`;
+
+  return {
+    title,
+    description: description || `Ratings and reviews for this episode of ${episode.podcastTitle} on Podtracker.`,
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      title,
+      description,
+      url: canonical,
+      images: episode.coverUrl ? [{ url: episode.coverUrl, alt: episode.title }] : undefined,
+    },
+    twitter: {
+      card: "summary", // square artwork; the wide card crops it badly
+      title,
+      description,
+      images: episode.coverUrl ? [episode.coverUrl] : undefined,
+    },
+  };
+}
+
 export default async function EpisodePage({ params }: { params: Promise<{ id: string; epId: string }> }) {
   const { id, epId } = await params;
   const result = await getEpisodeDetail(id, epId);
@@ -55,8 +108,36 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
   }
   const episode = result.episode;
 
+  const origin = staticSiteOrigin();
+  const schema = [
+    {
+      "@context": "https://schema.org",
+      "@type": "PodcastEpisode",
+      "@id": `${origin}/podcast/${id}/episode/${epId}#episode`,
+      name: episode.title,
+      url: `${origin}/podcast/${id}/episode/${epId}`,
+      description: episode.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 500),
+      image: episode.coverUrl || undefined,
+      partOfSeries: {
+        "@type": "PodcastSeries",
+        name: episode.podcastTitle,
+        url: `${origin}/podcast/${id}`,
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Explore", item: `${origin}/explore` },
+        { "@type": "ListItem", position: 2, name: episode.podcastTitle, item: `${origin}/podcast/${id}` },
+        { "@type": "ListItem", position: 3, name: episode.title, item: `${origin}/podcast/${id}/episode/${epId}` },
+      ],
+    },
+  ];
+
   return (
     <>
+      <JsonLd data={schema} />
       <SiteNav />
 
       {/* No banner on episode pages — Sasha's call (2026-08-17): podcasts aren't

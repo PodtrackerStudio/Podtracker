@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -7,6 +8,11 @@ import { db } from "@/lib/db";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import { FollowingGrid, type FollowedShow } from "./FollowingGrid";
 import styles from "./following.module.css";
+
+export const metadata: Metadata = {
+  title: "Following",
+  robots: { index: false, follow: false },
+};
 
 // "Your shows!" is personal, so it needs a signed-in user.
 export default async function FollowingPage() {

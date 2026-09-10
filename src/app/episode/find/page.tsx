@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import { lookupPodcast, fetchPodcastFeed } from "@/lib/podcastApi";
 import { episodeKeyFromGuid } from "@/lib/episodeKey";
 import { normaliseEpisodeTitle } from "@/lib/trendingEpisodes";
+
+export const metadata: Metadata = {
+  title: "Finding that episode…",
+  // A lookup that redirects, not a destination.
+  robots: { index: false, follow: false },
+};
 
 /**
  * Resolves one chart episode to its real page, then redirects. Renders nothing.

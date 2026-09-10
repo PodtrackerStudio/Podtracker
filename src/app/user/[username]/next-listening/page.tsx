@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -9,6 +10,13 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { getNextListening } from "@/lib/nextListening";
 import styles from "./nextListening.module.css";
+
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
+  // Somebody's queue is a private-feeling page that changes constantly. It is
+  // reachable, but there is nothing in it worth putting in an index.
+  return { title: `${username}'s next listening`, robots: { index: false, follow: true } };
+}
 
 const MEDIA_OPTIONS: FilterOption[] = [
   { value: "shows", label: "Shows only" },

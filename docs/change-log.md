@@ -71,6 +71,104 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-10 — SEO round two: structured data and a title on every page
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "do more SEO so it pops up for
+  sure especially when i type in podcast".
+- **Status:** Complete for everything achievable in code.
+
+**On the actual request**
+
+Ranking for the single word **"podcast"** is not achievable and was said so
+plainly. That query returns Spotify, Apple and YouTube; no markup moves a new
+site into it. Everything here serves the two queries that *are* winnable — the
+brand name, and "<show or episode name> review / ratings" — and that is where
+the work went.
+
+**What was still missing after the first pass**
+
+The earlier entry added a title template, robots.txt, a sitemap and per-show
+metadata. **28 of 29 pages still had no metadata of their own**, so they all
+inherited the site-wide title, and there was no structured data anywhere.
+
+**What changed**
+
+- **`src/components/JsonLd.tsx`** — **new.** Emits schema.org JSON-LD. Uses
+  `dangerouslySetInnerHTML` because React escapes text children into HTML
+  entities, which produces JSON no parser accepts — the tag renders and every
+  crawler ignores it. Escapes `<` so a feed description containing
+  `</script>` cannot break out of the tag; podcast titles and descriptions are
+  third-party text, so that is a real input.
+- **Site-wide structured data** in the root layout: `WebSite` with a
+  `SearchAction` (what makes Google offer a search box inside a brand result)
+  and `Organization` (ties name, logo and domain into one entity).
+- **`PodcastSeries` + `BreadcrumbList`** on show pages, **`PodcastEpisode` +
+  `BreadcrumbList`** on episode pages. Both skipped for the placeholder show,
+  which carries invented copy — marking fiction up as fact is how a site earns
+  a manual penalty.
+- **A real title and description on every remaining page.** Episode pages are
+  the significant one: tens of thousands of them, all previously shipping as
+  "Podtracker", and "<episode title> review" is a search with almost no
+  competition since the platforms do not host reviews at all. Also profiles,
+  profile sub-tabs, creator pages, reviews, lists, and the two show sub-pages.
+- **`noindex` on the pages that should never be in an index**: `/home`,
+  `/following`, `/settings`, `/log`, `/search`, `/list/create`, the
+  password-reset pages, `/genres`, `/episode/find`, `/login`, and Next
+  listening. This is separate from robots.txt and both are needed: robots.txt
+  asks a crawler not to *fetch* a page, but a page linked from elsewhere can
+  still be indexed on the strength of the link. The tag is the guarantee.
+- **`/person/[slug]` is noindex for any slug not in the creator registry.**
+  Unknown slugs render a title-cased guess at a name over "No bio available
+  yet". Inviting search engines to index invented biography about a real,
+  named, living person is not something to ship.
+- **Share images**: the root now points at `icon.png` so a shared link is not
+  a blank card, and the Twitter card type dropped from `summary_large_image`
+  to `summary` everywhere. The only images available — the site icon and
+  podcast artwork — are square, and the wide card crops a square badly.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/JsonLd.tsx` | Added — JSON-LD emitter |
+| `src/app/layout.tsx` | Modified — WebSite + Organization schema, share image, card type |
+| `src/app/podcast/[id]/page.tsx` | Modified — PodcastSeries + breadcrumb |
+| `src/app/podcast/[id]/episode/[epId]/page.tsx` | Modified — generateMetadata, PodcastEpisode + breadcrumb |
+| `src/app/person/[slug]/page.tsx` | Modified — generateMetadata, noindex for unknown slugs |
+| `src/app/user/[username]/page.tsx` | Modified — generateMetadata from the profile row |
+| `src/app/review/[id]/page.tsx` | Modified — generateMetadata from the review |
+| `src/app/list/[id]/page.tsx` | Modified — generateMetadata from the list |
+| 5 profile sub-tabs, 2 show sub-pages | Modified — generateMetadata each |
+| 16 static pages | Modified — metadata block each, `noindex` where private |
+
+**Verification**
+
+`npx tsc --noEmit` clean · `npm run lint` clean · `npm run build` exit 0.
+Checked the built HTML rather than trusting the source: every page carries a
+distinct `<title>`, the `robots` meta matches intent on each
+(`index, follow` on public pages, `noindex, nofollow` on private ones), and
+the JSON-LD blocks parse as valid JSON with absolute
+`https://www.podtracker.studio` urls throughout.
+
+**Follow-ups — not code**
+
+- **Google Search Console**: verify the domain and submit `/sitemap.xml`. This
+  is still the highest-value remaining item and nothing in the repo can do it.
+  Bing Webmaster Tools covers Bing and DuckDuckGo.
+- **`NEXT_PUBLIC_SITE_URL` must be the live domain**, or every canonical url
+  and preview link points somewhere wrong.
+- **A real 1200×630 share image.** `icon.png` is a 561px square standing in.
+  Replacing it is a Figma export, so it needs Sasha; drop the file in and point
+  the two `images` entries at it.
+- **`AggregateRating` on show pages is deliberately absent.** It is the markup
+  that puts star ratings in a search result and it is the obvious next win —
+  but the numbers on those pages are still mock, and publishing invented
+  ratings as structured data is exactly what manual penalties are for. Add it
+  when `getPodcastCommunityStats` returns real counts.
+
+---
+
 ### 2026-09-10 — Make the site findable: metadata, robots.txt, sitemap, per-show titles
 
 - **Branch:** `main`

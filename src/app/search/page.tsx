@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { search, hrefForSearchItem, subtitleForSearchItem, type SearchItem } from "@/lib/search";
 import styles from "./search.module.css";
+
+export const metadata: Metadata = {
+  title: "Search",
+  // Search result pages are the classic way to fill an index with thousands of
+  // near-identical thin pages, one per query string. Google's own guidance is
+  // to keep them out.
+  robots: { index: false, follow: true },
+};
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -15,6 +16,15 @@ import {
   type SortMode,
 } from "@/lib/userRatings";
 import styles from "./ratings.module.css";
+
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
+  return {
+    title: `${username}'s ratings`,
+    description: `How ${username} rated the podcasts and episodes they have listened to.`,
+    alternates: { canonical: `/user/${username}/ratings` },
+  };
+}
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
 

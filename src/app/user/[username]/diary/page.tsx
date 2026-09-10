@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -6,6 +7,15 @@ import { getCurrentUser } from "@/lib/auth";
 import { episodeHref } from "@/lib/episodeKey";
 import { ProfileSubHeader } from "../ProfileSubHeader";
 import styles from "../profileSub.module.css";
+
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
+  return {
+    title: `${username}'s diary`,
+    description: `Every podcast ${username} has listened to, in order, on Podtracker.`,
+    alternates: { canonical: `/user/${username}/diary` },
+  };
+}
 
 export default async function DiaryPage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;

@@ -8,6 +8,8 @@ import { ReviewWidget } from "@/components/ReviewWidget";
 import { FollowButton } from "@/components/FollowButton";
 import { NextListeningButton } from "@/components/NextListeningButton";
 import { AddToListButton } from "@/components/AddToListButton";
+import { JsonLd } from "@/components/JsonLd";
+import { staticSiteOrigin } from "@/lib/siteUrl";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { getViewerPodcastState } from "@/lib/viewerState";
@@ -95,7 +97,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       images: detail.coverUrl ? [{ url: detail.coverUrl, alt: detail.title }] : undefined,
     },
     twitter: {
-      card: "summary_large_image",
+      card: "summary", // square artwork; the wide card crops it badly
       title,
       description,
       images: detail.coverUrl ? [detail.coverUrl] : undefined,
@@ -114,8 +116,41 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
   // instead of resetting to Follow / unrated on every refresh.
   const viewerState = await getViewerPodcastState(id);
 
+  // Structured data, so this reads as a podcast rather than an unlabelled page
+  // of text. `PodcastSeries` is what makes artwork and episode information
+  // eligible to appear in a result; the breadcrumb is what turns the grey
+  // "podtracker.studio › podcast › 360084272" line into a readable trail.
+  //
+  // Only for live shows. The placeholder carries invented copy, and marking
+  // fiction up as fact is how a site earns a manual penalty.
+  const origin = staticSiteOrigin();
+  const schema = !podcast.isLive
+    ? null
+    : [
+        {
+          "@context": "https://schema.org",
+          "@type": "PodcastSeries",
+          "@id": `${origin}/podcast/${id}#podcast`,
+          name: podcast.title,
+          url: `${origin}/podcast/${id}`,
+          description: podcast.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 500),
+          image: podcast.coverUrl || undefined,
+          author: podcast.author ? { "@type": "Person", name: podcast.author } : undefined,
+          genre: podcast.genres || undefined,
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Explore", item: `${origin}/explore` },
+            { "@type": "ListItem", position: 2, name: podcast.title, item: `${origin}/podcast/${id}` },
+          ],
+        },
+      ];
+
   return (
     <>
+      {schema && <JsonLd data={schema} />}
       <SiteNav />
 
       {/* No banner (Sasha, 2026-08-18) — same call as the episode page. The

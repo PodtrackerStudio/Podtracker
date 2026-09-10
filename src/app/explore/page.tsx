@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -6,6 +7,13 @@ import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import { getTrendingEpisodes } from "@/lib/trendingEpisodes";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import styles from "./explore.module.css";
+
+export const metadata: Metadata = {
+  title: "Explore podcasts",
+  description:
+    "Today's most popular podcasts and trending episodes, with ratings and reviews from the Podtracker community.",
+  alternates: { canonical: "/explore" },
+};
 
 // The Popular lists cards are mock rows with no real list behind them, so
 // they have nowhere to go — /list/[id] renders real lists only now. They sit

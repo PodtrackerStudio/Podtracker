@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -61,6 +62,33 @@ function getMockPerson(slug: string): PersonData {
     bio: "No bio available yet for this person.",
     hostedShow: null,
     appearances: [],
+  };
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const creator = getCreator(slug);
+
+  // Only the curated creators get indexable metadata. Any other slug renders a
+  // title-cased guess at a name over a placeholder bio, and a page of invented
+  // biography about a real, named, living person is not something to invite
+  // search engines to index.
+  if (!creator) return { robots: { index: false, follow: true } };
+
+  const description = creator.bio.replace(/\s+/g, " ").trim();
+  const title = `${creator.name} — ${creator.role}`;
+
+  return {
+    title,
+    description: description.length > 200 ? `${description.slice(0, 197).trimEnd()}…` : description,
+    alternates: { canonical: `/person/${slug}` },
+    openGraph: {
+      type: "profile",
+      title,
+      description,
+      url: `/person/${slug}`,
+      images: creator.avatarUrl ? [{ url: creator.avatarUrl, alt: creator.name }] : undefined,
+    },
   };
 }
 

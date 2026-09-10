@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -6,6 +7,15 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ProfileSubHeader } from "../ProfileSubHeader";
 import styles from "../profileSub.module.css";
+
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
+  return {
+    title: `${username}'s lists`,
+    description: `Podcast lists made by ${username} on Podtracker.`,
+    alternates: { canonical: `/user/${username}/lists` },
+  };
+}
 
 export default async function ListsPage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;

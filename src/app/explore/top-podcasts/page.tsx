@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import styles from "./topPodcasts.module.css";
+
+export const metadata: Metadata = {
+  title: "Top podcasts today",
+  description: "The 100 most popular podcasts right now, ranked, each with ratings and reviews on Podtracker.",
+  alternates: { canonical: "/explore/top-podcasts" },
+};
 
 /**
  * The full chart behind Explore's "See full list" — the same big cover grid the

@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { getTrendingEpisodes } from "@/lib/trendingEpisodes";
 import styles from "../top-podcasts/topPodcasts.module.css";
+
+export const metadata: Metadata = {
+  title: "Trending podcast episodes",
+  description: "The podcast episodes people are listening to right now — find out which ones are worth your time.",
+  alternates: { canonical: "/explore/trending-episodes" },
+};
 
 /**
  * The full chart behind Explore's "See full list" beside Popular episodes.
