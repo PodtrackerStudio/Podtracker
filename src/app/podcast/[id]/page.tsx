@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -53,6 +54,54 @@ const lists = [
 // `HAS_COMMUNITY_DATA` (imported above) gates everything needing a user base.
 // False renders Sasha's no-users design (Figma Frames 11 + 13); true restores
 // the with-users one (Frames 4 + 6).
+
+/**
+ * Per-show titles and link previews.
+ *
+ * Every show page shared the site-wide title before this, so a hundred pages
+ * competed as "Podtracker" and none of them described what they were. This is
+ * also the only search traffic worth chasing: nobody reaches a new site by
+ * searching "podcasts", but "<show name> episode reviews" is winnable.
+ *
+ * `getPodcastDetail` is called here *and* in the page body. That is not a
+ * duplicate fetch — Next runs both in the same request and the underlying
+ * lookups are cached, so the second call is served from cache.
+ */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const detail = await getPodcastDetail(id);
+
+  // The placeholder show carries invented copy. Leaving it out keeps the
+  // fallback page on the site-wide title rather than indexing fiction.
+  if (!detail.isLive) return {};
+
+  // Feed descriptions run to thousands of characters and often carry HTML.
+  // Search results truncate around 160, and a preview card less than that.
+  const plain = detail.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const description = plain.length > 200 ? `${plain.slice(0, 197).trimEnd()}…` : plain;
+
+  const title = `${detail.title} — ratings and episode reviews`;
+  const canonical = `/podcast/${id}`;
+
+  return {
+    title,
+    description: description || `Ratings, reviews and episode guides for ${detail.title} on Podtracker.`,
+    alternates: { canonical },
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      url: canonical,
+      images: detail.coverUrl ? [{ url: detail.coverUrl, alt: detail.title }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: detail.coverUrl ? [detail.coverUrl] : undefined,
+    },
+  };
+}
 
 export default async function PodcastPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

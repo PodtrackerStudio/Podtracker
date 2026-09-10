@@ -71,6 +71,95 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-10 — Make the site findable: metadata, robots.txt, sitemap, per-show titles
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "how do i get it so it comes up
+  when i look up podcasts or podtracker".
+- **Status:** Complete. Nothing here makes the site rank on its own; it removes
+  the reasons a crawler would skip it or index it badly.
+
+**The honest framing, recorded so it is not re-litigated**
+
+Ranking for **"podcasts"** is not a goal. That query belongs to Spotify, Apple
+and YouTube and no amount of markup changes it. Two things are winnable and
+everything below serves them: the brand search **"podtracker"**, and the long
+tail of **"<show name> reviews / ratings"** on individual show pages.
+
+**What was missing**
+
+The whole app had one `<title>` and one description, set in the root layout.
+Every one of the hundred-plus show pages shipped as "Podtracker" with the same
+generic sentence, so they competed with each other and described nothing. There
+was no `robots.txt`, no sitemap, no `metadataBase`, and no Open Graph tags —
+so a link pasted into iMessage or Discord rendered as a bare url.
+
+**What changed**
+
+- **`src/lib/siteUrl.ts`** — added `staticSiteOrigin()`. The existing
+  `siteOrigin(request)` needs a request; metadata, robots and the sitemap are
+  produced outside one. Order is `NEXT_PUBLIC_SITE_URL` →
+  `VERCEL_PROJECT_PRODUCTION_URL` → `http://localhost:3000`. The Vercel
+  fallback exists so a deploy that forgets the variable still emits absolute
+  urls rather than telling Google the canonical address of every page is
+  localhost.
+- **`src/app/layout.tsx`** — `metadataBase` (without it Next emits relative
+  Open Graph urls, which scrapers ignore, so the tags exist and do nothing), a
+  title template so pages read "About Podtracker · Podtracker", explicit robots
+  directives including `max-image-preview: large`, and Open Graph + Twitter
+  card defaults.
+- **`src/app/robots.ts`** — **new.** Allows everything except paths that waste
+  crawl budget: `/api/`, `/auth/`, `/settings`, `/log`, the password-reset
+  pages, `/episode/find` (a lookup that redirects) and `/genres` (unlinked,
+  cut from MVP). None of this is access control — all of them already have auth
+  checks where they need them.
+- **`src/app/sitemap.ts`** — **new.** Eight static pages plus the top 100
+  podcasts from Apple's chart, so show pages are discoverable without a crawler
+  having to find them through Explore. Hourly revalidate, matching the chart.
+  Returns just the static list if the chart is unreachable rather than failing
+  the build. Profile pages are omitted until there are real accounts.
+- **`src/app/podcast/[id]/page.tsx`** — `generateMetadata`: per-show title
+  ("<show> — ratings and episode reviews"), the feed description stripped of
+  HTML and cut to 200 characters, canonical url, and the show's artwork as the
+  preview image. Returns `{}` for the placeholder show so invented copy is
+  never indexed.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/siteUrl.ts` | Modified — added `staticSiteOrigin()` |
+| `src/app/layout.tsx` | Modified — metadataBase, title template, robots, Open Graph, Twitter |
+| `src/app/robots.ts` | Added — `/robots.txt` |
+| `src/app/sitemap.ts` | Added — `/sitemap.xml` |
+| `src/app/podcast/[id]/page.tsx` | Modified — `generateMetadata` per show |
+
+**Verification**
+
+`npx tsc --noEmit` clean · `npm run lint` clean · `npm run build` exit 0.
+Inspected the generated output: `/robots.txt` and `/sitemap.xml` both build as
+static routes, and with `NEXT_PUBLIC_SITE_URL` set they carry absolute
+`https://www.podtracker.studio` urls. The sitemap's podcast entries could not be
+checked locally — the sandbox blocks Apple's chart host, so only the eight
+static entries appeared; the fallback path is what was exercised.
+
+**Follow-ups — none of this is code**
+
+- **`NEXT_PUBLIC_SITE_URL` must be correct in production**, or every canonical
+  url and preview link is wrong. It is currently set to a value that predates
+  the custom domain.
+- **Google Search Console**: verify the domain, submit `/sitemap.xml`. Nothing
+  gets indexed quickly without this. Bing Webmaster Tools is the same job again
+  and covers Bing plus DuckDuckGo.
+- **No Open Graph image exists.** There is `icon.png` and nothing else, so
+  shared links get a card with text and no picture. A 1200×630 image would fix
+  it; it is a design asset, so it needs Sasha.
+- Structured data (schema.org `PodcastSeries`, `Review`, `AggregateRating`) is
+  the obvious next step for show pages, and is worth doing once real ratings
+  exist rather than while the numbers on those pages are mock.
+
+---
+
 ### 2026-09-10 — First Vercel build failed on /explore; bounded the feed work and cached the result
 
 - **Branch:** `main`

@@ -18,6 +18,30 @@
  * Whatever this resolves to must also be listed under **Redirect URLs** in the
  * Supabase dashboard, or the link in the email refuses to open.
  */
+/**
+ * The site's origin without a request to infer it from.
+ *
+ * Metadata, `robots.txt` and the sitemap are all produced outside a request —
+ * during the build, or by Next's own generators — so they cannot use
+ * `siteOrigin` above. That leaves `NEXT_PUBLIC_SITE_URL` as the only source.
+ *
+ * **Set it in production.** The localhost fallback is right for development and
+ * wrong everywhere else: search engines would be handed `http://localhost:3000`
+ * as the canonical address of every page, and link previews would point there
+ * too. Vercel also exposes `VERCEL_PROJECT_PRODUCTION_URL`, which is checked
+ * second so a deploy that forgets the variable still produces working absolute
+ * urls rather than localhost ones.
+ */
+export function staticSiteOrigin(): string {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (configured) return configured.replace(/\/+$/, "");
+
+  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (vercelHost) return `https://${vercelHost.replace(/\/+$/, "")}`;
+
+  return "http://localhost:3000";
+}
+
 export function siteOrigin(request: Request): string {
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (configured) return configured.replace(/\/+$/, "");
