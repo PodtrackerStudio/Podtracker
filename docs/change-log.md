@@ -71,6 +71,76 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-10 — Ready to deploy on Vercel
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — prepare the site for Vercel.
+- **Status:** Complete. Nothing is deployed yet; this is the preparation.
+
+**The blocker that would have failed the first deploy**
+
+`package.json` had **no `postinstall`**, and the Prisma client is generated into
+`src/generated/prisma`, which is gitignored. Vercel checks the repository out
+fresh, so the directory is simply absent and `next build` dies with
+`Module not found: Can't resolve '@/generated/prisma/client'`. It works locally
+only because everyone has run `prisma generate` by hand at some point.
+
+Added `"postinstall": "prisma generate"`. Verified the way it actually matters:
+deleted `src/generated`, ran `npm install` (the hook regenerated it) and then
+`npm run build` — 39 pages, exit 0. That is precisely Vercel's sequence.
+
+**A bug that only appears in production**
+
+`/api/auth/forgot-password` built the reset link from `new URL(request.url).origin`.
+Vercel terminates TLS at the edge and forwards plain HTTP to the function, so
+that can yield `http://` and, depending on the hop, an internal host. The result
+would be a downgraded link in somebody's inbox that Supabase's redirect
+allow-list then refuses — a password reset that fails only in production, only
+for real users, and works perfectly on localhost.
+
+`src/lib/siteUrl.ts` (new) resolves the public origin properly: explicit
+`NEXT_PUBLIC_SITE_URL` first, then `x-forwarded-proto`/`x-forwarded-host`, then
+the request URL as the localhost case.
+
+**Also**
+
+- `docs/deploying-to-vercel.md` — **new.** Environment variables, the Supabase
+  dashboard settings the code cannot set, migration handling, and what behaves
+  differently in production.
+- `.env.example` — documents `NEXT_PUBLIC_SITE_URL`, and **drops
+  `PODCAST_INDEX_API_KEY`, `PODCAST_INDEX_API_SECRET` and `SESSION_SECRET`**,
+  which were read by nothing. They were finding 6 of the 2026-09-06 review and
+  had already sent phillipn to copy a fake `DATABASE_URL` during setup. The file
+  now lists exactly what the code reads.
+
+**Two production decisions written down in the doc, not made here**
+
+- **Use Neon's pooled connection string on Vercel**, not the direct one. Each
+  serverless invocation can open its own connection and a plain endpoint runs
+  out. The direct one is still what `prisma migrate` needs locally.
+- **Migrations are deliberately not part of the build.** A migration failing
+  mid-deploy leaves the schema half-applied, and `migrate deploy` through a
+  pooler is unreliable. Run it by hand against the direct connection.
+
+**Verified**
+
+`tsc --noEmit` clean, `eslint` clean apart from the pre-existing
+`countedRatings` warning, and a clean-checkout `npm install && npm run build`
+compiles 39 pages.
+
+**Follow-ups — read before going live**
+
+- **Email confirmation is still off** in Supabase, and its built-in mailer is
+  rate-limited to a handful of messages an hour. Both need changing before real
+  users, or anyone who forgets a password is stuck.
+- **Development and production share one database.** Existing test accounts and
+  reviews become publicly visible content the moment the site is live. A
+  separate, empty Neon database for production is the cleaner start.
+- **The database password should be rotated** — it has been pasted into a chat.
+- The rate limiter is per-instance and therefore weaker on Vercel than on one
+  long-running server. Supabase's own limits are the real protection.
+- The four findings from the 2026-09-06 review are still open.
+
 ### 2026-09-08 — A missing Supabase key took the whole site down; footer spacing
 
 - **Branch:** `main`

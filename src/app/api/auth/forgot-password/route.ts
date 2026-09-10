@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { rateLimit, clientKey, AUTH_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
+import { siteOrigin } from "@/lib/siteUrl";
 
 /**
  * Send a password-reset email.
@@ -33,11 +34,10 @@ export async function POST(request: Request) {
 
   const supabase = await createSupabaseServerClient();
 
-  // Built from the incoming request rather than a hardcoded host, so this works
-  // on localhost and in production without a second env var. The address must
-  // also be listed under Redirect URLs in the Supabase dashboard, or the link in
-  // the email refuses to open.
-  const origin = new URL(request.url).origin;
+  // See `siteOrigin` — behind Vercel's proxy the request the handler sees can
+  // carry http:// and an internal host, which would put a downgraded, rejected
+  // link in somebody's inbox.
+  const origin = siteOrigin(request);
 
   await supabase.auth.resetPasswordForEmail(email.trim(), {
     redirectTo: `${origin}/auth/callback?next=/reset-password`,
