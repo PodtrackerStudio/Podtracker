@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { fetchPodcastFeed, lookupPodcast } from "./podcastApi";
 import { episodeKeyFromGuid } from "./episodeKey";
 
@@ -66,7 +67,7 @@ export function normaliseEpisodeTitle(title: string): string {
  * feeds that will happen; a working show link beats dropping the entry or
  * guessing at an episode.
  */
-export async function getTrendingEpisodes(
+async function computeTrendingEpisodes(
   limit = 8,
   country = "us",
   /**
@@ -113,7 +114,7 @@ export async function getTrendingEpisodes(
   );
 
   const feedsByShow = new Map<string, { guid: string; title: string }[]>();
-  await Promise.all(
+  const resolveAll = Promise.all(
     showIds.map(async (showId) => {
       try {
         const podcast = await lookupPodcast(showId);
@@ -125,6 +126,25 @@ export async function getTrendingEpisodes(
       }
     }),
   );
+
+  // HARD DEADLINE, on top of MAX_FEEDS. The cap bounds how many feeds we ask
+  // for; it does not bound how long they take, and that distinction broke the
+  // first Vercel deploy: `/explore` exceeded Next's 60s per-page prerender
+  // limit three times and failed the build outright. Parsing is CPU-bound and
+  // single-threaded, feeds run 2.5–7MB, and a build machine generating pages
+  // with three workers is far slower than a laptop.
+  //
+  // Whatever has landed in `feedsByShow` when the clock runs out is used;
+  // everything else takes the /episode/find fallback below, which is the same
+  // degradation an unmatched title already gets. A page that renders in 20s
+  // with some deferred links beats a build that does not complete.
+  const RESOLVE_BUDGET_MS = 20_000;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, RESOLVE_BUDGET_MS);
+  });
+  await Promise.race([resolveAll, deadline]);
+  clearTimeout(timer);
 
   return results.map((r) => {
     const showId = showIdFromUrl(r.url);
@@ -150,3 +170,33 @@ export async function getTrendingEpisodes(
     };
   });
 }
+
+/**
+ * The public entry point, wrapping the work above in Next's data cache.
+ *
+ * **Why this is not enough to be covered by the caches already in place.**
+ * `fetchPodcastFeed` keeps parsed feeds in a module-level `Map`, which is one
+ * cache *per server instance* — on Vercel every serverless instance starts cold
+ * with an empty one, so the expensive path is re-run far more often than the
+ * hour-long TTL suggests. Next's own fetch cache does not fill the gap either:
+ * podcast feeds exceed its 2MB limit and are refused outright (the first Vercel
+ * build logged exactly that for four feeds, 2.5MB to 7.2MB).
+ *
+ * What gets cached here is the *finished* array — a few kilobytes of titles,
+ * artwork urls and hrefs — which fits comfortably and, on Vercel, is shared
+ * across instances and survives them. So the feeds are parsed roughly once an
+ * hour for the whole deployment rather than once per cold instance.
+ *
+ * `unstable_cache` keys on the arguments automatically, so the 8-item Explore
+ * row and the 100-item full list get separate entries, as do different
+ * countries and the `resolveEpisodeLinks: false` variant.
+ *
+ * Next 16 recommends migrating this to the `use cache` directive, which needs
+ * the app-wide `cacheComponents` flag turned on. That is a deliberate migration
+ * for its own session, not something to fold into a deploy fix.
+ */
+export const getTrendingEpisodes = unstable_cache(
+  computeTrendingEpisodes,
+  ["trending-episodes"],
+  { revalidate: 3600, tags: ["trending-episodes"] },
+);

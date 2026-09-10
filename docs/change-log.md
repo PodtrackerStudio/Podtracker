@@ -71,6 +71,106 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-10 — First Vercel build failed on /explore; bounded the feed work and cached the result
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — the Vercel deploy errored.
+- **Status:** Code fix complete and verified locally. The deploy itself is
+  blocked on a Vercel configuration problem the code cannot fix — see below.
+
+**What actually failed**
+
+```
+Failed to build /explore/page: /explore (attempt 1 of 3) because it took more than 60 seconds.
+... attempt 2 ... attempt 3 ...
+Export encountered an error on /explore/page: /explore, exiting the build.
+Error: Command "npm run build" exited with 1
+```
+
+Next gives each prerendered page 60 seconds. `/explore` calls
+`getTrendingEpisodes(8)`, which parses a full RSS feed per distinct show.
+The same build logged four feeds it could not put in the fetch cache — 2.5MB,
+4.9MB, 6.6MB and 7.2MB — so every one of them was parsed from scratch, on a
+build container running three page workers in parallel. Comfortably over 60s.
+
+**The part that is easy to miss:** `/explore` was only being prerendered
+*because the Supabase environment variables were absent from the build.*
+`SiteNav` awaits `getCurrentUser`, which reads `cookies()` — but only once
+Supabase is configured. With no keys it returns `null` before touching cookies,
+nothing marks the route dynamic, and Next prerenders it. Verified both ways
+locally:
+
+| Build | `/explore` |
+| --- | --- |
+| no Supabase keys | `○` static — prerendered, subject to the 60s limit |
+| keys present | `ƒ` dynamic — not prerendered at all |
+
+So the missing keys caused the build failure. But "just add the keys" would only
+move the cost from build time to *every request*, which is worse. Both are fixed
+here.
+
+**What changed**
+
+- **A hard deadline on feed resolution** in `getTrendingEpisodes`. `MAX_FEEDS`
+  bounds how many feeds are requested; nothing bounded how long they take.
+  Resolution now gets 20 seconds, and whatever has resolved by then is used —
+  the rest fall through to the `/episode/find` link, which is the same
+  degradation an unmatched title already took. A page that renders with some
+  deferred links beats a build that never finishes.
+- **`unstable_cache` around the finished result.** The existing
+  `parsedFeedCache` is a module-level `Map`, i.e. one cache per server
+  instance, and on Vercel every cold instance starts empty. Next's fetch cache
+  does not cover the gap either — it refuses anything over 2MB, which is most
+  podcast feeds. Caching the *finished array* instead (a few KB of titles,
+  artwork and hrefs) fits easily and, on Vercel, is shared across instances.
+  Feeds are now parsed roughly once an hour per deployment rather than once per
+  cold instance. This is the item the 2026-09-10 latency review flagged and
+  deliberately left; the build failure made it worth doing now.
+
+`unstable_cache` keys on its arguments, so the 8-item Explore row, the 100-item
+list, other countries and the `resolveEpisodeLinks: false` variant all get
+separate entries.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/trendingEpisodes.ts` | Modified — 20s resolution deadline; `getTrendingEpisodes` is now `computeTrendingEpisodes` wrapped in `unstable_cache` |
+
+**Not done, and why**
+
+Next 16 recommends replacing `unstable_cache` with the `use cache` directive,
+which requires turning on the app-wide `cacheComponents` flag. That is a
+migration with its own blast radius, not something to fold into a deploy fix.
+`unstable_cache` remains supported and documented for apps without that flag.
+
+**Verification**
+
+`npx tsc --noEmit` clean · `npm run lint` clean · `npm run build` exit 0, both
+with and without Supabase keys present.
+
+**Not verified:** the sandbox blocks outbound requests to
+`rss.applemarketingtools.com` and the feed hosts, so the chart fetch returns
+empty locally and the 20s deadline is never actually exercised. The logic is
+correct by inspection and the build passes; the real timing can only be
+confirmed by a Vercel build.
+
+**Follow-ups**
+
+- **The Vercel build had no Supabase environment variables**, despite all four
+  being present in the project settings — the build log shows the app's own
+  "not set" warning. All four are marked **Secret**, and Vercel's sensitive
+  variables are not exposed to the build step, which is exactly what
+  `NEXT_PUBLIC_` values need in order to be inlined. Leading hypothesis: the
+  three `NEXT_PUBLIC_*` ones must not be marked sensitive. Worth ruling out a
+  spelling mismatch at the same time. Unresolved at the time of writing.
+- `podtracker.studio` DNS is hosted at Fastmail and was still pointing at
+  Fastmail's file storage. Records to change were handed over; not yet confirmed
+  green in Vercel.
+- The per-instance rate limiter is unchanged and still per-instance.
+
+---
+
 ### 2026-09-10 — Backend audit before deployment: four logic fixes, latency measured
 
 - **Branch:** `main`
