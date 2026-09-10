@@ -71,6 +71,98 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-10 — Backend audit before deployment: four logic fixes, latency measured
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — check the backend for errors or
+  flaws in code logic, finalize latency, and prepare for final deployment.
+- **Status:** Complete for the four fixes below. Two production-latency items
+  are recorded under **Follow-ups** rather than rewritten — see the reasoning
+  there.
+
+**What changed**
+
+- `formatCount` rendered **"1000k"** for anything from 999,500 to 999,999. The
+  branch split on `n < 1_000_000`, but the rounding happens *after* the branch
+  is chosen, so 999,500 entered the "k" arm and `Math.round(999.5)` came out as
+  1000. The boundary is now 999,500. `999_500_000` still renders "1000M" — there
+  is no billions tier and there is no plausible route to needing one.
+- `POST /api/likes` **500'd on a fast double click.** It did
+  `findFirst` → `create`, so two overlapping requests both saw no row and the
+  loser hit the composite unique constraint. The `create` now swallows Prisma
+  `P2002` specifically: "already liked" is the state the route is trying to
+  reach, so a concurrent winner is success, not an error. Every other error code
+  still throws.
+- **Four date formatters were unpinned**, in `/review/[id]`,
+  `/user/[username]/diary`, `/user/[username]/reviews` and `src/lib/search.ts`.
+  Without `timeZone`, `Intl.DateTimeFormat` renders in the *server's* zone.
+  Dates are stored as UTC midnight, so on a server west of UTC a diary entry
+  saved for the 1st displayed as the 31st, and the same entry showed one date on
+  the review page and another on the ratings tab. All four now pin `"UTC"`,
+  matching the formatters that were already correct.
+- Removed a dead `countedRatings` variable in `/user/[username]/page.tsx`.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/podcastStats.ts` | Modified — `formatCount` boundary 1,000,000 → 999,500 |
+| `src/app/api/likes/route.ts` | Modified — tolerate P2002 on the concurrent-like race |
+| `src/app/review/[id]/page.tsx` | Modified — pin the date formatter to UTC |
+| `src/app/user/[username]/diary/page.tsx` | Modified — pin the date formatter to UTC |
+| `src/app/user/[username]/reviews/page.tsx` | Modified — pin the date formatter to UTC |
+| `src/lib/search.ts` | Modified — pin the date formatter to UTC |
+| `src/app/user/[username]/page.tsx` | Modified — drop the unused `countedRatings` |
+
+**What the latency work actually found**
+
+Measured rather than guessed. A logging stand-in for Supabase's auth server ran
+on port 4610 so every outbound auth call could be counted per page request:
+
+- **Signed-out visitors make zero Supabase calls.** `proxy.ts` and
+  `getCurrentUser` both short-circuit with no cookie present, so the common case
+  for a pre-launch site costs nothing.
+- **Signed-in requests make two** — one in `proxy.ts` (session refresh) and one
+  in `getCurrentUser`. React `cache()` already collapses repeated
+  `getCurrentUser` calls *within* a render; it cannot reach across the proxy
+  boundary, which runs in a separate invocation.
+- Warm page latency across nine routes: **50–175ms**. No page issues unbatched
+  sequential database calls; `ensurePodcast` uses `upsert`, so there is no
+  create race there.
+
+**Why these two were left alone**
+
+- **`parsedFeedCache` is a module-level `Map`.** On Vercel each serverless
+  instance gets its own, so the documented 175s → 0.3s win holds only for repeat
+  hits landing on the same warm instance. Fixing it properly means an external
+  cache (Vercel KV / Redis) or persisting parsed feeds to Postgres — a real
+  design decision with a cost attached, not a cleanup. Deleting the cache would
+  be strictly worse, and `CLAUDE.md` is right that it is load-bearing.
+- **The two `getUser()` round trips per signed-in request** could become one by
+  having the proxy pass the verified user down via a request header. That trades
+  a ~40ms saving for a header the app would have to trust, which is the kind of
+  shortcut that turns into an auth bypass if anything upstream ever forwards a
+  client-supplied header. Not worth it before there are users.
+
+**Verification**
+
+`npx tsc --noEmit` clean · `npm run lint` clean · `npm run build` compiles 39
+pages, exit 0.
+
+**Follow-ups**
+
+- Per-instance `parsedFeedCache` and per-instance rate limiter on serverless —
+  both degrade rather than break, both need a shared store to fix properly.
+- Two `getUser()` calls per signed-in request.
+- Still outstanding from earlier reviews: the rating-tier label capitalisation
+  drift ("Don't recommend" vs "Don't Recommend") needs Sasha's call, since it is
+  user-visible wording.
+- **Before launch:** rotate the Neon database password (it was pasted in a chat),
+  enable Supabase email confirmation with real SMTP, and decide whether
+  production gets its own empty database.
+
+---
+
 ### 2026-09-10 — Ready to deploy on Vercel
 
 - **Branch:** `main`

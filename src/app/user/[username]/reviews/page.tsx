@@ -87,7 +87,7 @@ export default async function ReviewsPage({ params }: { params: Promise<{ userna
                     <div className={styles.reviewTitle}>{title}</div>
                     {rating && <span className={`${styles.reviewTag} ${styles[TIER_CLASS[rating.tier]]}`}>{TIER_LABELS[rating.tier]}</span>}
                     <p className={styles.reviewText}>{entry.reviewText}</p>
-                    <div className={styles.reviewDate}>{entry.listenedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
+                    <div className={styles.reviewDate}>{entry.listenedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}</div>
                   </div>
                 </Link>
               );

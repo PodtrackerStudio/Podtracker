@@ -54,7 +54,12 @@ export async function getPodcastCommunityStats(externalId: string): Promise<Podc
  */
 export function formatCount(n: number): string {
   if (n < 1_000) return String(n);
-  if (n < 1_000_000) {
+  // 999_500, not 1_000_000: the rounding below happens *after* the branch is
+  // chosen, so splitting on the round number let 999_500 into the "k" branch
+  // where 999.5 rounded up and rendered as "1000k" instead of "1M". There is no
+  // billions tier, so 999_500_000 still renders "1000M" — left alone, since a
+  // podcast on this site reaching a billion listens is not the problem to solve.
+  if (n < 999_500) {
     const k = n / 1_000;
     return `${k < 10 ? k.toFixed(1).replace(/\.0$/, "") : Math.round(k)}k`;
   }

@@ -68,7 +68,7 @@ export default async function DiaryPage({ params }: { params: Promise<{ username
                   <img className={styles.reviewThumb} src={cover} alt={title} />
                   <div className={styles.reviewBody}>
                     <div className={styles.reviewTitle}>{title}</div>
-                    <div className={styles.reviewDate}>{entry.listenedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
+                    <div className={styles.reviewDate}>{entry.listenedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}</div>
                     {entry.reviewText && <p className={styles.reviewText}>{entry.reviewText}</p>}
                   </div>
                 </>

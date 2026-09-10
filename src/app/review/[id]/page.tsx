@@ -18,7 +18,16 @@ const TIER_DISPLAY: Record<string, { label: string; className: string }> = {
   DIDNT_FINISH: { label: "Didn't finish", className: "didnt" },
 };
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "numeric", day: "numeric", year: "2-digit" });
+// timeZone pinned, like every other date formatter in the app. Without it this
+// renders in the *server's* zone, so the same entry showed one date here and
+// another on /user/[username]/ratings — and west of UTC a diary entry saved for
+// the 1st displayed as the 31st.
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "numeric",
+  day: "numeric",
+  year: "2-digit",
+  timeZone: "UTC",
+});
 
 /**
  * A single review, opened from anywhere one is listed.

@@ -303,7 +303,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       : 0;
 
   const allRatings = [...podcastRatings, ...episodeRatings];
-  const countedRatings = allRatings.filter((r) => r.tier !== "DIDNT_FINISH");
   const distributionCounts = {
     HIGHLY_RECOMMEND: 0,
     RECOMMEND: 0,

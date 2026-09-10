@@ -50,7 +50,7 @@ export function hrefForSearchItem(item: SearchItem): string {
 export function subtitleForSearchItem(item: SearchItem): string {
   if (item.type === "episode") {
     const date = item.releaseDate
-      ? new Date(item.releaseDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      ? new Date(item.releaseDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })
       : null;
     return date ? `${item.showTitle} · ${date}` : item.showTitle;
   }

@@ -42,7 +42,17 @@ export async function POST(request: Request) {
     where: { userId: user.id, ...target },
     select: { id: true },
   });
-  if (!existing) await db.like.create({ data: { userId: user.id, ...target } });
+  if (!existing) {
+    try {
+      await db.like.create({ data: { userId: user.id, ...target } });
+    } catch (error) {
+      // P2002 = the composite unique fired, so a concurrent request got there
+      // first. Already liked is the state this route is trying to reach, so
+      // that is success, not an error. Without this, a fast double-click sent
+      // two overlapping requests, both saw no existing row, and the loser 500'd.
+      if ((error as { code?: string })?.code !== "P2002") throw error;
+    }
+  }
 
   const count = await db.like.count({ where: target });
   return NextResponse.json({ ok: true, liked: true, count });
