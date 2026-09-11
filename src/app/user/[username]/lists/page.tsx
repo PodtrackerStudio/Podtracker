@@ -67,7 +67,7 @@ export default async function ListsPage({ params }: { params: Promise<{ username
                 <Link className={styles.listRow} href={`/list/${list.id}`} key={list.id}>
                   <div className={styles.listRowGallery}>
                     {list.items.map((item) => {
-                      const cover = item.podcast?.coverUrl ?? item.episode?.coverUrl ?? item.episode?.podcast?.coverUrl ?? "https://picsum.photos/seed/listdefault/80/80";
+                      const cover = item.podcast?.coverUrl ?? item.episode?.coverUrl ?? item.episode?.podcast?.coverUrl ?? "/placeholder-cover.svg";
                       return (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img className={styles.listRowGalleryImg} src={cover} alt="" key={item.id} />

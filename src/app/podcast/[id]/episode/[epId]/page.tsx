@@ -30,15 +30,15 @@ const community = {
 };
 
 const reviews = [
-  { id: "r1", avatar: "https://picsum.photos/seed/av5/88/88", name: "JohnJam", tier: "recommend", tierLabel: "Recommend", date: "6/24/2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. Ezra Klein brought a lot of nuance to the political discussion that you rarely hear…" },
-  { id: "r2", avatar: "https://picsum.photos/seed/vitoc/88/88", name: "Vito Corleone", tier: "ok", tierLabel: "OK", date: "7/1/2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. This particular episode felt a little long in the middle section but picked up toward the end…" },
-  { id: "r3", avatar: "https://picsum.photos/seed/av2/88/88", name: "Phillip Neiman", tier: "highly", tierLabel: "Highly Recommend", date: "6/28/2026", text: "One of the best political episodes I've heard all year. Ezra Klein is a rare guest who can go deep without losing the thread. Chris pushed back at exactly the right moments…" },
+  { id: "r1", avatar: "/default-avatar.webp", name: "JohnJam", tier: "recommend", tierLabel: "Recommend", date: "6/24/2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. Ezra Klein brought a lot of nuance to the political discussion that you rarely hear…" },
+  { id: "r2", avatar: "/default-avatar.webp", name: "Vito Corleone", tier: "ok", tierLabel: "OK", date: "7/1/2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. This particular episode felt a little long in the middle section but picked up toward the end…" },
+  { id: "r3", avatar: "/default-avatar.webp", name: "Phillip Neiman", tier: "highly", tierLabel: "Highly Recommend", date: "6/28/2026", text: "One of the best political episodes I've heard all year. Ezra Klein is a rare guest who can go deep without losing the thread. Chris pushed back at exactly the right moments…" },
 ];
 
 const lists = [
-  { id: "l1", avatar: "https://picsum.photos/seed/danielocean/80/80", title: "Modern Wisdom (all episodes)", author: "Daniel Ocean", more: 42, gallery: ["https://picsum.photos/seed/listep1/80/80", "https://picsum.photos/seed/listep2/80/80", "https://picsum.photos/seed/epcover/80/80"] },
-  { id: "l2", avatar: "https://picsum.photos/seed/rowan/80/80", title: "Ezra Klein appearances", author: "Rowan", more: 5, gallery: ["https://picsum.photos/seed/epcover/80/80", "https://picsum.photos/seed/listep1/80/80", "https://picsum.photos/seed/listep2/80/80"] },
-  { id: "l3", avatar: "https://picsum.photos/seed/laimerkor/80/80", title: "Episodes I listened this week", author: "LaimerKor", more: 3, gallery: ["https://picsum.photos/seed/listep1/80/80", "https://picsum.photos/seed/listep2/80/80", "https://picsum.photos/seed/epcover/80/80"] },
+  { id: "l1", avatar: "/default-avatar.webp", title: "Modern Wisdom (all episodes)", author: "Daniel Ocean", more: 42, gallery: ["/placeholder-cover.svg", "/placeholder-cover.svg", "/placeholder-cover.svg"] },
+  { id: "l2", avatar: "/default-avatar.webp", title: "Ezra Klein appearances", author: "Rowan", more: 5, gallery: ["/placeholder-cover.svg", "/placeholder-cover.svg", "/placeholder-cover.svg"] },
+  { id: "l3", avatar: "/default-avatar.webp", title: "Episodes I listened this week", author: "LaimerKor", more: 3, gallery: ["/placeholder-cover.svg", "/placeholder-cover.svg", "/placeholder-cover.svg"] },
 ];
 
 // `HAS_COMMUNITY_DATA` (imported above) renders Sasha's no-users episode design

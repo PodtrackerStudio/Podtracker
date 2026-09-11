@@ -71,6 +71,73 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-11 — Covers were vanishing intermittently: removed picsum.photos
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "every once in a while my
+  podcasts like the covers go away".
+- **Status:** Complete.
+
+**Cause**
+
+**71 images across 12 files were served by `picsum.photos`.** It is a free
+hobby service with no availability guarantee and aggressive rate limiting. A
+page carrying fifteen of them has several time out, a *different* few on each
+reload — which is exactly "sometimes the covers disappear". Nothing in the app
+was wrong; it was depending on a service that does not promise to answer.
+
+Worth stating clearly, since it was the natural suspicion: **live podcast
+artwork never touched picsum.** Apple's CDN serves that and is reliable. Only
+mock data used picsum — demo avatars, list galleries, appearance thumbnails,
+creators' hosted-show covers, and the placeholder show's own cover.
+
+**What changed**
+
+All 71 replaced with local files that cannot fail — 21 avatars to the existing
+`/default-avatar.webp`, 50 pieces of artwork to a new
+`public/placeholder-cover.svg`.
+
+The new file is deliberately a blank grey tile with a muted microphone, built
+from existing tokens only (`--page-bg-alt`, `--didnt-finish`). It invents no
+design, and being visibly a placeholder is the point: artwork that looks real
+hides that the data behind it is still mock. This follows the precedent already
+set in `creators.ts`, where picsum portraits were replaced with a neutral
+silhouette for the related reason that random strangers' faces should not be
+attached to named real people.
+
+`demoFriends` became eleven identical avatars rather than eleven distinct
+random photographs — same reasoning, and they were fictional accounts.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `public/placeholder-cover.svg` | Added — neutral artwork placeholder |
+| 12 files under `src/` | Modified — 71 picsum URLs replaced |
+
+**A bug introduced and caught during the change**
+
+The scripted replacement ate part of a template literal, leaving
+`\`/placeholder-cover.svg + 1}/110/110\`` in the profile page. It type-checked
+and built fine — it is a valid string — so neither `tsc` nor `eslint` would
+have caught it; only a targeted grep for leftovers did. Worth remembering when
+scripting replacements across a codebase: a syntactically valid wrong answer is
+the failure mode to look for.
+
+**Verification**
+
+`npx tsc --noEmit` clean · `npm run lint` clean · `npm run build` compiles.
+Grepped for surviving picsum references and for mangled replacements; both
+clean. **Not verified visually** — the sandbox cannot run a browser against the
+live site, so how the placeholder reads at each size is unconfirmed.
+
+**Follow-up**
+
+The placeholder is functional, not designed. If Sasha wants a different one, it
+is a single file swap.
+
+---
+
 ### 2026-09-11 — Moved the database from Neon to Supabase Postgres
 
 - **Branch:** `main`

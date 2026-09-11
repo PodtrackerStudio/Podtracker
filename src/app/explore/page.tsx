@@ -30,9 +30,9 @@ const trendingUsers = [
 ];
 
 const popularLists = [
-  { id: "l1", author: "Alexander Knysh", avatar: "https://picsum.photos/seed/av1/40/40", title: "Joe Rogan MMA show", more: 150, gallery: ["/explore/list-mma-1.jpg", "/explore/list-mma-2.jpg", "https://picsum.photos/seed/mma3/200/200"] },
-  { id: "l2", author: "James", avatar: "https://picsum.photos/seed/av9/40/40", title: "Shane Gillis episodes", more: 40, gallery: ["/explore/list-gillis-1.jpg", "/explore/list-gillis-2.jpg", "/explore/list-gillis-3.jpg"] },
-  { id: "l3", author: "Ryan Jones", avatar: "https://picsum.photos/seed/av10/40/40", title: "Watch to fix your sleep", more: 10, gallery: ["/explore/list-sleep-1.webp", "/explore/list-sleep-2.jpg", "/explore/list-sleep-3.jpg"] },
+  { id: "l1", author: "Alexander Knysh", avatar: "/default-avatar.webp", title: "Joe Rogan MMA show", more: 150, gallery: ["/explore/list-mma-1.jpg", "/explore/list-mma-2.jpg", "/placeholder-cover.svg"] },
+  { id: "l2", author: "James", avatar: "/default-avatar.webp", title: "Shane Gillis episodes", more: 40, gallery: ["/explore/list-gillis-1.jpg", "/explore/list-gillis-2.jpg", "/explore/list-gillis-3.jpg"] },
+  { id: "l3", author: "Ryan Jones", avatar: "/default-avatar.webp", title: "Watch to fix your sleep", more: 10, gallery: ["/explore/list-sleep-1.webp", "/explore/list-sleep-2.jpg", "/explore/list-sleep-3.jpg"] },
 ];
 
 const curatedLists = [

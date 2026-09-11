@@ -32,7 +32,7 @@ function getDemoProfile() {
     following: 19,
     friends: 16,
     link: "Youtube.com",
-    avatar: "https://picsum.photos/seed/profileav/220/220",
+    avatar: "/default-avatar.webp",
     bio: "I like podcasts, and I recommend the ones I really like here",
     longBio:
       "Lifelong podcast addict, currently somewhere between 3 hours and 11 hours behind on my queue. Big fan of long-form interviews, comedy podcasts, and the occasional deep dive into NBA discourse. Always open to recommendations — especially if they're better than what my friends usually send me.",
@@ -40,9 +40,9 @@ function getDemoProfile() {
 }
 
 const demoListening = [
-  { id: "l1", img: "https://picsum.photos/seed/listen1/480/300", tier: "highly", tierLabel: "Highly Recommend", hasReview: true },
-  { id: "l2", img: "https://picsum.photos/seed/listen2/480/300", tier: "recommend", tierLabel: "Recommend", hasReview: true },
-  { id: "l3", img: "https://picsum.photos/seed/listen3/480/300", tier: "ok", tierLabel: "OK", hasReview: false },
+  { id: "l1", img: "/placeholder-cover.svg", tier: "highly", tierLabel: "Highly Recommend", hasReview: true },
+  { id: "l2", img: "/placeholder-cover.svg", tier: "recommend", tierLabel: "Recommend", hasReview: true },
+  { id: "l3", img: "/placeholder-cover.svg", tier: "ok", tierLabel: "OK", hasReview: false },
 ];
 
 const demoDistribution = [
@@ -53,7 +53,7 @@ const demoDistribution = [
   { tier: "didnt", label: "Didn't finish", pct: 4, count: 4 },
 ];
 
-const demoNextListening = ["https://picsum.photos/seed/next1/130/130", "https://picsum.photos/seed/next2/130/130", "https://picsum.photos/seed/next3/130/130"];
+const demoNextListening = ["/placeholder-cover.svg", "/placeholder-cover.svg", "/placeholder-cover.svg"];
 
 const demoListenedDays: Record<number, string[]> = {
   2: ["Joe Rogan #2002 – Bill Burr"],
@@ -65,7 +65,10 @@ const demoListenedDays: Record<number, string[]> = {
   19: ["Conversations with Coleman – Israel & American Power", "Whistleblower CIA – Tucker Carlson", "FLAGRANT – Episode 312"],
 };
 
-const demoFriends = Array.from({ length: 11 }, (_, i) => `https://picsum.photos/seed/friend${i + 1}/110/110`);
+// Eleven identical avatars rather than eleven distinct ones. They were eleven
+// different random photographs of real strangers from picsum.photos, which is
+// both unreliable and a poor thing to attach to fictional accounts.
+const demoFriends = Array.from({ length: 11 }, () => "/default-avatar.webp");
 
 // June 2026 starts on a Monday, so no leading/trailing muted days are needed for week 1.
 const juneWeeks = [

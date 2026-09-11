@@ -27,15 +27,15 @@ const DEMO_EPISODE_HREF = "/podcast/modern-wisdom/episode/1109";
  */
 const appearancesBySlug: Record<string, PersonData["appearances"]> = {
   "joe-rogan": [
-    { id: "a1", title: "This Past Weekend #554 – Joe Rogan", img: "https://picsum.photos/seed/tpwjoe/480/320", href: DEMO_EPISODE_HREF, popularity: 88, order: 1 },
-    { id: "a2", title: "KILL TONY – Joe Rogan & That Mexican OT", img: "https://picsum.photos/seed/killtonyjoe/480/320", href: DEMO_EPISODE_HREF, popularity: 95, order: 2 },
-    { id: "a3", title: "Lex Fridman #300 – Joe Rogan Round 2", img: "https://picsum.photos/seed/lexjoe300/480/480", href: DEMO_EPISODE_HREF, popularity: 99, order: 3 },
+    { id: "a1", title: "This Past Weekend #554 – Joe Rogan", img: "/placeholder-cover.svg", href: DEMO_EPISODE_HREF, popularity: 88, order: 1 },
+    { id: "a2", title: "KILL TONY – Joe Rogan & That Mexican OT", img: "/placeholder-cover.svg", href: DEMO_EPISODE_HREF, popularity: 95, order: 2 },
+    { id: "a3", title: "Lex Fridman #300 – Joe Rogan Round 2", img: "/placeholder-cover.svg", href: DEMO_EPISODE_HREF, popularity: 99, order: 3 },
   ],
   "chris-williamson": [
-    { id: "a1", title: "The Diary of a CEO – Chris Williamson", img: "https://picsum.photos/seed/doacchris/480/320", href: DEMO_EPISODE_HREF, popularity: 70, order: 1 },
+    { id: "a1", title: "The Diary of a CEO – Chris Williamson", img: "/placeholder-cover.svg", href: DEMO_EPISODE_HREF, popularity: 70, order: 1 },
   ],
   "ezra-klein": [
-    { id: "a1", title: "Modern Wisdom – Inside Modern Politics", img: "https://picsum.photos/seed/mwezra/480/320", href: DEMO_EPISODE_HREF, popularity: 82, order: 1 },
+    { id: "a1", title: "Modern Wisdom – Inside Modern Politics", img: "/placeholder-cover.svg", href: DEMO_EPISODE_HREF, popularity: 82, order: 1 },
   ],
 };
 
@@ -58,7 +58,7 @@ function getMockPerson(slug: string): PersonData {
       .split("-")
       .map((w) => w[0]?.toUpperCase() + w.slice(1))
       .join(" "),
-    photo: `https://picsum.photos/seed/${slug}/460/460`,
+    photo: `/default-avatar.webp`,
     bio: "No bio available yet for this person.",
     hostedShow: null,
     appearances: [],

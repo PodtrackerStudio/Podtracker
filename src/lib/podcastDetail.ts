@@ -100,13 +100,13 @@ function placeholderDetail(id: string): PodcastDetail {
     genres: "Self-help, Society & Culture",
     description:
       "Life is hard. This podcast will help. Lessons from the greatest thinkers on the planet with Chris Williamson. Including guests like David Goggins, Dr Jordan Peterson, Naval Ravikant, Sam Harris, Jocko Willink, Dr Andrew Huberman, Dr Julie Smith, Steven Bartlett, Ryan Holiday, Robert Greene, Matthew McConaughey, Alain de Botton, Alex Hormozi, Tony Robbins, Chris Bumstead, Mark Manson and more.",
-    coverUrl: "https://picsum.photos/seed/mwcover/360/360",
-    bannerUrl: "https://picsum.photos/seed/mwbanner/1600/640",
+    coverUrl: "/placeholder-cover.svg",
+    bannerUrl: "/placeholder-cover.svg",
     recentEpisodes: [
-      { id: "1111", guid: "placeholder-1111", publishedAtIso: null, title: "The Hidden Cost Of Overthinking Everything – George Mack #1111", guest: "George Mack", date: "June 15, 2026", img: "https://picsum.photos/seed/ep1111/120/120" },
-      { id: "1110", guid: "placeholder-1110", publishedAtIso: null, title: "Why Most People Never Reach Their Potential – Suzanne Venker #1110", guest: "Suzanne Venker", date: "June 8, 2026", img: "https://picsum.photos/seed/ep1110/120/120" },
-      { id: "1109", guid: "placeholder-1109", publishedAtIso: null, title: "Inside Modern Politics – Ezra Klein #1109", guest: "Ezra Klein", date: "June 1, 2026", img: "https://picsum.photos/seed/ep1109/120/120" },
-      { id: "1108", guid: "placeholder-1108", publishedAtIso: null, title: "How To Rebuild Your Confidence From Zero – DJ Shipley #1108", guest: "DJ Shipley", date: "May 25, 2026", img: "https://picsum.photos/seed/ep1108/120/120" },
+      { id: "1111", guid: "placeholder-1111", publishedAtIso: null, title: "The Hidden Cost Of Overthinking Everything – George Mack #1111", guest: "George Mack", date: "June 15, 2026", img: "/placeholder-cover.svg" },
+      { id: "1110", guid: "placeholder-1110", publishedAtIso: null, title: "Why Most People Never Reach Their Potential – Suzanne Venker #1110", guest: "Suzanne Venker", date: "June 8, 2026", img: "/placeholder-cover.svg" },
+      { id: "1109", guid: "placeholder-1109", publishedAtIso: null, title: "Inside Modern Politics – Ezra Klein #1109", guest: "Ezra Klein", date: "June 1, 2026", img: "/placeholder-cover.svg" },
+      { id: "1108", guid: "placeholder-1108", publishedAtIso: null, title: "How To Rebuild Your Confidence From Zero – DJ Shipley #1108", guest: "DJ Shipley", date: "May 25, 2026", img: "/placeholder-cover.svg" },
     ],
     isLive: false,
   };

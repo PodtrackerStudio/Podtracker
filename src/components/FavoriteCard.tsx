@@ -21,7 +21,7 @@ export function FavoriteCard({ podcastId, title, cover, canRemove }: { podcastId
     <Link className={styles.card} href={`/podcast/${podcastId}`}>
       <div style={{ position: "relative" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className={styles.cover} src={cover ?? "https://picsum.photos/seed/favdefault/300/300"} alt={title} />
+        <img className={styles.cover} src={cover ?? "/placeholder-cover.svg"} alt={title} />
         {canRemove && (
           <button
             onClick={remove}

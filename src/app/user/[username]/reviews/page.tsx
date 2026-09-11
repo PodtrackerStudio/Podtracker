@@ -81,7 +81,7 @@ export default async function ReviewsPage({ params }: { params: Promise<{ userna
         ) : (
           <div className={styles.reviewList}>
             {reviews.map((entry) => {
-              const cover = entry.episode?.coverUrl ?? entry.podcast?.coverUrl ?? "https://picsum.photos/seed/reviewdefault/200/200";
+              const cover = entry.episode?.coverUrl ?? entry.podcast?.coverUrl ?? "/placeholder-cover.svg";
               const title = entry.episode?.title ?? entry.podcast?.title ?? "Untitled";
               // Clicking a review opens the review itself, not the show.
               const href = `/review/${entry.id}`;

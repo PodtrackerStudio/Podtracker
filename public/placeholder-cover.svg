@@ -1,0 +1,21 @@
+<!--
+  Neutral stand-in for mock podcast artwork.
+
+  Replaces picsum.photos, which served every placeholder image in the app until
+  2026-09-11. picsum is a free hobby service with no availability guarantee: a
+  page carrying fifteen of them had several time out, a different few each
+  reload, which read as covers randomly disappearing. A local file cannot fail.
+
+  Deliberately blank and grey rather than a fake cover. It uses only existing
+  design tokens — --page-bg-alt (#e7e7e7) and --didnt-finish (#999999) — and
+  invents nothing, because a placeholder that looks like real artwork hides the
+  fact that the data behind it is not real yet.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" role="img" aria-label="Placeholder artwork">
+  <rect width="300" height="300" fill="#e7e7e7"/>
+  <g fill="none" stroke="#999999" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.55">
+    <rect x="132" y="96" width="36" height="62" rx="18"/>
+    <path d="M114 146a36 36 0 0 0 72 0"/>
+    <path d="M150 182v22"/>
+  </g>
+</svg>

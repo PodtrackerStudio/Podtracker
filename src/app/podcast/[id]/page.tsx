@@ -34,22 +34,22 @@ const community = {
 };
 
 const friendsActivity = [
-  { id: "fa1", avatar: "https://picsum.photos/seed/fa1/88/88", tier: "highly", tierLabel: "Highly Recommend", hasReview: false },
-  { id: "fa2", avatar: "https://picsum.photos/seed/fa2/88/88", tier: "recommend", tierLabel: "Recommend", hasReview: true },
-  { id: "fa3", avatar: "https://picsum.photos/seed/fa3/88/88", tier: "ok", tierLabel: "OK", hasReview: true },
-  { id: "fa4", avatar: "https://picsum.photos/seed/fa4/88/88", tier: "highly", tierLabel: "Highly Recommend", hasReview: false },
+  { id: "fa1", avatar: "/default-avatar.webp", tier: "highly", tierLabel: "Highly Recommend", hasReview: false },
+  { id: "fa2", avatar: "/default-avatar.webp", tier: "recommend", tierLabel: "Recommend", hasReview: true },
+  { id: "fa3", avatar: "/default-avatar.webp", tier: "ok", tierLabel: "OK", hasReview: true },
+  { id: "fa4", avatar: "/default-avatar.webp", tier: "highly", tierLabel: "Highly Recommend", hasReview: false },
 ];
 
 const reviews = [
-  { id: "r1", avatar: "https://picsum.photos/seed/av5/88/88", name: "JohnJam", tier: "recommend", tierLabel: "Recommend", date: "June 16, 2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. The conversations go deep without losing accessibility — a rare thing in the self-improvement space…" },
-  { id: "r2", avatar: "https://picsum.photos/seed/av2/88/88", name: "Phillip Neiman", tier: "highly", tierLabel: "Highly Recommend", date: "June 10, 2026", text: "Easily one of the most consistently high-quality long-form podcasts out there. Chris has a genuine gift for drawing out the best in his guests — every episode feels like a real conversation, not an interview…" },
-  { id: "r3", avatar: "https://picsum.photos/seed/av6/88/88", name: "Peter Prokhorov", tier: "ok", tierLabel: "OK", date: "June 5, 2026", text: "Good podcast overall but some episodes feel like they drag on longer than necessary. Best consumed one or two episodes a week rather than binging…" },
+  { id: "r1", avatar: "/default-avatar.webp", name: "JohnJam", tier: "recommend", tierLabel: "Recommend", date: "June 16, 2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. The conversations go deep without losing accessibility — a rare thing in the self-improvement space…" },
+  { id: "r2", avatar: "/default-avatar.webp", name: "Phillip Neiman", tier: "highly", tierLabel: "Highly Recommend", date: "June 10, 2026", text: "Easily one of the most consistently high-quality long-form podcasts out there. Chris has a genuine gift for drawing out the best in his guests — every episode feels like a real conversation, not an interview…" },
+  { id: "r3", avatar: "/default-avatar.webp", name: "Peter Prokhorov", tier: "ok", tierLabel: "OK", date: "June 5, 2026", text: "Good podcast overall but some episodes feel like they drag on longer than necessary. Best consumed one or two episodes a week rather than binging…" },
 ];
 
 const lists = [
-  { id: "l1", avatar: "https://picsum.photos/seed/av5/80/80", title: "Good Self-help podcasts", author: "Ronnie", more: 8, gallery: ["https://picsum.photos/seed/mwcover/80/80", "https://picsum.photos/seed/simhuberman/80/80", "https://picsum.photos/seed/simdoac/80/80"] },
-  { id: "l2", avatar: "https://picsum.photos/seed/av9/80/80", title: "Listens of the week", author: "JackM", more: 3, gallery: ["https://picsum.photos/seed/mwcover/80/80", "https://picsum.photos/seed/simhuberman/80/80", "https://picsum.photos/seed/simdoac/80/80"] },
-  { id: "l3", avatar: "https://picsum.photos/seed/av10/80/80", title: "Helpful Advice (for me)", author: "Bullsfan1991", more: 11, gallery: ["https://picsum.photos/seed/simrichroll/80/80", "https://picsum.photos/seed/simtimferriss/80/80", "https://picsum.photos/seed/mwcover/80/80"] },
+  { id: "l1", avatar: "/default-avatar.webp", title: "Good Self-help podcasts", author: "Ronnie", more: 8, gallery: ["/placeholder-cover.svg", "/placeholder-cover.svg", "/placeholder-cover.svg"] },
+  { id: "l2", avatar: "/default-avatar.webp", title: "Listens of the week", author: "JackM", more: 3, gallery: ["/placeholder-cover.svg", "/placeholder-cover.svg", "/placeholder-cover.svg"] },
+  { id: "l3", avatar: "/default-avatar.webp", title: "Helpful Advice (for me)", author: "Bullsfan1991", more: 11, gallery: ["/placeholder-cover.svg", "/placeholder-cover.svg", "/placeholder-cover.svg"] },
 ];
 
 

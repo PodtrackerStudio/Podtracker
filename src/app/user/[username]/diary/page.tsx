@@ -62,7 +62,7 @@ export default async function DiaryPage({ params }: { params: Promise<{ username
         ) : (
           <div className={styles.reviewList}>
             {entries.map((entry) => {
-              const cover = entry.episode?.coverUrl ?? entry.podcast?.coverUrl ?? "https://picsum.photos/seed/diarydefault/200/200";
+              const cover = entry.episode?.coverUrl ?? entry.podcast?.coverUrl ?? "/placeholder-cover.svg";
               const title = entry.episode?.title ?? entry.podcast?.title ?? "Untitled";
               // Both ids here used to be database cuids, so every episode row
               // linked to the placeholder episode rather than the logged one.

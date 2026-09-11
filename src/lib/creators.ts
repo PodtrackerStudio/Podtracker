@@ -66,7 +66,7 @@ export const CREATORS: Record<string, Creator> = {
     bio: "Chris Williamson is a British podcaster and former club night promoter, best known as the host of Modern Wisdom, a podcast focused on self-improvement and conversations with leading thinkers across psychology, philosophy, health, and business.",
     hostedShow: {
       title: "Modern Wisdom",
-      cover: "https://picsum.photos/seed/mwcover/460/460",
+      cover: "/placeholder-cover.svg",
       href: "/podcast/modern-wisdom",
     },
   },
@@ -78,7 +78,7 @@ export const CREATORS: Record<string, Creator> = {
     bio: "Ezra Klein is an American journalist, political analyst, and podcast host. He is a columnist for The New York Times and co-founder of Vox, known for his in-depth conversations on politics, media, and public policy.",
     hostedShow: {
       title: "The Ezra Klein Show",
-      cover: "https://picsum.photos/seed/ezrashow/460/460",
+      cover: "/placeholder-cover.svg",
       href: "/podcast/the-ezra-klein-show",
     },
   },
@@ -126,7 +126,7 @@ export const CREATORS: Record<string, Creator> = {
     bio: "Andrew Huberman is an American neuroscientist and a professor at Stanford University School of Medicine. He hosts Huberman Lab, a podcast covering neuroscience and science-based tools for sleep, focus, stress, and physical health.",
     hostedShow: {
       title: "Huberman Lab",
-      cover: "https://picsum.photos/seed/simhuberman/460/460",
+      cover: "/placeholder-cover.svg",
       href: "/podcast/huberman-lab",
     },
   },
@@ -138,7 +138,7 @@ export const CREATORS: Record<string, Creator> = {
     bio: "Tucker Carlson is an American conservative political commentator and writer who hosts The Tucker Carlson Show. He previously presented programmes on CNN, MSNBC, and Fox News, and co-founded the news site The Daily Caller.",
     hostedShow: {
       title: "The Tucker Carlson Show",
-      cover: "https://picsum.photos/seed/tuckershow/460/460",
+      cover: "/placeholder-cover.svg",
       href: "/podcast/the-tucker-carlson-show",
     },
   },
@@ -198,7 +198,7 @@ export const CREATORS: Record<string, Creator> = {
     bio: "Bill Simmons is an American sports writer and podcaster. He founded the sports and culture site Grantland and later The Ringer, and hosts The Bill Simmons Podcast alongside The Rewatchables, a film podcast.",
     hostedShow: {
       title: "The Rewatchables",
-      cover: "https://picsum.photos/seed/rewatchables/460/460",
+      cover: "/placeholder-cover.svg",
       href: "/podcast/rewatchables",
     },
   },
@@ -215,7 +215,7 @@ export const CREATORS: Record<string, Creator> = {
     bio: "Sean Fennessey is an American writer and editor who co-hosts The Rewatchables, a film podcast, with Bill Simmons and Chris Ryan.",
     hostedShow: {
       title: "The Rewatchables",
-      cover: "https://picsum.photos/seed/rewatchables/460/460",
+      cover: "/placeholder-cover.svg",
       href: "/podcast/rewatchables",
     },
   },
@@ -227,7 +227,7 @@ export const CREATORS: Record<string, Creator> = {
     bio: "Chris Ryan is an American writer and editor who co-hosts The Rewatchables, a film podcast, with Bill Simmons and Sean Fennessey.",
     hostedShow: {
       title: "The Rewatchables",
-      cover: "https://picsum.photos/seed/rewatchables/460/460",
+      cover: "/placeholder-cover.svg",
       href: "/podcast/rewatchables",
     },
   },
@@ -239,7 +239,7 @@ export const CREATORS: Record<string, Creator> = {
     bio: "Alex Hormozi is an American entrepreneur and investor, known for his books on offers and acquisition and for The Game, his podcast on building and scaling companies.",
     hostedShow: {
       title: "The Game",
-      cover: "https://picsum.photos/seed/thegame/460/460",
+      cover: "/placeholder-cover.svg",
       href: "/podcast/the-game",
     },
   },

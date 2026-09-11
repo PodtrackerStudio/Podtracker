@@ -65,7 +65,7 @@ export function TopRatedClient({ podcastId, podcastTitle }: { podcastId: string;
           <Link className={styles.episodeRow} href={`/podcast/${podcastId}/episode/1109`} key={`${ep.title}-${i}`}>
             <div className={styles.episodeRank}>{i + 1}.</div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={styles.episodeThumb} src={`https://picsum.photos/seed/mwtop${i}/120/120`} alt="Episode thumbnail" />
+            <img className={styles.episodeThumb} src={`/placeholder-cover.svg`} alt="Episode thumbnail" />
             <div className={styles.episodeText}>
               <div className={styles.episodeTitleLine}>{ep.title}</div>
               <div className={styles.episodeDate}>{ep.date}</div>
