@@ -71,6 +71,95 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-11 — Moved the database from Neon to Supabase Postgres
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "start the rewrite", after
+  asking how hard consolidating onto Supabase would be.
+- **Status:** Code complete and verified against a real Postgres. **Not yet
+  pointed at a live Supabase database** — that needs a connection string only
+  Phillip has.
+
+**Why**
+
+Supabase was already here for auth, and every Supabase project ships a Postgres
+database. The app was running two database services and using one of them. One
+dashboard, one connection string, one password to rotate — and the app's tables
+now sit in the same database as the auth users they belong to, which is what
+makes database-level access rules possible later.
+
+**What changed**
+
+- **`src/lib/db.ts`** — `PrismaNeon` → `PrismaPg`. Both adapters were already
+  installed, so there was nothing to add; `@neondatabase/serverless` and
+  `@prisma/adapter-neon` were removed. The 10s connect timeout is unchanged.
+- **`scripts/check-db.mjs`** — rewritten for Supabase. It now recognises three
+  wrong connection strings rather than one: a leftover Neon string, the direct
+  string, and the pooler in **transaction mode on 6543**, which pools but hands
+  the connection back after every statement and so breaks interactive
+  transactions. Also flags the pooler's `postgres.<project-ref>` username,
+  which fails exactly like a wrong password when copied wrong.
+- **`.env.example`**, **`docs/deploying-to-vercel.md`**, **`CLAUDE.md`** —
+  updated. Supabase's three connection strings are now tabulated with which one
+  to use and why.
+
+**The regression this introduces, recorded deliberately**
+
+Neon was reached over a WebSocket on **port 443**, the same port as HTTPS. That
+was not stylistic: on 2026-08-31 Sasha's university wifi throttled 5432 and
+every page died — measured, 443 connected in 0.06s while 5432 was reset at
+19.3s. **Supabase has no port-443 transport, so on a network blocking outbound
+5432 this app cannot reach its database.** Written into `db.ts`, `CLAUDE.md`
+and the deploy doc, because the symptom is "works everywhere except one
+network" and that is otherwise a long hunt. It is the reason to reverse this
+decision, if it needs reversing.
+
+**Verification — against a real Postgres, not just a compiler**
+
+Installed Postgres 16 in the sandbox and ran the whole thing against it:
+
+- All **15 migrations applied cleanly** to stock Postgres.
+- **Interactive `$transaction`** (the `/api/log` shape) works.
+- **Array `$transaction`** (the `/api/favorites` shape) works.
+- **Rollback works** — a transaction failing partway left the earlier write
+  unapplied, confirmed by row count. This is the guarantee the adapter choice
+  exists to protect and the thing most at risk in the move.
+- **P2002 still surfaces as P2002** through the new adapter, which the likes
+  race fix from 2026-09-10 depends on.
+- The app's **own `src/lib/db.ts`** — not a hand-built client — drove a
+  create/read/count round trip and `getPodcastCommunityStats` returned correct
+  values.
+
+`npx tsc --noEmit` clean · `npm run lint` clean · `npm run build` exit 0, 41
+pages.
+
+**What was NOT verified, and cannot be here**
+
+The sandbox blocks outbound traffic to `supabase.co`, so **nothing was tested
+against real Supabase.** Stock Postgres is a good proxy but not identical — the
+pooler is the untested part, and transaction behaviour through Supavisor is
+exactly where a surprise would appear. Expect to confirm by logging a podcast on
+the live site.
+
+**Follow-ups — Phillip's side**
+
+1. Supabase → Project Settings → Database → copy the **pooler, session mode
+   (5432)** string.
+2. Run the migrations with the **direct** string:
+   `DATABASE_URL="<direct>" npx prisma migrate deploy`
+3. Set `DATABASE_URL` locally and in Vercel; redeploy.
+4. `npm run check:db`, then create an account and log a podcast on the live site.
+5. **Delete the existing Supabase auth users at the same time.** Starting on an
+   empty database leaves credentials that exist in Supabase Auth with no profile
+   row behind them — those accounts log in "successfully" and the app still
+   treats them as strangers, and they cannot sign up again because the email is
+   taken. This is the most likely way the move goes wrong.
+
+Neon should be kept alive until the live site is confirmed working; rollback is
+one revert and a connection string.
+
+---
+
 ### 2026-09-10 — A one-command diagnostic for "we couldn't reach our database"
 
 - **Branch:** `main`

@@ -107,6 +107,15 @@ The Following empty state — "No Favorites… / Add Favorites ⊕" — used to 
 - **Restart the dev server after any Prisma migration.** A running server holds
   a stale client and throws `Unknown argument <newField>` even though the
   migration applied and the schema is correct.
+- **The database is Supabase Postgres, reached on port 5432** (Neon, and its
+  WebSocket transport on 443, were dropped 2026-09-11). Two consequences worth
+  knowing before debugging: a network that blocks outbound 5432 — university and
+  corporate wifi often do — breaks the site entirely, and this bit the project
+  once already on 2026-08-31; and `DATABASE_URL` must be the **pooler** string
+  on **port 5432**, not the direct one and not transaction mode on 6543, which
+  breaks the `$transaction` calls in `/api/log` and `/api/favorites`.
+  **`npm run check:db` diagnoses all of this** and names the fix — run it before
+  investigating a database problem by hand.
 - **`fetchPodcastFeed`'s in-memory parsed cache is load-bearing — do not remove
   it.** Podcast feeds exceed Next's 2MB fetch-cache limit, so Next caches *none*
   of them, and the XML re-parses on every render. Feeds are huge (JRE's carries

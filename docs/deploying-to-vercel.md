@@ -11,19 +11,46 @@ should be — it is gitignored deliberately.
 
 | Variable | Value |
 | --- | --- |
-| `DATABASE_URL` | the Neon **pooled** connection string — see below |
+| `DATABASE_URL` | the Supabase **pooler** string, port 5432 — see below |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://<project>.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the **publishable** key |
 | `NEXT_PUBLIC_SITE_URL` | the site's public origin, e.g. `https://podtracker.studio` |
 
-### Use the pooled Neon string here, not the direct one
+### Use the pooler string, on port 5432
 
-Locally the direct endpoint is the right choice, because `prisma migrate` needs
-it. **In production use the pooled one** — the host with `-pooler` in it.
+Supabase offers three connection strings and only one is correct here.
+**Project Settings → Database → Connection string.**
 
-Every serverless invocation can open its own connection, and a plain Postgres
-endpoint runs out of them under any real traffic. Neon's pooler exists for
-exactly this shape of deployment.
+| String | Host / port | Use it? |
+| --- | --- | --- |
+| Direct | `db.<ref>.supabase.co:5432` | Only for `prisma migrate`. Runs out of connections in production. |
+| Pooler, transaction mode | `...pooler.supabase.com:6543` | **No.** Breaks interactive transactions. |
+| Pooler, session mode | `...pooler.supabase.com:5432` | **Yes.** |
+
+Every serverless invocation can open its own connection, so the direct endpoint
+runs out under any real traffic. Transaction mode pools but returns the
+connection after each individual statement, which breaks the `$transaction`
+calls in `/api/log` and `/api/favorites` — the ones that stop a log recording a
+diary entry while silently dropping the rating. Session mode is pooled and keeps
+the connection, which is what the app needs.
+
+The pooler's username is `postgres.<project-ref>`, not plain `postgres`.
+Copying the direct string's username onto the pooler host fails exactly like a
+wrong password.
+
+`npm run check:db` checks every one of these and names what is wrong.
+
+### One thing Supabase cannot do that Neon could
+
+Neon was reached over a WebSocket on **port 443**, the same port as HTTPS, which
+meant it worked on networks that block database traffic. On 2026-08-31 that was
+not hypothetical: Sasha's university wifi throttled port 5432 and every page
+died. Measured at the time — 443 connected in 0.06s, 5432 was reset at 19.3s.
+
+Supabase has no port-443 transport. **On a network that blocks outbound 5432
+this app cannot reach its database.** If the site works everywhere except one
+network, that is the cause, and it is a reason to reconsider the choice rather
+than a bug to hunt.
 
 ### `NEXT_PUBLIC_SITE_URL` is not optional in production
 
@@ -76,15 +103,15 @@ They are **not** run by the build, deliberately: a migration failing mid-deploy
 leaves the schema half-applied and the deploy broken, and `prisma migrate deploy`
 against a pooled connection is unreliable.
 
-Run them yourself, from a machine with the **direct** connection string, before
-deploying a change that needs them:
+Run them yourself, using the **direct** connection string — `prisma migrate`
+needs a real session and will not work reliably through the pooler:
 
 ```bash
-DATABASE_URL="<direct, non-pooled string>" npx prisma migrate deploy
+DATABASE_URL="<direct string>" npx prisma migrate deploy
 ```
 
 The database is shared between local development and production unless you make
-a second one, so a migration run locally has already been applied.
+a second Supabase project, so a migration run locally has already been applied.
 
 ## 5. Things that behave differently in production
 
@@ -99,18 +126,21 @@ shared storage.
 log the raw Supabase message on failure; that is where to look when a signup
 fails in production.
 
-**Cold starts are visible.** Neon suspends idle databases, and the first request
-after a quiet period pays for the wake-up. The 10s connection timeout in
-`src/lib/db.ts` is set generously for exactly that reason.
+**Cold starts are visible.** Supabase pauses free-tier projects after a week of
+inactivity, and a paused project does not wake on a connection — it has to be
+resumed from the dashboard, and until it is, every page that touches the
+database fails. The 10s connection timeout in `src/lib/db.ts` is generous for
+ordinary slow starts, but it cannot rescue a paused project.
 
 ## 6. Before you tell anyone the URL
 
 - **Rotate the database password** if it has ever been pasted into a chat, an
-  issue, or a screenshot. Neon → project → Roles → reset.
+  issue, or a screenshot. Supabase → Project Settings → Database → Reset
+  database password. Update it in Vercel *and* your local `.env`, then redeploy.
 - **Turn on email confirmation**, with real SMTP behind it.
 - **Decide what happens to the current data.** Development and production share
   one database today, so existing test accounts and reviews become real,
   publicly visible content the moment the site is live. Starting production on a
-  separate, empty Neon database is the cleaner option.
-- **Set spend limits** on Vercel and Neon. A bot hammering an API route is a
+  separate, empty Supabase project is the cleaner option.
+- **Set spend limits** on Vercel and Supabase. A bot hammering an API route is a
   more likely source of a surprise bill than real traffic.

@@ -1,47 +1,58 @@
-import { neonConfig } from "@neondatabase/serverless";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 /**
- * Postgres over **port 443**, not 5432.
+ * Postgres, hosted by Supabase.
  *
- * **Why this isn't plain `pg`.** Neon's normal endpoint is Postgres on 5432, and
- * plenty of networks don't allow that port — Sasha's university guest wifi
- * throttles it, so on 2026-08-31 every page died with
- * `PrismaClientKnownRequestError: Server has closed the connection`. Measured
- * against the same host at the same moment: **443 connected in 0.06s, 5432 took
- * 7.7s to handshake and was then reset at 19.3s, six attempts running.**
+ * **Why this is no longer Neon.** Supabase was already here for authentication,
+ * and every Supabase project includes a Postgres database — so the app was
+ * running two database services and using one of them. Consolidating leaves one
+ * dashboard, one connection string, one password to rotate, and puts the app's
+ * tables in the same database as the auth users they belong to.
  *
- * `@neondatabase/serverless` tunnels the Postgres protocol over a WebSocket to
- * Neon's proxy on 443, so it works anywhere HTTPS does.
+ * **The connection string must be the pooler one.** Supabase publishes two:
+ * a direct connection to the database, and one through Supavisor, its pooler.
+ * Use the pooler. Every serverless invocation on Vercel can open its own
+ * connection, and a direct Postgres endpoint runs out of them under any real
+ * traffic. The pooler host contains `pooler.supabase.com`; the direct one does
+ * not. `npm run check:db` says which one is configured.
  *
- * **It must be the WebSocket `Pool`, not the HTTP `neon()` driver.** The HTTP
- * one cannot do interactive transactions, and `/api/log` and `/api/favorites`
- * both use `db.$transaction` — a log that recorded a diary entry but silently
- * dropped the rating would be exactly the kind of quiet wrong this codebase
- * avoids elsewhere.
+ * **Session mode (5432), not transaction mode (6543).** Both are pooled.
+ * Transaction mode hands a connection back after each individual statement,
+ * which breaks interactive transactions — and `/api/log` and `/api/favorites`
+ * both use `db.$transaction` to make a log that records a diary entry but
+ * silently drops the rating impossible. Session mode keeps the connection for
+ * the life of the client, so transactions behave normally. It offers fewer
+ * concurrent connections, which is the right trade for a site with no user base
+ * and a correctness guarantee worth keeping.
  *
- * **Migrations still use 5432.** `prisma migrate` and `prisma studio` connect
- * through `prisma.config.ts` with Prisma's own engine, which this adapter does
- * not touch. On a network that blocks 5432 the app runs but migrations don't.
+ * **A regression to watch for, recorded so it is recognised rather than
+ * rediscovered.** Neon was reached over a WebSocket on **port 443**, and that
+ * was not an aesthetic choice: on 2026-08-31 Sasha's university wifi throttled
+ * port 5432 and every page died with `Server has closed the connection`.
+ * Measured against the same host at the same moment: 443 connected in 0.06s,
+ * 5432 took 7.7s to handshake and was reset at 19.3s, six attempts running.
+ * Supabase offers no port-443 transport, so **on a network that blocks outbound
+ * 5432 this app will not reach its database.** If the site works everywhere
+ * except one network, this is why, and it is the reason to reconsider the move
+ * rather than a bug to hunt.
  */
-neonConfig.poolQueryViaFetch = false; // keep transactions on the WebSocket path
 
-// Reused across Next.js dev-mode hot reloads so we don't open a new connection
-// pool on every file change (Prisma 7 requires an explicit driver adapter).
+// Reused across Next.js hot reloads in development so a new connection pool
+// isn't opened on every file change (Prisma 7 requires an explicit adapter).
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function createClient() {
-  // PrismaNeon takes the pool *config* and owns the pool itself — passing a
-  // constructed Pool type-errors.
-  const adapter = new PrismaNeon({
+  // PrismaPg takes the pool *config* and owns the pool itself — passing an
+  // already-constructed Pool type-errors.
+  const adapter = new PrismaPg({
     connectionString: process.env.DATABASE_URL,
     // Bounds *connecting*, not query time, so a slow query is unaffected.
     // Without it an unreachable database hangs the request for ~30s before
     // failing, which on the signup form looked like a broken site rather than
-    // an outage. 10s is deliberately generous: Neon suspends idle databases and
-    // a cold start costs a few seconds, so a tighter bound would turn a normal
-    // wake-up into an error.
+    // an outage. 10s is deliberately generous: a pooler under load or a cold
+    // database costs a few seconds, and a tighter bound would turn a normal
+    // slow start into an error.
     connectionTimeoutMillis: 10_000,
   });
   return new PrismaClient({ adapter });
