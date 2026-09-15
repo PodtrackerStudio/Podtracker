@@ -71,6 +71,83 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-15 — /api/health/db, because the broken machine was never the one we could inspect
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — signup still returning the
+  database-unreachable error on the live site.
+- **Status:** Diagnostic shipped. **The underlying fault is not yet fixed** —
+  this is the instrument for finding it.
+
+**Where this stands, from live evidence**
+
+A signup attempted directly against production returned:
+
+```
+HTTP STATUS: 503
+{"error":"We couldn't reach our database, ..."}
+```
+
+and the homepage still answers with `x-nextjs-prerender: 1`, while
+`/robots.txt` returns 200. Read together that is precise:
+
+1. **The latest code is deployed** — robots.txt only exists since 2026-09-10.
+2. **Supabase keys are still absent from the build** — `/` prerenders only when
+   `getCurrentUser` short-circuits before reading cookies, which happens only
+   when the keys are missing. Confirmed by building both ways locally.
+3. **The deployment cannot reach the database**, while the same developer's
+   laptop reaches it in 1.2s with 19 tables present.
+
+Two environments, separate copies of every variable, and every diagnostic so
+far ran against the healthy one.
+
+**Why a route rather than more log-reading**
+
+The real error goes to `console.error` and lands in Vercel's log drain. Asking
+a non-expert to find a specific line in that UI has cost several round trips,
+and `npm run check:db` — added three days ago for the same problem — answers
+for the laptop, which is the machine that was never broken.
+
+**`GET /api/health/db`** reports what the *running deployment* sees: whether
+each environment variable is present, which provider the connection string
+points at, the port, whether it is pooled, and the result of an actual
+connection including table count and whether `User` exists.
+
+**It returns no secrets** — no connection string, host, username, password or
+key. Booleans, a provider name, a port, and a classified error. The most it
+reveals is which host runs the database and whether it is currently up, both
+inferable from the site being broken. That is the reason it is safe to leave
+reachable rather than gated behind another environment variable, which would
+be one more thing to misconfigure in exactly the situation it exists to
+diagnose.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/api/health/db/route.ts` | Added — runtime database and env diagnostic |
+
+**Verification — all three branches exercised against a real Postgres**
+
+| State | Result |
+| --- | --- |
+| Reachable, no schema | `tables: 0, hasUserTable: false`, verdict names it |
+| Reachable, migrations applied | `tables: 19, hasUserTable: true`, 8ms |
+| Unreachable host | `ok: false`, cause `unreachable: nothing answered, or the port is blocked` |
+
+`npx tsc --noEmit` clean · `npm run lint` clean · `npm run build` compiles the
+route as `ƒ /api/health/db`.
+
+**Next step, and it needs the live site**
+
+Redeploy, then `curl https://www.podtracker.studio/api/health/db`. The `env`
+block settles the open question: if `DATABASE_URL` reads `false` there while
+being set in the Vercel dashboard, then **no** environment variable is reaching
+the runtime, which would explain the missing Supabase keys and the 503 as one
+fault rather than two.
+
+---
+
 ### 2026-09-11 — Covers were vanishing intermittently: removed picsum.photos
 
 - **Branch:** `main`
