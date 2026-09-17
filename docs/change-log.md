@@ -76,8 +76,9 @@ rejected. This is the part that saves the most time later.
 - **Branch:** `main`
 - **Requested by:** sashaknyshjr@gmail.com — first real test of the donate
   button, on his machine with a live test-mode key.
-- **Status:** Fix pushed, **still unverified.** Nobody has yet completed a
-  checkout.
+- **Status:** Complete and **verified** — Sasha completed a test-mode checkout
+  on localhost on 2026-09-17, after the fix below. This is the first donation
+  the site has ever taken.
 
 **What happened**
 
@@ -120,11 +121,21 @@ the fastest way to read it next time.
 and `tax_code` were both checked against the installed SDK's types rather than
 assumed — `submit_type: "donate"` was briefly suspected and cleared the same way.
 
-**Not verified**
+**Verified on Sasha's machine**
 
-This container cannot reach Stripe, so the success path is still unproven. The
-only evidence that will settle it is a test-mode donation appearing in the
-dashboard.
+The success path works: pick an amount, land on Stripe Checkout, pay with the
+test card, and return to `/donate` with the thank-you message. Confirmed by
+Sasha the same day, which is the only evidence that could settle it — this
+container cannot reach Stripe at all.
+
+**Still open**
+
+- The **cancel** path (backing out of Checkout) has not been exercised.
+- Nothing has run against a **live** key. That is a separate switch: `sk_live_`
+  in Vercel's environment variables, not in a local `.env`.
+- Whether opting out of Managed Payments leaves a sales-tax obligation is a
+  question for whoever handles Podtracker's tax affairs. It is not settled by
+  the code working.
 
 ---
 
