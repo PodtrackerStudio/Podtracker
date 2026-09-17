@@ -71,6 +71,63 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-17 — Donations rejected by Stripe: Managed Payments wanted a tax code
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — first real test of the donate
+  button, on his machine with a live test-mode key.
+- **Status:** Fix pushed, **still unverified.** Nobody has yet completed a
+  checkout.
+
+**What happened**
+
+The first real attempt returned 502 and "Couldn't reach the payment provider."
+The key was fine — Stripe recognised the account and answered in test mode. The
+400 was Stripe rejecting the request body:
+
+> Invalid `line_items[0]`: the product tax code is missing. Product tax code is
+> required for Managed Payments, which is enabled by default on your account.
+
+**Managed Payments** is Stripe's merchant-of-record product. It is on by default
+on this account, it calculates and remits sales tax on what it treats as a sale,
+and so it requires a `tax_code` on every line item.
+
+**The fix**
+
+`managed_payments: { enabled: false }` on the session. A donation is not a sale
+of goods, and Podtracker is not a registered charity — the donate page says so
+in its own footnote — so there is no product here to assign a tax code to.
+Podtracker stays the merchant of record, which is what it already was.
+
+**This is a tax decision as much as a code one.** Turning Managed Payments back
+on means picking a real product tax code and accepting Stripe's tax handling.
+That belongs to whoever handles Podtracker's tax affairs. The account-wide
+default lives at Stripe → Settings → Managed Payments; this change only affects
+sessions this route creates.
+
+**Why the diagnosis took a round trip**
+
+The route deliberately shows donors a plain sentence and logs the detail to the
+server. That was right, but it means the useful text only exists in the dev
+server window — and the first screenshot caught the tail of the error dump,
+where every field was `undefined`, rather than the `message` line at the top.
+Stripe also puts the same error on a `request_log_url` in the response, which is
+the fastest way to read it next time.
+
+**Verified here**
+
+`tsc --noEmit` clean, `eslint` clean, production build compiles. `managed_payments`
+and `tax_code` were both checked against the installed SDK's types rather than
+assumed — `submit_type: "donate"` was briefly suspected and cleared the same way.
+
+**Not verified**
+
+This container cannot reach Stripe, so the success path is still unproven. The
+only evidence that will settle it is a test-mode donation appearing in the
+dashboard.
+
+---
+
 ### 2026-09-17 — Donations take real money: Stripe Checkout wired to /donate
 
 - **Branch:** `main`

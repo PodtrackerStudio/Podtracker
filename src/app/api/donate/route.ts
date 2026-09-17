@@ -61,6 +61,17 @@ export async function POST(request: Request) {
       success_url: `${origin}/donate?donation=success`,
       cancel_url: `${origin}/donate?donation=cancelled`,
       submit_type: "donate",
+      // Managed Payments is Stripe's merchant-of-record product, on by default
+      // for this account. It requires a tax code on every line item, because it
+      // calculates and remits sales tax on what it treats as a sale. A donation
+      // is not a sale of goods, and Podtracker is not a registered charity (the
+      // page says so), so there is no product being taxed here — the session
+      // opts out and Podtracker remains the merchant of record.
+      //
+      // Turning this back on means choosing a real product tax code and
+      // accepting Stripe's tax handling; that is a decision for whoever handles
+      // Podtracker's tax affairs, not a code change to make casually.
+      managed_payments: { enabled: false },
       line_items: [
         {
           quantity: 1,
