@@ -71,6 +71,86 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-17 — Donations take real money: Stripe Checkout wired to /donate
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — set up a Stripe account and asked
+  what it takes to connect it to the donation page.
+- **Status:** Complete in code, **not verified against a real Stripe account.**
+  See "What has not been proven" below before trusting it with live money.
+
+**What changed**
+
+- `src/lib/stripe.ts` — the key, an `isStripeConfigured` guard, the accepted
+  amount range, and `toDonationCents`.
+- `src/app/api/donate/route.ts` — creates a Checkout session, returns its URL.
+- `src/app/donate/DonateForm.tsx` — posts the amount, redirects to Stripe, and
+  reports the outcome on return.
+- `src/app/donate/page.tsx` — the form now sits behind `<Suspense>`.
+- `.env.example` — documents `STRIPE_SECRET_KEY`.
+- `stripe` (22.6.2) added to dependencies.
+
+**Decisions, and who made them**
+
+Sasha chose **hosted Checkout over an embedded card form**, and **no database
+record** of donations. Both were put to him rather than assumed:
+
+- Hosted Checkout means no card data touches this server, and Apple Pay, Google
+  Pay, 3-D Secure and receipts all arrive for free. The cost is that the donor
+  briefly sees a Stripe-branded page.
+- Stripe's dashboard is the record. Nothing is written here, so there is no
+  webhook to maintain. **If that changes, the redirect back to the site is not
+  proof of payment** — anyone can open `/donate?donation=success` directly. The
+  only trustworthy signal is a `checkout.session.completed` webhook.
+
+**No new screen was invented.** Stripe returns the donor to
+`/donate?donation=success|cancelled` and the existing `.statusMsg` line reports
+it, so nothing here needed a Figma frame that does not exist.
+
+**Guards worth keeping**
+
+- **The amount is revalidated on the server.** The client check is a courtesy to
+  the person typing; the request body can say anything. $1–$10,000, converted
+  with `Math.round`, because `19.99 * 100` is 1998.9999999999998 in floating
+  point and Stripe rejects a non-integer.
+- **The endpoint is rate limited** (10 per 10 minutes per IP). It is
+  unauthenticated and every call costs a request against a paid API.
+- **A missing key cannot take the site down.** `/donate` renders without
+  `STRIPE_SECRET_KEY` and the button reports that donations are not switched on.
+  This is the 2026-09-08 Supabase failure repeated deliberately in the opposite
+  direction — that incident is why the guard exists at all.
+- **The secret key is not `NEXT_PUBLIC_`** and must never become so: that prefix
+  inlines a value into the JavaScript every visitor downloads, and this key can
+  move money. Checkout needs no publishable key, so nothing Stripe-related
+  reaches the browser.
+
+**Verified here**
+
+`tsc --noEmit` clean, `eslint` clean, production build compiles with `/donate`
+still statically rendered. Exercised against the running server:
+
+| Case | Result |
+| --- | --- |
+| `/donate` with no Stripe key | 200 — renders, does not 500 |
+| `POST /api/donate`, no key | 503, "Donations aren't switched on yet" |
+| amount `0`, `-5`, `10001`, `"abc"`, `null` | 400, rejected |
+| amount `10`, `7.505` | passes validation, reaches Stripe |
+| Stripe unreachable | 502, "Nothing has been charged" — no crash |
+| 11th request in 10 minutes | 429 |
+| `?donation=success` / `?donation=cancelled` | correct message, no JS errors |
+
+**What has not been proven**
+
+- **No real payment has ever been taken.** This container cannot reach Stripe,
+  so every success path above was inferred from validation passing, not from a
+  completed checkout. The first genuine test has to happen on a machine with a
+  real key.
+- Use a **test-mode key** (`sk_test_`) and card `4242 4242 4242 4242` first. Only
+  move to `sk_live_` once a test donation appears in the dashboard.
+- Currency is hard-coded USD, matching the `$` the page already showed.
+
+---
+
 ### 2026-09-15 — /api/health/db, because the broken machine was never the one we could inspect
 
 - **Branch:** `main`

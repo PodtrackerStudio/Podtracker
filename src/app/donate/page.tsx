@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { DonateForm } from "./DonateForm";
@@ -22,7 +23,13 @@ export default function DonatePage() {
           contribution helps cover hosting and keeps it free for everyone else.
         </p>
 
-        <DonateForm />
+        {/* DonateForm reads `?donation=` to report how Checkout went, and
+            useSearchParams opts a component out of static rendering unless it
+            sits behind a boundary. The fallback is null because the form is the
+            whole content here — a skeleton would flash for no reason. */}
+        <Suspense fallback={null}>
+          <DonateForm />
+        </Suspense>
 
         <p className={styles.note}>
           Podtracker is not a registered charity, so contributions are not tax deductible.

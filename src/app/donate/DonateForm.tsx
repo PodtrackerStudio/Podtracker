@@ -1,12 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import styles from "./donate.module.css";
 
 const PRESET_AMOUNTS = [1, 5, 10, 25, 50, 100];
 
 /** Guards a typo like 100000 from being presented back as a real total. */
 const MAX_AMOUNT = 10_000;
+
+/**
+ * What Stripe sends people back to after Checkout.
+ *
+ * "Success" here means Stripe reported the payment as complete on the redirect.
+ * It is a message, not a receipt — the authoritative record is the Stripe
+ * dashboard, and Stripe emails the donor separately.
+ */
+const RETURN_MESSAGES: Record<string, string> = {
+  success: "Thank you — your donation went through. A receipt is on its way to your email.",
+  cancelled: "No payment was taken. You can pick an amount again whenever you like.",
+};
 
 function formatAmount(value: number): string {
   // Whole pounds/dollars read better without trailing zeros; a custom 7.50
@@ -15,9 +28,20 @@ function formatAmount(value: number): string {
 }
 
 export function DonateForm() {
+  const searchParams = useSearchParams();
+  const donation = searchParams.get("donation");
+
   const [selected, setSelected] = useState<number | "custom">(10);
   const [custom, setCustom] = useState("");
-  const [status, setStatus] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Seeded from the URL rather than set by an effect. Stripe returns the donor
+  // with a full page load, so this runs exactly when there is a result to show,
+  // and every existing path that clears the status still works — picking a new
+  // amount wipes the thank-you, as it should.
+  const [status, setStatus] = useState<string | null>(
+    () => (donation && RETURN_MESSAGES[donation]) || null,
+  );
 
   const customAmount = Number.parseFloat(custom);
   const customIsValid =
@@ -33,15 +57,38 @@ export function DonateForm() {
     setStatus(null);
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (amount === null) return;
-    // There is no payment provider wired up, so this deliberately does not
-    // pretend to take money. Saying so plainly is the whole point — a button
-    // that silently does nothing reads as a broken checkout.
-    setStatus(
-      `Payments aren't connected yet, so nothing has been charged. ${formatAmount(amount)} is the amount this page would send once a payment provider is set up.`,
-    );
+    if (amount === null || submitting) return;
+
+    setSubmitting(true);
+    setStatus(null);
+
+    try {
+      const response = await fetch("/api/donate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data?.url) {
+        // Every failure path on the route already ends "Nothing has been
+        // charged", which is the sentence that matters to someone who just
+        // pressed a donate button.
+        setStatus(data?.error ?? "Something went wrong. Nothing has been charged.");
+        setSubmitting(false);
+        return;
+      }
+
+      // Leaving for Stripe. Deliberately not clearing `submitting`: the button
+      // should stay disabled for the moment the browser takes to navigate,
+      // rather than inviting a second click that starts a second checkout.
+      window.location.assign(data.url);
+    } catch {
+      setStatus("Couldn't reach the payment provider. Nothing has been charged.");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -108,8 +155,16 @@ export function DonateForm() {
       )}
 
       <div className={styles.submitRow}>
-        <button className={styles.donateButton} type="submit" disabled={amount === null}>
-          {amount === null ? "Donate" : `Donate ${formatAmount(amount)}`}
+        <button
+          className={styles.donateButton}
+          type="submit"
+          disabled={amount === null || submitting}
+        >
+          {submitting
+            ? "Taking you to checkout…"
+            : amount === null
+              ? "Donate"
+              : `Donate ${formatAmount(amount)}`}
         </button>
       </div>
 
