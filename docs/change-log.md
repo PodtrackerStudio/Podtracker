@@ -76,7 +76,9 @@ rejected. This is the part that saves the most time later.
 - **Branch:** `main`
 - **Requested by:** sashaknyshjr@gmail.com — first real test of the donate
   button, on his machine with a live test-mode key.
-- **Status:** Fix pushed, **still unverified.** No checkout has been completed.
+- **Status:** Complete and **verified.** A $10 test-mode donation completed on
+  2026-09-17 and appears in Stripe's Transactions list as Succeeded. First money
+  the site has ever moved, real or test.
 
 **What happened**
 
@@ -119,16 +121,18 @@ the fastest way to read it next time.
 and `tax_code` were both checked against the installed SDK's types rather than
 assumed — `submit_type: "donate"` was briefly suspected and cleared the same way.
 
-**Not verified**
+**Verified end to end**
 
-This container cannot reach Stripe, so the success path remains unproven. The
-only evidence that will settle it is a test-mode donation appearing in the
-dashboard.
+Choose an amount, reach Stripe Checkout, pay with `4242 4242 4242 4242`, return
+to `/donate?donation=success`, see the thank-you line — and the $10 appears in
+Stripe's **Transactions** list as Succeeded. The dashboard is what settles it:
+the redirect alone proves nothing, since anyone can open that URL directly.
 
-An earlier revision of this entry claimed the checkout had been verified. It had
-not: "it worked" was read as a completed payment when it meant the error was
-gone. Recorded here because a log that overstates what was tested is worse than
-no log.
+Two dead ends worth not repeating. **Payments analytics** showed "no payments
+matching this selection" while the payment existed — it is a filtered reporting
+view that lags; **Transactions** is the list to look at. And an earlier revision
+of this entry claimed verification before any payment had happened, because "it
+worked" was read as a completed checkout when it meant the error had gone.
 
 **Still open**
 
