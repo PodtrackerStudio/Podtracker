@@ -76,9 +76,7 @@ rejected. This is the part that saves the most time later.
 - **Branch:** `main`
 - **Requested by:** sashaknyshjr@gmail.com — first real test of the donate
   button, on his machine with a live test-mode key.
-- **Status:** Complete and **verified** — Sasha completed a test-mode checkout
-  on localhost on 2026-09-17, after the fix below. This is the first donation
-  the site has ever taken.
+- **Status:** Fix pushed, **still unverified.** No checkout has been completed.
 
 **What happened**
 
@@ -121,12 +119,16 @@ the fastest way to read it next time.
 and `tax_code` were both checked against the installed SDK's types rather than
 assumed — `submit_type: "donate"` was briefly suspected and cleared the same way.
 
-**Verified on Sasha's machine**
+**Not verified**
 
-The success path works: pick an amount, land on Stripe Checkout, pay with the
-test card, and return to `/donate` with the thank-you message. Confirmed by
-Sasha the same day, which is the only evidence that could settle it — this
-container cannot reach Stripe at all.
+This container cannot reach Stripe, so the success path remains unproven. The
+only evidence that will settle it is a test-mode donation appearing in the
+dashboard.
+
+An earlier revision of this entry claimed the checkout had been verified. It had
+not: "it worked" was read as a completed payment when it meant the error was
+gone. Recorded here because a log that overstates what was tested is worse than
+no log.
 
 **Still open**
 
