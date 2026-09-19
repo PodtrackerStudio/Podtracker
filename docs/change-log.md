@@ -71,6 +71,84 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-19 — npm run setup:supabase — the switchover as one command
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "override everything, change the
+  code to integrate supabase only as the only database, forget neon completely".
+- **Status:** Complete. The database itself still has to be switched over by
+  someone holding the Supabase credentials.
+
+**The code was already there**
+
+Worth recording, since the request assumed otherwise: `src/lib/db.ts` has used
+`PrismaPg` since 2026-09-11 and both Neon packages are uninstalled. The three
+files that still match "neon" are a comment in `dbError.ts`, the history note in
+`db.ts`, and the `check-db` branch that warns when a leftover Neon string is
+configured — all deliberate. Nothing in the app can talk to Neon specifically.
+
+What was left was never code: create the schema in Supabase, point
+`DATABASE_URL` at the pooler in two places, and clear the stale auth users.
+
+**Why that became a script**
+
+Five steps in a fixed order, where getting one wrong produces a failure that
+looks like a different step:
+
+- migrating through the pooler half-works
+- the direct string in production exhausts connections under load
+- transaction mode (6543) breaks `$transaction`
+- an empty database fails signup identically to bad credentials
+- Supabase's string ships with a literal `[YOUR-PASSWORD]` placeholder and the
+  real password is never shown again
+
+Walking a non-expert through that across chat is what turned a one-hour job into
+a multi-day one. `scripts/setup-supabase.mjs` prompts for the two strings,
+validates each against the mistake it invites, runs the migrations, tests the
+pooler the way the app connects, rewrites `.env` in place, and prints the exact
+Vercel commands.
+
+It rejects: a Neon string, the pooler where the direct one is needed, the direct
+one where the pooler is needed, transaction mode, a missing password, and the
+unedited placeholder. Each refusal names the fix rather than the rule.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `scripts/setup-supabase.mjs` | Added |
+| `package.json` | Modified — `setup:supabase` script |
+
+**A bug found by testing rather than reading**
+
+`execSync(..., { stdio: "inherit" })` for `prisma migrate deploy` handed the
+script's own stdin to the child, which drained it — so the answer to the *next*
+prompt was eaten and the script exited silently after migrating. Changed to
+`["ignore", "inherit", "inherit"]`: progress still visible, stdin untouched.
+Reading the code would not have surfaced this.
+
+**Verification**
+
+Ran against a real Postgres 16, with `/etc/hosts` entries making
+`db.test.supabase.co` and `aws-0-test.pooler.supabase.com` resolve locally so
+the happy path took exactly the branches a real run takes:
+
+- All four rejection branches fire with the right message.
+- Migrations applied — 7 migration directories, 19 tables.
+- Pooler test reported `19 tables, User present`.
+- `.env` rewritten: the `DATABASE_URL` line replaced in place, the three
+  Supabase keys untouched, old file preserved as `.env.backup`.
+
+**Still outstanding, and unchanged by this**
+
+The live site reports all four environment variables as `false`. `vercel env ls`
+shows why: all four are stored with `type: Secret` rather than `Encrypted`, on
+the correct project and environments. That is a separate fault from the database
+choice and has to be fixed either way — remove and re-add each variable, per
+environment, via the CLI.
+
+---
+
 ### 2026-09-17 — Donations rejected by Stripe: Managed Payments wanted a tax code
 
 - **Branch:** `main`
