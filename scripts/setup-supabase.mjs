@@ -77,8 +77,30 @@ function check(raw, { wantPooler }) {
         "  port 5432 — session mode.",
       );
     }
-  } else if (d.isPooler) {
-    fail(`That is the POOLER string. Migrations need the DIRECT one (host like db.<ref>.supabase.co).`);
+  } else {
+    // Migrations need a real session, which rules out transaction mode — but
+    // NOT the session pooler, which this originally rejected on the assumption
+    // that migrations require the direct endpoint. They do not, and insisting
+    // on it is actively wrong for two reasons: Supabase serves
+    // `db.<ref>.supabase.co` over IPv6 only unless a project buys the IPv4
+    // add-on, and the direct endpoint expects the username `postgres` while the
+    // pooler expects `postgres.<project-ref>` — so a string assembled from the
+    // wrong half is rejected as bad credentials (P1000) even when the password
+    // is perfect. The session pooler works over IPv4 and is what Supabase now
+    // points people at.
+    if (d.isTransactionMode) {
+      fail(
+        "That is the pooler in TRANSACTION mode (port 6543). Migrations need a real session.\n" +
+        "  Use the same host on port 5432 — session mode — or the direct string.",
+      );
+    }
+    if (d.isPooler && d.isSupabase && !/^postgres\.[a-z0-9]+$/i.test(d.user)) {
+      fail(
+        `The pooler expects the username 'postgres.<project-ref>', but this says '${d.user}'.\n` +
+        "  That mismatch is rejected as a bad password even when the password is right. Copy the\n" +
+        "  string from the dashboard rather than editing the direct one by hand.",
+      );
+    }
   }
 
   console.log(`  ✓ ${d.host}:${d.port} as ${d.user}`);
@@ -89,12 +111,17 @@ async function main() {
   console.log("\nPodtracker — Supabase database setup\n");
   console.log("You need two connection strings, both from:");
   console.log("  Supabase > Project Settings > Database > Connection string\n");
-  console.log("  1. DIRECT  — host like db.<ref>.supabase.co        (used once, to create the tables)");
-  console.log("  2. POOLER  — host like ...pooler.supabase.com:5432 (what the app uses from then on)\n");
+  console.log("  1. DIRECT or SESSION POOLER — used once, to create the tables");
+  console.log("  2. SESSION POOLER (port 5432) — what the app uses from then on");
+  console.log("\n  The same session pooler string works for both. Use it for both if in doubt.\n");
   console.log("Replace [YOUR-PASSWORD] with the real password before pasting. No quotes.");
 
-  rule("Step 1 of 4 — the DIRECT string");
-  const direct = (await rl.question("Paste the DIRECT connection string:\n> ")).trim();
+  rule("Step 1 of 4 — a string that can run migrations");
+  console.log("Either the DIRECT string, or the SESSION POOLER one (port 5432).");
+  console.log("If the direct string gave you 'Authentication failed', use the session pooler —");
+  console.log("Supabase serves the direct host over IPv6 only unless the project has the IPv4");
+  console.log("add-on, and it expects a different username than the pooler.\n");
+  const direct = (await rl.question("Paste it here:\n> ")).trim();
   check(direct, { wantPooler: false });
 
   rule("Step 2 of 4 — creating the tables");
@@ -108,7 +135,14 @@ async function main() {
       env: { ...process.env, DATABASE_URL: direct },
     });
   } catch {
-    fail("Migrations failed. The output above says why — usually a wrong password or a paused project.");
+    fail(
+      "Migrations failed. The output above says why.\n\n" +
+      "  If it says P1000 / 'Authentication failed', the likeliest cause is NOT the password:\n" +
+      "    - the direct host wants the username 'postgres'\n" +
+      "    - the pooler host wants 'postgres.<project-ref>'\n" +
+      "  A string built from one half and the other is refused as bad credentials.\n" +
+      "  Copy the SESSION POOLER string straight from the dashboard and run this again.",
+    );
   }
 
   rule("Step 3 of 4 — the POOLER string");

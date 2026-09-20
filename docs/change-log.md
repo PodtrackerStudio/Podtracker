@@ -71,6 +71,70 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-20 — setup:supabase insisted on the direct endpoint; it should not have
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — migrations failed twice with
+  `P1000: Authentication failed`, once after resetting the database password.
+- **Status:** Fixed. The switchover itself still has not run successfully.
+
+**What went wrong, and it was my script**
+
+`setup:supabase` demanded the **direct** connection string for the migration
+step and rejected the session pooler outright. That assumption was wrong, and
+wrong in a way that produced a misleading error:
+
+- Supabase serves `db.<ref>.supabase.co` over **IPv6 only** unless the project
+  has the paid IPv4 add-on.
+- The direct endpoint expects the username `postgres`; the pooler expects
+  `postgres.<project-ref>`.
+- A string carrying one host and the other's username is refused as **bad
+  credentials** — `P1000` — which reads as a wrong password and sends you off
+  to reset one that was never the problem. Which is exactly what happened.
+
+Migrations do not need the direct endpoint. They need a *session*, which rules
+out transaction mode on 6543 and nothing else. The session pooler on 5432
+qualifies, works over IPv4, and is what Supabase now steers people toward.
+
+**What changed**
+
+- Step 1 accepts the **direct string or the session pooler**. Only transaction
+  mode is rejected, and the message says why.
+- A new guard catches the username/host mismatch *before* connecting, naming it
+  as the cause rather than letting it surface as P1000 four steps later.
+- The P1000 failure message now leads with the username mismatch rather than
+  the password, since that is the likelier cause.
+- Opening text says the same session pooler string works for both prompts —
+  which is the simplest correct answer and avoids the choice entirely.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `scripts/setup-supabase.mjs` | Modified — accept the session pooler for migrations; guard the username mismatch |
+
+**Verification**
+
+Against a real Postgres, with `/etc/hosts` mapping the Supabase hostnames
+locally and a `postgres.test` role created so the pooler username path is
+genuinely exercised:
+
+- Session pooler accepted for migrations: 7 migrations applied, 19 tables,
+  `User` present, `.env` written.
+- Pooler host with username `postgres`: rejected, naming the mismatch.
+- Transaction mode on 6543: still rejected.
+
+`npm run lint` clean, `node --check` clean.
+
+**Lesson worth keeping**
+
+The original script encoded a rule I believed rather than one I had tested, and
+it then *enforced* that rule against the user. A validator is only as good as
+its premise, and a wrong premise is worse than no validation — it blocks the
+working answer while sounding authoritative.
+
+---
+
 ### 2026-09-19 — npm run setup:supabase — the switchover as one command
 
 - **Branch:** `main`
