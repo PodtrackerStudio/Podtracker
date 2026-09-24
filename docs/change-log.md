@@ -76,7 +76,8 @@ rejected. This is the part that saves the most time later.
 - **Branch:** `main`
 - **Requested by:** phillipn@podtracker.studio — "go through the code, update
   what you need and lets fix it", before another attempt at the switchover.
-- **Status:** Fixed in code. The switchover itself still has not been run.
+- **Status:** Two fixes landed. The switchover was attempted and failed again —
+  on the direct endpoint, not on anything fixed here. Still not done.
 
 **The landmine**
 
@@ -134,6 +135,26 @@ hatch works.
 
 `npm run lint` clean · `npx tsc --noEmit` clean · `npm run build` compiles 42
 pages.
+
+**Then the switchover was attempted, and failed on something else again**
+
+The run used the **direct** string and got `P1001: Can't reach database server`
+— a different failure from the earlier `P1000`. Nothing answered at all, which
+is the IPv6 case: `db.<ref>.supabase.co` is IPv6-only unless a project buys the
+paid IPv4 add-on, and that Mac's network does not route IPv6.
+
+The script invited this. Step 1 offered "DIRECT or SESSION POOLER", presenting
+as an even choice one option that fails on most consumer networks. It now asks
+for the **session pooler** outright — the same string step 3 wants — and the
+failure guidance names `P1001` alongside `P1000`. Committed as `f69b2be`.
+
+Three distinct faults have now been ruled out on the way to this switchover, all
+of which presented as vague credential problems: the username/host mismatch
+(`P1000`), the IPv6-only direct endpoint (`P1001`), and the TLS default above.
+
+**The password was pasted into chat** during this exchange and needs resetting —
+the third reset on this project for the same reason. Flagged to Phillip at the
+time; unresolved at the time of writing.
 
 **Unknown, and it needs the live project**
 
