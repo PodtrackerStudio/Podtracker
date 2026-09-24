@@ -13,6 +13,15 @@
  */
 import { readFileSync, writeFileSync, existsSync, copyFileSync } from "node:fs";
 
+// Run with no pipe and it waits for a paste. That matters more than it looks:
+// piping from `pbpaste` means the clipboard must still hold the Supabase block
+// when the command runs — and copying the command itself overwrites it. Pasting
+// straight into the prompt has no such ordering problem.
+if (process.stdin.isTTY) {
+  console.log("\nPaste the .env.local block copied from Supabase > Connect > ORM,");
+  console.log("then press Ctrl-D on a new line.\n");
+}
+
 let input = "";
 process.stdin.setEncoding("utf8");
 for await (const chunk of process.stdin) input += chunk;
