@@ -71,6 +71,80 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-24 — pg does not enable TLS, and Supabase requires it
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "go through the code, update
+  what you need and lets fix it", before another attempt at the switchover.
+- **Status:** Fixed in code. The switchover itself still has not been run.
+
+**The landmine**
+
+**`pg` does not negotiate TLS unless told to, and Supabase refuses connections
+without it.** Neon's driver did this on its own, so it never came up; the plain
+Postgres driver that replaced it on 2026-09-11 does not. And the connection
+strings Supabase hands out in the dashboard carry **no `sslmode`**, so pasting
+one verbatim produces a connection that is simply rejected.
+
+The rejection does not mention TLS. Postgres reports it as
+`no pg_hba.conf entry for host ...`, which reads as a permissions or
+credentials problem. Given this project has already lost two evenings to a
+`P1000` that was not about the password either, that was worth finding before
+the next attempt rather than during it.
+
+**What changed**
+
+`sslConfig()` in `src/lib/db.ts`, mirrored into `check-db.mjs`,
+`setup-supabase.mjs` and `/api/health/db` so all four agree on what the app
+would actually do. It enables TLS unless:
+
+- the string already sets `sslmode` — the author has an opinion and it wins
+- the host is local, where there is nothing to negotiate
+
+**Verification stays on.** Encryption without verification stops passive
+eavesdropping but not an active machine-in-the-middle, and quietly opting out of
+that on a connection carrying every user record is not a default to choose on
+someone's behalf. Where a certificate does not validate, the fix is
+`?sslmode=no-verify` — visible in the connection string, and theirs to decide.
+`check-db` now recognises TLS failures and says exactly that.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/db.ts` | Modified — `sslConfig()`, passed to the adapter |
+| `scripts/check-db.mjs` | Modified — same rule; classify TLS failures |
+| `scripts/setup-supabase.mjs` | Modified — same rule on the pooler test |
+| `src/app/api/health/db/route.ts` | Modified — same rule |
+
+**Verification — against a Postgres configured like Supabase**
+
+Stood up Postgres 16 on 5433 with a self-signed certificate and `hostssl` in
+`pg_hba.conf`, so it *requires* TLS exactly as Supabase does, reached through a
+`*.pooler.supabase.com` hostname mapped in `/etc/hosts`:
+
+| Configuration | Result |
+| --- | --- |
+| Before the fix (no TLS) | `no pg_hba.conf entry` — rejected, TLS never mentioned |
+| After the fix, verification on | `self-signed certificate` — connects, names the real cause |
+| After the fix, `?sslmode=no-verify` | **connected** |
+
+So the fix is what makes a connection possible at all, and the documented escape
+hatch works.
+
+`npm run lint` clean · `npx tsc --noEmit` clean · `npm run build` compiles 42
+pages.
+
+**Unknown, and it needs the live project**
+
+Whether Supabase's pooler certificate validates against the system trust store.
+If it does, the middle row above becomes "connected" and nothing more is needed.
+If it does not, `?sslmode=no-verify` goes on the end of `DATABASE_URL`. The
+sandbox cannot reach `supabase.co` — the environment's network policy denies it
+— so this can only be settled on the real project.
+
+---
+
 ### 2026-09-20 — setup:supabase insisted on the direct endpoint; it should not have
 
 - **Branch:** `main`

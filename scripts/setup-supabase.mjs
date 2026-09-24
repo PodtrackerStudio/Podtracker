@@ -19,6 +19,22 @@ import pg from "pg";
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 
+// Same rule as src/lib/db.ts: `pg` does not enable TLS on its own and Supabase
+// refuses connections without it, while the strings Supabase hands out carry no
+// `sslmode`. Kept identical so this reports what the app would actually see.
+function sslConfig(connectionString) {
+  if (!connectionString) return undefined;
+  if (/[?&]sslmode=/i.test(connectionString)) return undefined;
+  try {
+    const host = new URL(connectionString).hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local")) return undefined;
+  } catch {
+    return undefined;
+  }
+  return { rejectUnauthorized: true };
+}
+
+
 function rule(title) {
   console.log(`\n${title}\n${"─".repeat(title.length)}`);
 }
@@ -150,7 +166,7 @@ async function main() {
   check(pooler, { wantPooler: true });
 
   console.log("\nTesting it the way the app connects…");
-  const pool = new pg.Pool({ connectionString: pooler, connectionTimeoutMillis: 10_000, max: 1 });
+  const pool = new pg.Pool({ connectionString: pooler, ssl: sslConfig(pooler), connectionTimeoutMillis: 10_000, max: 1 });
   try {
     const res = await pool.query(
       `select count(*)::int as total,

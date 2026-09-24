@@ -21,6 +21,22 @@ import pg from "pg";
 
 const { Pool } = pg;
 
+// Same rule as src/lib/db.ts: `pg` does not enable TLS on its own and Supabase
+// refuses connections without it, while the strings Supabase hands out carry no
+// `sslmode`. Kept identical so this reports what the app would actually see.
+function sslConfig(connectionString) {
+  if (!connectionString) return undefined;
+  if (/[?&]sslmode=/i.test(connectionString)) return undefined;
+  try {
+    const host = new URL(connectionString).hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local")) return undefined;
+  } catch {
+    return undefined;
+  }
+  return { rejectUnauthorized: true };
+}
+
+
 function heading(text) {
   console.log(`\n${text}\n${"-".repeat(text.length)}`);
 }
@@ -114,7 +130,7 @@ if (parts.legacyNeon) {
 heading("3. Can we actually connect?");
 console.log(`Connecting the same way the app does, to port ${parts.port || "5432"}…`);
 
-const pool = new Pool({ connectionString: url, connectionTimeoutMillis: 15_000 });
+const pool = new Pool({ connectionString: url, ssl: sslConfig(url), connectionTimeoutMillis: 15_000 });
 const started = Date.now();
 
 try {
@@ -181,6 +197,12 @@ try {
     console.log("\nFIX: check the project is active in the Supabase dashboard and copy");
     console.log("     its current pooler string. If Supabase looks healthy, try another");
     console.log("     network — a phone hotspot is the quickest test.");
+  } else if (/self.signed|certificate|SSL|TLS/i.test(message)) {
+    console.log("The connection was refused at the TLS layer — encryption, not credentials.");
+    console.log("\nThe host's certificate did not validate. Add ?sslmode=no-verify to the end of");
+    console.log("DATABASE_URL to encrypt without verifying the certificate. That still stops");
+    console.log("eavesdropping; it does not stop an active machine-in-the-middle, so it is a");
+    console.log("deliberate trade rather than a formality.");
   } else if (/does not exist/i.test(message)) {
     console.log("The server answered but that database or role does not exist on it.");
     console.log("Usually a connection string from a project that was deleted or renamed.");

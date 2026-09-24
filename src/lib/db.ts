@@ -42,11 +42,52 @@ import { PrismaClient } from "@/generated/prisma/client";
 // isn't opened on every file change (Prisma 7 requires an explicit adapter).
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
+/**
+ * Whether to turn TLS on ourselves.
+ *
+ * **`pg` does not use TLS unless told to, and Supabase refuses connections
+ * without it.** Neon's driver negotiated TLS on its own, so this never came up
+ * before; the plain Postgres driver does not. The connection strings Supabase
+ * hands you in the dashboard do **not** carry `sslmode`, so pasting one
+ * verbatim produces a connection that is rejected — and the rejection does not
+ * mention TLS, which is how it turns into an evening of resetting passwords.
+ *
+ * Returns `undefined` — meaning "leave `pg` alone" — in the two cases where
+ * interfering would be wrong:
+ *
+ *   - the string already specifies `sslmode`, so the author has an opinion and
+ *     it should win
+ *   - the host is local, where there is no TLS to negotiate
+ *
+ * Verification stays **on**. Encryption without verification stops passive
+ * eavesdropping but not an active machine-in-the-middle, and silently opting
+ * out of that on a connection carrying every user record is not a default to
+ * choose for someone. If a provider's certificate does not validate, the fix is
+ * `?sslmode=no-verify` on the connection string — visible, deliberate, and
+ * theirs to make.
+ */
+function sslConfig(connectionString: string | undefined) {
+  if (!connectionString) return undefined;
+  if (/[?&]sslmode=/i.test(connectionString)) return undefined;
+
+  try {
+    const host = new URL(connectionString).hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local")) {
+      return undefined;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return { rejectUnauthorized: true };
+}
+
 function createClient() {
   // PrismaPg takes the pool *config* and owns the pool itself — passing an
   // already-constructed Pool type-errors.
   const adapter = new PrismaPg({
     connectionString: process.env.DATABASE_URL,
+    ssl: sslConfig(process.env.DATABASE_URL),
     // Bounds *connecting*, not query time, so a slow query is unaffected.
     // Without it an unreachable database hangs the request for ~30s before
     // failing, which on the signup form looked like a broken site rather than

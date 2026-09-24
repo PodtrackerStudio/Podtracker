@@ -28,6 +28,20 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 // The connection attempt must not be cached, or this reports history.
 export const dynamic = "force-dynamic";
 
+/** Mirrors `sslConfig` in src/lib/db.ts so this reports what the app would see. */
+function sslConfig(connectionString: string) {
+  if (/[?&]sslmode=/i.test(connectionString)) return undefined;
+  try {
+    const host = new URL(connectionString).hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local")) {
+      return undefined;
+    }
+  } catch {
+    return undefined;
+  }
+  return { rejectUnauthorized: true };
+}
+
 function providerOf(hostname: string): string {
   if (hostname.includes("neon.tech")) return "neon";
   if (hostname.includes("supabase.co") || hostname.includes("supabase.com")) return "supabase";
@@ -91,7 +105,7 @@ export async function GET() {
     hasPassword: Boolean(parsed.password),
   };
 
-  const pool = new pg.Pool({ connectionString: url, connectionTimeoutMillis: 8_000, max: 1 });
+  const pool = new pg.Pool({ connectionString: url, ssl: sslConfig(url), connectionTimeoutMillis: 8_000, max: 1 });
   const started = Date.now();
 
   try {
