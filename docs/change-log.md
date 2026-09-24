@@ -71,6 +71,70 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-24 — Supabase switchover completed; comma dropped from the home greeting
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio
+- **Status:** Complete. **The live site is on Supabase and healthy.**
+
+**The switchover landed**
+
+`/api/health/db` on production, after months of this being the open item:
+
+```json
+{"env":{"DATABASE_URL":true,"NEXT_PUBLIC_SUPABASE_URL":true,
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY":true,"NEXT_PUBLIC_SITE_URL":true,
+        "supabaseConsideredConfigured":true},
+ "database":{"provider":"supabase","port":"5432","pooled":true},
+ "connection":{"ok":true,"ms":175,"tables":19,"hasUserTable":true},
+ "verdict":"Database reachable and the schema is present."}
+```
+
+All four read `false` an hour earlier. Neon is no longer in use.
+
+**What the Vercel variable bug actually was**
+
+Not quite what was recorded on 2026-09-15. `vercel env ls` now shows
+`DATABASE_URL` as type **Secret** and working fine, while the three
+`NEXT_PUBLIC_` ones re-added through the CLI came out as type **Config**.
+
+So Secret is not broken in general — Secret values reach the *runtime* but not
+the *build*, and `NEXT_PUBLIC_` values must be readable at build time because
+they are compiled into the client bundle. That is why the symptoms split the way
+they did: the database failed at runtime for its own reasons while auth failed
+because the keys never made it into the build. Two faults that looked like one.
+
+**The greeting**
+
+`/home` said "Good to see you, Phillip!" — comma removed at Sasha's request,
+via Phillip. One character, in `src/app/home/page.tsx`.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/home/page.tsx` | Modified — dropped the comma from the greeting |
+
+**Verification**
+
+`npx tsc --noEmit` clean · `npm run lint` clean. The greeting change is not
+visually verified — the sandbox cannot open the live site.
+
+**Outstanding, and none of it is code**
+
+- **Reset the database password.** Two of them went through the chat transcript
+  during diagnosis. Needs updating in `.env`, in Vercel, then a redeploy.
+- **Delete the leftover users** in Supabase > Authentication > Users. Their
+  credentials exist in Supabase but their profile rows were in Neon; against the
+  new database they sign in successfully and the app treats them as strangers,
+  with no way to re-register because the email is taken.
+- **Keep the Neon project alive** for a few days before deleting it.
+- **Untested on the live site:** creating an account, logging a podcast (the
+  transaction path, which was the main risk of moving to a pooler), and leaving
+  a review.
+
+---
+
 ### 2026-09-24 — The pooler hostname cannot be derived, and guessing it costs days
 
 - **Branch:** `main`

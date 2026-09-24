@@ -34,7 +34,7 @@ export default async function HomePage() {
 
       <main className={styles.main}>
         <section className={styles.hero}>
-          <h1>Good to see you, {user.displayName}!</h1>
+          <h1>Good to see you {user.displayName}!</h1>
           <p>Here are popular podcasts</p>
         </section>
 
