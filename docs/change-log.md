@@ -71,6 +71,79 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-24 — The pooler hostname cannot be derived, and guessing it costs days
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — repeated
+  `password authentication failed` against a connection string that was
+  provably correct in every inspectable way.
+- **Status:** Tooling added. The switchover still has not completed.
+
+**The mistake, which was mine**
+
+Phillip could not find the connection string in Supabase's dashboard, so I
+**constructed** one from his region: `aws-0-us-east-2.pooler.supabase.com`.
+
+The shard number in that hostname — `aws-0-` versus `aws-1-` — is not
+derivable from the region. Both hostnames resolve, because they are shared
+endpoints, so `nslookup` cannot tell you which is yours. Connect to the wrong
+one and Supavisor does not recognise the tenant, and **reports that exactly like
+a bad password**.
+
+So the error said "password authentication failed", and we reset the database
+password **three times** chasing it. A shape inspection of the `.env` finally
+ruled out every local cause — straight quotes, no hidden characters, correct
+username, 21 alphanumeric password characters — which left only the part I had
+invented.
+
+**What changed**
+
+`scripts/env-from-clipboard.mjs` (`npm run env:from-clipboard`). Supabase's
+**Connect > ORM** tab has a copy button; this reads that block from stdin and
+writes `.env` from it, so the hostname is never retyped or inferred.
+
+It also handles two traps in that panel:
+
+- **The labels are crossed over.** Supabase calls the *transaction* pooler
+  `DATABASE_URL` and the *session* pooler `DIRECT_URL`, matching Prisma's own
+  documented setup. This app needs **session** mode for `DATABASE_URL` —
+  transaction mode breaks the interactive transactions in `/api/log` — so the
+  script deliberately maps `DIRECT_URL` onto `DATABASE_URL` and rejects
+  anything on port 6543.
+- **The panel ships a `[YOUR-PASSWORD]` placeholder**, not the real password.
+  Rather than asking someone to retype a secret, it carries the password across
+  from the existing `.env` — the hostname was the unknown, not the password.
+
+`?sslmode=no-verify` is appended automatically, which the live run confirmed is
+required: Supabase's pooler certificate does not validate against the system
+trust store.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `scripts/env-from-clipboard.mjs` | Added |
+| `package.json` | Modified — `env:from-clipboard` |
+
+**Verification**
+
+Fed blocks shaped like Supabase's real output. Confirmed it reads `aws-1` when
+given `aws-1` rather than assuming anything; picks `DIRECT_URL` over
+`DATABASE_URL`; rejects port 6543; appends `sslmode=no-verify`; carries the
+existing password when the clipboard holds a placeholder; backs up `.env` and
+preserves the Supabase keys. `npm run lint` clean.
+
+**What this cost, worth recording**
+
+Three password resets, two of those passwords ending up in chat, and several
+evenings — all because a hostname was reconstructed from fragments instead of
+copied. The diagnostics built along the way were each correct and each pointed
+at the wrong layer, because the failure genuinely presented as an
+authentication problem. **When a value can be copied from its source, copy it;
+do not derive it.**
+
+---
+
 ### 2026-09-24 — pg does not enable TLS, and Supabase requires it
 
 - **Branch:** `main`

@@ -10,7 +10,8 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "check:db": "node scripts/check-db.mjs",
-    "setup:supabase": "node scripts/setup-supabase.mjs"
+    "setup:supabase": "node scripts/setup-supabase.mjs",
+    "env:from-clipboard": "node scripts/env-from-clipboard.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
