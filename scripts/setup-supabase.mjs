@@ -133,11 +133,12 @@ async function main() {
   console.log("Replace [YOUR-PASSWORD] with the real password before pasting. No quotes.");
 
   rule("Step 1 of 4 — a string that can run migrations");
-  console.log("Either the DIRECT string, or the SESSION POOLER one (port 5432).");
-  console.log("If the direct string gave you 'Authentication failed', use the session pooler —");
-  console.log("Supabase serves the direct host over IPv6 only unless the project has the IPv4");
-  console.log("add-on, and it expects a different username than the pooler.\n");
-  const direct = (await rl.question("Paste it here:\n> ")).trim();
+  console.log("Use the SESSION POOLER string — the same one step 3 asks for.");
+  console.log("Its host contains 'pooler.supabase.com' and its port is 5432.\n");
+  console.log("Not the direct string (db.<ref>.supabase.co). Supabase serves that over IPv6 only");
+  console.log("unless the project has the paid IPv4 add-on, so on most networks nothing answers");
+  console.log("and prisma reports P1001 'Can't reach database server'.\n");
+  const direct = (await rl.question("Paste the SESSION POOLER string:\n> ")).trim();
   check(direct, { wantPooler: false });
 
   rule("Step 2 of 4 — creating the tables");
@@ -153,6 +154,8 @@ async function main() {
   } catch {
     fail(
       "Migrations failed. The output above says why.\n\n" +
+      "  P1001 / \"Can't reach database server\" on a db.<ref>.supabase.co host: that endpoint is\n" +
+      "  IPv6-only without the paid IPv4 add-on. Use the SESSION POOLER string instead.\n\n" +
       "  If it says P1000 / 'Authentication failed', the likeliest cause is NOT the password:\n" +
       "    - the direct host wants the username 'postgres'\n" +
       "    - the pooler host wants 'postgres.<project-ref>'\n" +
