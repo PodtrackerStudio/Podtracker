@@ -95,6 +95,23 @@ function createClient() {
     // database costs a few seconds, and a tighter bound would turn a normal
     // slow start into an error.
     connectionTimeoutMillis: 10_000,
+    // **`pg` defaults this to 10, and that default is wrong here.**
+    //
+    // Every warm serverless instance on Vercel holds its own pool, so the
+    // default means one instance can hold ten session-mode connections and a
+    // handful of instances can exhaust Supabase's pooler between them. What
+    // that looks like from outside is the symptom reported on 2026-09-26: the
+    // profile page — the only page that reads this database — worked, then
+    // returned a server error, while every other page carried on fine.
+    //
+    // Three rather than one because the profile page issues seven queries in a
+    // `Promise.all`; a pool of one would serialise them and make the page
+    // slower for no gain. `/api/health/db` already uses `max: 1` for its single
+    // probe query, which is the same reasoning at a different size.
+    max: 3,
+    // Hand connections back quickly instead of holding them for the life of an
+    // instance that may serve nothing else for minutes.
+    idleTimeoutMillis: 10_000,
   });
   return new PrismaClient({ adapter });
 }

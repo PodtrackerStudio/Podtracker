@@ -71,6 +71,78 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-26 — The profile page died on the live site while every other page worked
+
+- **Branch:** `main`
+- **Reported by:** sashaknyshjr@gmail.com — signed in on a second device, used
+  the live site, and the profile page returned a server error after having
+  worked. Every other page was fine, and it still works on his own machine.
+- **Status:** A likely cause is fixed. **Not confirmed against production** —
+  see "What would actually settle it".
+
+**Two separate findings. The first explains why nobody caught this.**
+
+`/user/sasha` renders from `DEMO_USERNAME` constants and **never touches the
+database**. Reproduced here with Postgres stopped:
+
+| Page | DB up | DB down |
+| --- | --- | --- |
+| `/user/sasha` (demo) | 200 | **200** |
+| `/user/<real account>` | 200 | **500** |
+
+So Sasha's own profile cannot show this class of bug, and "it works for me" is
+expected rather than reassuring. Every real account takes the other path.
+
+Worth knowing more generally: **the profile page is the only page that needs the
+database.** With Postgres stopped, `/`, `/explore`, `/login`, `/signup`,
+`/about` and `/donate` all returned 200. That is exactly the reported shape —
+one page broken, everything else fine — so a database problem will always look
+like "the profile page is broken".
+
+**The likely cause**
+
+`pg` defaults `max` to **10 connections per pool**, and `db.ts` did not set it.
+Every warm serverless instance on Vercel holds its own pool, so a few instances
+can hold thirty or more session-mode connections between them and exhaust
+Supabase's pooler. Once exhausted, new connections fail and Prisma reports
+`Can't reach database server` — which surfaces as a 500 on the one page that
+reads the database.
+
+That matches "worked, then stopped": fine on one warm instance, failing once
+traffic spreads across several.
+
+**The fix**
+
+`max: 3` and `idleTimeoutMillis: 10_000` on the adapter. Three rather than one
+because the profile page issues seven queries in a `Promise.all`; a pool of one
+would serialise them for no benefit. `/api/health/db` already used `max: 1` for
+its single probe.
+
+**Verified here**
+
+`tsc` clean, `eslint` clean, build compiles. Ten concurrent profile loads all
+returned 200, and `pg_stat_activity` showed **4** connections — three from the
+pool, one from the psql session running the check. The cap holds.
+
+**What would actually settle it**
+
+This container cannot reproduce Supabase pooler exhaustion, so the fix is
+reasoning plus a local connection-count check, not proof.
+
+Open **`/api/health/db` on the live site** and read the `database.pooled` field.
+If it is `false`, the `DATABASE_URL` in Vercel is the **direct** connection
+string rather than the pooler — which `db.ts` already warns runs out of
+connections under any real traffic, and would be the whole answer on its own.
+Vercel's function logs for the failing request would also name the error.
+
+**Still open**
+
+- A database blip still returns a bare 500 on the profile. `DB_UNREACHABLE_MESSAGE`
+  exists and is wired only into signup. Offered; not done.
+- No retry on transient connection failures anywhere.
+
+---
+
 ### 2026-09-26 — Search finds people, not just shows and episodes
 
 - **Branch:** `main`
