@@ -39,6 +39,12 @@
   flex-shrink: 0;
   transition: transform 0.15s;
 }
+
+/* A member can top the results when nothing in the catalogue matches. Round,
+   so it reads as a person rather than as cover art. */
+.topResultCoverUser {
+  border-radius: 50%;
+}
 .topResultCard:hover .topResultCover {
   transform: scale(1.02);
 }
@@ -75,6 +81,14 @@
   flex-shrink: 0;
   transition: transform 0.15s;
 }
+/* A person, not cover art: square and circular, matching how avatars read on
+   Explore, review bylines and the profile header. Height matches .resultCover
+   so a Users row lines up with the results above it. */
+.resultCoverUser {
+  width: 87px;
+  border-radius: 50%;
+}
+
 .resultCard:hover .resultCover {
   transform: scale(1.02);
 }
@@ -106,5 +120,8 @@
   .resultCover {
     width: 56px;
     height: 56px;
+  }
+  .resultCoverUser {
+    width: 56px;
   }
 }

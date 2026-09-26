@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { subtitleForSearchItem, type SearchItem, type SearchScope } from "@/lib/search";
+import { subtitleForSearchItem, type SearchItem, type SearchScope } from "@/lib/searchItem";
 import { useSearchResults } from "@/components/useSearchResults";
 import { TrashIcon } from "@/components/icons";
 import styles from "./createList.module.css";

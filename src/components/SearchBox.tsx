@@ -2,7 +2,7 @@
 
 import { useState, useRef, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { hrefForSearchItem, subtitleForSearchItem } from "@/lib/search";
+import { hrefForSearchItem, subtitleForSearchItem } from "@/lib/searchItem";
 import { useSearchResults } from "./useSearchResults";
 import { SearchIcon } from "./icons";
 
@@ -12,7 +12,9 @@ export function SearchBox() {
   const [open, setOpen] = useState(false);
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const matches = useSearchResults(value);
+  // Members included here, unlike the add bars: this search navigates rather
+  // than adding something to a collection, so a person is a valid destination.
+  const matches = useSearchResults(value, 5, "all", { includeUsers: true });
 
   function goToResultsPage() {
     if (!value.trim()) return;
@@ -65,7 +67,15 @@ export function SearchBox() {
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="search-dropdown-thumb" src={item.cover} alt="" />
+              <img
+                className={
+                  item.type === "user"
+                    ? "search-dropdown-thumb search-dropdown-thumb-user"
+                    : "search-dropdown-thumb"
+                }
+                src={item.cover}
+                alt=""
+              />
               <div>
                 <div className="search-dropdown-title">{item.title}</div>
                 <div className="search-dropdown-subtitle">{subtitleForSearchItem(item)}</div>

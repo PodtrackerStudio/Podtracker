@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AddPodcastsBar } from "@/components/AddPodcastsBar";
 import { LogReviewPopup } from "@/components/LogReviewPopup";
-import type { SearchItem } from "@/lib/search";
+import type { SearchItem } from "@/lib/searchItem";
 import styles from "./log.module.css";
 
 /**

@@ -21,9 +21,12 @@ export async function GET(request: Request) {
   const limit = Math.min(Number(searchParams.get("limit")) || 5, 25);
   const requested = searchParams.get("scope") ?? "all";
   const scope: SearchScope = SCOPES.includes(requested as SearchScope) ? (requested as SearchScope) : "all";
+  // Opt-in, so the add bars — which never pass it — cannot be handed a member
+  // to add to a list. See the note on `search` in lib/search.ts.
+  const includeUsers = searchParams.get("users") === "1";
 
   if (!q) return NextResponse.json({ results: [] });
 
-  const results = await quickSearch(q, limit, scope);
+  const results = await quickSearch(q, limit, scope, { includeUsers });
   return NextResponse.json({ results });
 }

@@ -71,6 +71,78 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-26 — Search finds people, not just shows and episodes
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — "the search bar needs to show users too".
+- **Status:** Complete and verified against seeded local accounts.
+
+**What changed**
+
+- `src/lib/searchItem.ts` — **new.** The result types and the three display
+  helpers, with no database or network imports. See the bundling note below;
+  this split is load-bearing, not tidying.
+- `src/lib/search.ts` — keeps the iTunes fetching, gains `searchUsers` reading
+  `User` from Postgres, and re-exports the pure surface for server callers.
+- `src/app/api/search/route.ts` — `?users=1` opts in.
+- `src/components/useSearchResults.ts`, `SearchBox.tsx` — nav dropdown asks for
+  users and renders their avatars round.
+- `src/app/search/page.tsx` — a **Users** section, separate from the catalogue
+  results.
+- `search.module.css`, `globals.css` — circular avatar variants.
+
+**What was asked for, and what was built instead**
+
+The request was a fourth tab next to "All media / Shows only / Episodes only".
+That control belongs to `AddPodcastsBar`, which appears on `/log`, next-listening
+and list pages — all flows that **add the picked thing to a collection**. A
+member cannot be logged as an episode or added to a list, so a Users tab there
+would hand those pickers results that break on click. Raised rather than built;
+Sasha chose the nav search and `/search` instead.
+
+**Users are opt-in, deliberately not a `SearchScope` value**
+
+The add bars pass scope `"all"`. Folding users into `"all"` would have put people
+in front of exactly the pickers that cannot accept them. `includeUsers` defaults
+to **false**, so a forgotten flag fails by not showing users rather than by
+corrupting an add.
+
+**The bug this turned up, worth remembering**
+
+Adding `import { db }` to `search.ts` **broke the production build**. Client
+components import the display helpers from that module, so Turbopack followed
+the chain `SearchBox → search.ts → db.ts → @prisma/adapter-pg → pg` and tried to
+bundle a Postgres driver for the browser, which reaches for `dns` and `fs`:
+
+> Module not found: Can't resolve 'dns'
+
+`tsc` and `eslint` both passed first. Only `npm run build` caught it.
+
+**The rule: a module a client component imports from must never reach the
+database.** Hence `searchItem.ts`. If something pure is ever needed from
+`search.ts` again, it goes in `searchItem.ts` instead.
+
+**Verified**
+
+`tsc` clean, `eslint` clean, production build compiles. Against three seeded
+accounts on a local Postgres:
+
+| Check | Result |
+| --- | --- |
+| `/api/search?q=sasha&users=1` | both matching members returned |
+| `/api/search?q=sasha` (no flag — what the add bars send) | `[]`, no members |
+| Handle vs display-name ranking | `@sashaknysh` above "Sasha Fan" |
+| `/search?q=sasha` | "Users" section, links to `/user/[username]` |
+| Nav dropdown, "phil" | Phillip N → `/user/phillipn`, avatar round |
+| JS errors | none |
+
+**Not verified**
+
+Media and member results have never been seen *together*: this container cannot
+reach iTunes, so every catalogue result was empty. The ordering — members after
+shows and episodes — is therefore untested against real mixed results, and a
+member only topped the page here because nothing else matched.
+
 ### 2026-09-26 — Email confirmation: the back end was ready, the front end ignored it
 
 - **Branch:** `main`

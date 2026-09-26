@@ -1,5 +1,13 @@
 import { searchPodcasts, searchEpisodes } from "./podcastApi";
 import { episodeKeyFromGuid } from "./episodeKey";
+import { db } from "./db";
+import type {
+  PodcastSearchItem,
+  EpisodeSearchItem,
+  UserSearchItem,
+  SearchItem,
+  SearchScope,
+} from "./searchItem";
 
 /**
  * Live search against the iTunes catalogue — shows and individual episodes.
@@ -13,55 +21,14 @@ import { episodeKeyFromGuid } from "./episodeKey";
  * the show's id plus a hashed feed guid, which is exactly the shape of
  * `/podcast/[id]/episode/[epId]`.
  */
-type SearchItemBase = {
-  /** Unique across both kinds — used as a React key and a dedupe key. */
-  id: string;
-  title: string;
-  cover: string;
-};
-
-export type PodcastSearchItem = SearchItemBase & {
-  type: "podcast";
-  artistName: string;
-  episodeCount: number;
-};
-
-export type EpisodeSearchItem = SearchItemBase & {
-  type: "episode";
-  /** iTunes id of the show — what the add endpoints take as `externalId`. */
-  showExternalId: string;
-  showTitle: string;
-  /** Hashed feed guid: the route segment, and what `ensureEpisode` matches on. */
-  episodeKey: string;
-  releaseDate: string | null;
-};
-
-export type SearchItem = PodcastSearchItem | EpisodeSearchItem;
-
-/** What a caller will accept back. The add bars expose this as a control. */
-export type SearchScope = "all" | "shows" | "episodes";
-
-export function hrefForSearchItem(item: SearchItem): string {
-  return item.type === "episode"
-    ? `/podcast/${item.showExternalId}/episode/${item.episodeKey}`
-    : `/podcast/${item.id}`;
-}
-
-export function subtitleForSearchItem(item: SearchItem): string {
-  if (item.type === "episode") {
-    const date = item.releaseDate
-      ? new Date(item.releaseDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })
-      : null;
-    return date ? `${item.showTitle} · ${date}` : item.showTitle;
-  }
-  // Apple's trackCount is a reasonable episode count; fall back to the author
-  // when it is missing, since "0 episodes" reads worse than no number.
-  return item.episodeCount > 0 ? `${item.episodeCount.toLocaleString("en-US")} episodes` : item.artistName;
-}
-
-export function coverForSearchItem(item: SearchItem): string {
-  return item.cover;
-}
+export type {
+  PodcastSearchItem,
+  EpisodeSearchItem,
+  UserSearchItem,
+  SearchItem,
+  SearchScope,
+} from "./searchItem";
+export { hrefForSearchItem, subtitleForSearchItem, coverForSearchItem } from "./searchItem";
 
 export type SearchResults = {
   topResult: SearchItem | null;
@@ -180,13 +147,86 @@ async function fetchItems(query: string, limit: number, scope: SearchScope): Pro
   }
 }
 
-export async function search(query: string, scope: SearchScope = "all"): Promise<SearchResults> {
-  const items = await fetchItems(query, 25, scope);
-  if (items.length === 0) return { topResult: null, otherResults: [] };
-  return { topResult: items[0], otherResults: items.slice(1) };
+/**
+ * Members whose handle or display name contains the query.
+ *
+ * Unlike everything else here this reads our own database, so it is cheap and
+ * exact where the iTunes calls are neither. Handle matches sort first: someone
+ * typing a username wants that person, not everyone whose bio-name happens to
+ * contain the same letters.
+ */
+async function searchUsers(query: string, limit: number): Promise<UserSearchItem[]> {
+  const q = query.trim();
+  if (!q) return [];
+
+  const users = await db.user.findMany({
+    where: {
+      OR: [
+        { username: { contains: q, mode: "insensitive" } },
+        { displayName: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    select: { id: true, username: true, displayName: true, avatarUrl: true },
+    take: limit,
+  });
+
+  const lower = q.toLowerCase();
+  const handleFirst = [...users].sort((a, b) => {
+    const aHandle = a.username.toLowerCase().startsWith(lower) ? 0 : 1;
+    const bHandle = b.username.toLowerCase().startsWith(lower) ? 0 : 1;
+    return aHandle - bHandle;
+  });
+
+  return handleFirst.map((u) => ({
+    // Namespaced so a member can never collide with an iTunes id, which shares
+    // this field as a React key and a dedupe key.
+    id: `user:${u.id}`,
+    type: "user" as const,
+    title: u.displayName || u.username,
+    cover: u.avatarUrl ?? "/default-avatar.webp",
+    username: u.username,
+  }));
+}
+
+/**
+ * `includeUsers` is opt-in, and deliberately not a `SearchScope` value.
+ *
+ * The add bars — Next listening, list pages, the log flow — pass scope "all"
+ * and add whatever is picked to a collection. A member cannot be logged as an
+ * episode or added to a list, so folding people into "all" would put results
+ * in front of those pickers that break when clicked. Off by default means the
+ * worst a forgotten flag can do is fail to show users, never corrupt an add.
+ */
+export async function search(
+  query: string,
+  scope: SearchScope = "all",
+  { includeUsers = false }: { includeUsers?: boolean } = {},
+): Promise<SearchResults> {
+  const [items, users] = await Promise.all([
+    fetchItems(query, 25, scope),
+    includeUsers ? searchUsers(query, 10) : Promise.resolve([]),
+  ]);
+
+  // Members go after the catalogue rather than competing with it for the top
+  // spot: iTunes ranks by real popularity, and there is no honest way to say
+  // whether a show beats a person for the same word.
+  const all: SearchItem[] = [...items, ...users];
+  if (all.length === 0) return { topResult: null, otherResults: [] };
+  return { topResult: all[0], otherResults: all.slice(1) };
 }
 
 /** The nav typeahead and the add bars — just the top few. */
-export async function quickSearch(query: string, limit = 5, scope: SearchScope = "all"): Promise<SearchItem[]> {
-  return fetchItems(query, limit, scope);
+export async function quickSearch(
+  query: string,
+  limit = 5,
+  scope: SearchScope = "all",
+  { includeUsers = false }: { includeUsers?: boolean } = {},
+): Promise<SearchItem[]> {
+  const [items, users] = await Promise.all([
+    fetchItems(query, limit, scope),
+    // A couple of slots only: the dropdown is short, and shows are what most
+    // searches are for.
+    includeUsers ? searchUsers(query, 2) : Promise.resolve([]),
+  ]);
+  return [...items, ...users];
 }

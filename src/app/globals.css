@@ -173,6 +173,11 @@ nav.site-nav {
   background: #ccc;
   flex-shrink: 0;
 }
+/* A person, not cover art. Circular is how avatars read everywhere else on the
+   site — Explore's trending users, review bylines, the profile header. */
+.search-dropdown-thumb-user {
+  border-radius: 50%;
+}
 .search-dropdown-title {
   font-size: 13px;
   font-weight: 600;

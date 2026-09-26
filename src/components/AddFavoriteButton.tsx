@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { subtitleForSearchItem, type SearchItem } from "@/lib/search";
+import { subtitleForSearchItem, type SearchItem } from "@/lib/searchItem";
 import { useSearchResults } from "./useSearchResults";
 import { PlusIcon } from "@/components/icons";
 import styles from "../app/user/[username]/profileSub.module.css";

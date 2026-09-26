@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { subtitleForSearchItem, type SearchItem, type SearchScope } from "@/lib/search";
+import { subtitleForSearchItem, type SearchItem, type SearchScope } from "@/lib/searchItem";
 import styles from "./addPodcastsBar.module.css";
 
 /** The Shows only / Episodes only control, in the wording the site already uses. */
