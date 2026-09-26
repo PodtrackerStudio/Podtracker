@@ -202,9 +202,13 @@ export async function search(
   scope: SearchScope = "all",
   { includeUsers = false }: { includeUsers?: boolean } = {},
 ): Promise<SearchResults> {
+  // "users" means only people; every other scope means no people unless the
+  // caller opted in. Both guards matter: the first makes the filter do what it
+  // says, the second keeps members away from the add bars.
+  const wantsUsers = includeUsers && (scope === "all" || scope === "users");
   const [items, users] = await Promise.all([
-    fetchItems(query, 25, scope),
-    includeUsers ? searchUsers(query, 10) : Promise.resolve([]),
+    scope === "users" ? Promise.resolve([]) : fetchItems(query, 25, scope),
+    wantsUsers ? searchUsers(query, scope === "users" ? 25 : 10) : Promise.resolve([]),
   ]);
 
   // Members go after the catalogue rather than competing with it for the top
@@ -222,11 +226,12 @@ export async function quickSearch(
   scope: SearchScope = "all",
   { includeUsers = false }: { includeUsers?: boolean } = {},
 ): Promise<SearchItem[]> {
+  const wantsUsers = includeUsers && (scope === "all" || scope === "users");
   const [items, users] = await Promise.all([
-    fetchItems(query, limit, scope),
-    // A couple of slots only: the dropdown is short, and shows are what most
-    // searches are for.
-    includeUsers ? searchUsers(query, 2) : Promise.resolve([]),
+    scope === "users" ? Promise.resolve([]) : fetchItems(query, limit, scope),
+    // Filtered to people, they get the whole dropdown. Mixed in, a couple of
+    // slots only — the dropdown is short and most searches are for shows.
+    wantsUsers ? searchUsers(query, scope === "users" ? limit : 2) : Promise.resolve([]),
   ]);
   return [...items, ...users];
 }

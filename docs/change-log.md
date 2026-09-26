@@ -86,19 +86,29 @@ rejected. This is the part that saves the most time later.
   `User` from Postgres, and re-exports the pure surface for server callers.
 - `src/app/api/search/route.ts` — `?users=1` opts in.
 - `src/components/useSearchResults.ts`, `SearchBox.tsx` — nav dropdown asks for
-  users and renders their avatars round.
+  users, renders their avatars round, and carries the four-way filter.
+- `SearchScope` gained `"users"`. The add bars list their three options in their
+  own `SCOPES` array, so widening the type did not widen their control.
 - `src/app/search/page.tsx` — a **Users** section, separate from the catalogue
   results.
 - `search.module.css`, `globals.css` — circular avatar variants.
 
-**What was asked for, and what was built instead**
+**What was asked for, and where it ended up**
 
 The request was a fourth tab next to "All media / Shows only / Episodes only".
-That control belongs to `AddPodcastsBar`, which appears on `/log`, next-listening
-and list pages — all flows that **add the picked thing to a collection**. A
-member cannot be logged as an episode or added to a list, so a Users tab there
-would hand those pickers results that break on click. Raised rather than built;
-Sasha chose the nav search and `/search` instead.
+That control belongs to `AddPodcastsBar` — `/log`, next-listening, list pages —
+all flows that **add the picked thing to a collection**. A member cannot be
+logged as an episode or added to a list, so a Users tab there would hand those
+pickers results that break on click. Raised rather than built.
+
+The first pass then shipped users with no filter at all, which was not what was
+asked for either. Sasha came back: he wanted the same three-way control the log
+page has, on the nav search, with Users as a fourth. That is what is there now —
+**All / Shows only / Episodes only / Users** in the nav dropdown, reusing the add
+bars' markup and styling so the two searches on the site behave alike.
+
+"All" rather than "All media": the nav version also returns people, and calling
+a person media would be wrong. The add bars keep their own wording, untouched.
 
 **Users are opt-in, deliberately not a `SearchScope` value**
 
@@ -134,6 +144,10 @@ accounts on a local Postgres:
 | Handle vs display-name ranking | `@sashaknysh` above "Sasha Fan" |
 | `/search?q=sasha` | "Users" section, links to `/user/[username]` |
 | Nav dropdown, "phil" | Phillip N → `/user/phillipn`, avatar round |
+| Nav filter renders | All / Shows only / Episodes only / Users, "All" active |
+| Switching to **Users** | people only |
+| Switching to **Shows only** | no people, "No matches." rather than a blank panel |
+| `?scope=shows&users=1` | `[]` — a filter cannot be talked into returning people |
 | JS errors | none |
 
 **Not verified**

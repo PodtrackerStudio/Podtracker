@@ -2,19 +2,33 @@
 
 import { useState, useRef, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { hrefForSearchItem, subtitleForSearchItem } from "@/lib/searchItem";
+import { hrefForSearchItem, subtitleForSearchItem, type SearchScope } from "@/lib/searchItem";
 import { useSearchResults } from "./useSearchResults";
 import { SearchIcon } from "./icons";
+
+/**
+ * The same filter the add bars carry, plus Users.
+ *
+ * "All" rather than the add bars' "All media", because here it also returns
+ * people and calling a person media would be wrong.
+ */
+const SCOPES: { value: SearchScope; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "shows", label: "Shows only" },
+  { value: "episodes", label: "Episodes only" },
+  { value: "users", label: "Users" },
+];
 
 export function SearchBox() {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(false);
+  const [scope, setScope] = useState<SearchScope>("all");
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Members included here, unlike the add bars: this search navigates rather
   // than adding something to a collection, so a person is a valid destination.
-  const matches = useSearchResults(value, 5, "all", { includeUsers: true });
+  const matches = useSearchResults(value, 5, scope, { includeUsers: true });
 
   function goToResultsPage() {
     if (!value.trim()) return;
@@ -51,8 +65,34 @@ export function SearchBox() {
         />
       </div>
 
-      {open && matches.length > 0 && (
+      {/* Stays open with no results too, so the filter is still reachable when
+          a filter is what emptied the list — same as the add bars. */}
+      {open && value.trim() && (
         <div className="search-dropdown">
+          <div className="search-scope-row" role="group" aria-label="Filter results">
+            {SCOPES.map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                className={
+                  s.value === scope ? "search-scope-button search-scope-active" : "search-scope-button"
+                }
+                aria-pressed={s.value === scope}
+                // onMouseDown, not onClick: the input's onBlur would close the
+                // dropdown before a click landed, so the filter would never change.
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  if (blurTimeout.current) clearTimeout(blurTimeout.current);
+                  setScope(s.value);
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {matches.length === 0 && <div className="search-dropdown-empty">No matches.</div>}
+
           {matches.map((item) => (
             <a
               key={item.id}

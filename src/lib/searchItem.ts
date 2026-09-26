@@ -47,7 +47,15 @@ export type UserSearchItem = SearchItemBase & {
 export type SearchItem = PodcastSearchItem | EpisodeSearchItem | UserSearchItem;
 
 /** What a caller will accept back. The add bars expose this as a control. */
-export type SearchScope = "all" | "shows" | "episodes";
+/**
+ * What a caller will accept back.
+ *
+ * `users` is only offered by the nav search, which navigates. The add bars
+ * offer the other three, because they add whatever is picked to a collection
+ * and a member cannot be logged as an episode or put in a list — see the note
+ * on `search` in `search.ts`.
+ */
+export type SearchScope = "all" | "shows" | "episodes" | "users";
 
 export function hrefForSearchItem(item: SearchItem): string {
   if (item.type === "user") return `/user/${item.username}`;

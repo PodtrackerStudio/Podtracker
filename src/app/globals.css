@@ -150,6 +150,46 @@ nav.site-nav {
   overflow: hidden;
   z-index: 50;
 }
+/* The nav search filter — deliberately the same control the add bars use
+   (.scopeRow / .scopeButton in addPodcastsBar.module.css), so the two searches
+   on the site look and behave alike. Plain class names rather than a module
+   because this dropdown is styled from globals. */
+.search-scope-row {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border-bottom: 1px solid var(--border);
+  background: #fafafa;
+}
+.search-scope-button {
+  flex: 1;
+  padding: 5px 6px;
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.search-scope-button:hover {
+  background: #eee;
+}
+.search-scope-active,
+.search-scope-active:hover {
+  background: var(--accent-blue);
+  color: var(--text);
+}
+/* Shown when a filter is what emptied the list, so the row above still reads
+   as the reason rather than the search looking broken. */
+.search-dropdown-empty {
+  padding: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .search-dropdown-item {
   display: flex;
   align-items: center;

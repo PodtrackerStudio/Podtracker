@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { quickSearch, type SearchScope } from "@/lib/search";
 
-const SCOPES: SearchScope[] = ["all", "shows", "episodes"];
+const SCOPES: SearchScope[] = ["all", "shows", "episodes", "users"];
 
 /**
  * Typeahead search for client components.
