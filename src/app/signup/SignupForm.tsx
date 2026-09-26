@@ -13,6 +13,11 @@ export function SignupForm() {
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Set once the account exists but the email has not been confirmed. Holding
+  // the address rather than a boolean lets the screen name the inbox and offer
+  // a resend without reading it back out of the form.
+  const [awaitingEmail, setAwaitingEmail] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -46,8 +51,65 @@ export function SignupForm() {
       return;
     }
 
+    const data = await res.json().catch(() => null);
+
+    // With email confirmation on, signing up does NOT sign you in — Supabase
+    // withholds the session until the link is clicked. Redirecting to /home
+    // here, as this used to, sent people to a page that immediately bounced
+    // them back to /login with no explanation of why.
+    if (data?.needsEmailConfirmation) {
+      setAwaitingEmail(data.email ?? email.trim());
+      setSubmitting(false);
+      return;
+    }
+
     router.push("/home");
     router.refresh();
+  }
+
+  async function handleResend() {
+    if (!awaitingEmail || resendState === "sending") return;
+    setResendState("sending");
+    await fetch("/api/auth/resend-confirmation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: awaitingEmail }),
+    }).catch(() => null);
+    // Always reports as sent. The endpoint deliberately gives the same answer
+    // whether or not the address exists, and contradicting that here would
+    // leak exactly what it is protecting.
+    setResendState("sent");
+  }
+
+  if (awaitingEmail) {
+    return (
+      <div className={styles.authWrap}>
+        <h1>Check your email</h1>
+        <p className={styles.authNote}>
+          We sent a confirmation link to <strong>{awaitingEmail}</strong>. Click it and you&apos;re in.
+        </p>
+        <p className={styles.authNote}>
+          Your account exists but stays locked until then — it&apos;s how we keep the site free of
+          accounts made with other people&apos;s addresses.
+        </p>
+        <p className={styles.authNote}>
+          Nothing after a minute or two? Check your spam folder.
+        </p>
+        <button
+          type="button"
+          className={styles.btnPrimary}
+          onClick={handleResend}
+          disabled={resendState !== "idle"}
+        >
+          {resendState === "idle" && "Send it again"}
+          {resendState === "sending" && "Sending…"}
+          {resendState === "sent" && "Sent — check your inbox"}
+        </button>
+        <div className={styles.authSwitch}>
+          Already confirmed? <Link href="/login">Login</Link>
+        </div>
+      </div>
+    );
   }
 
   return (

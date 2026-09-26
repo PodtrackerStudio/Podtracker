@@ -71,6 +71,100 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-26 — Email confirmation: the back end was ready, the front end ignored it
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "verify a user's email once they
+  create an account so people can't just use fake emails to spam accounts".
+- **Status:** Code complete. **Confirmation is still switched OFF in the
+  Supabase dashboard** — that toggle is the thing that actually turns this on
+  and only Phillip can flip it.
+
+**What already existed**
+
+The signup route has computed `needsEmailConfirmation` since the Supabase
+switchover, and `/auth/callback` already exchanges an emailed code for a
+session. Supabase does the verifying; nothing here needed inventing.
+
+**What was broken**
+
+`SignupForm` ignored `needsEmailConfirmation` and ran `router.push("/home")`
+regardless. With confirmation on, Supabase withholds the session until the link
+is clicked — so signing up would have dropped people on `/home`, bounced them
+straight back to `/login`, and explained nothing. Turning the toggle on without
+this change would have looked like a broken site.
+
+**What changed**
+
+- **`emailRedirectTo` on `signUp`**, pointing at `/auth/callback?next=/home`.
+  Without it Supabase uses the project's Site URL — `/` — which cannot complete
+  a signup, because turning the code into a session needs cookie writes that
+  only a Route Handler can do. The link would appear to work and leave the
+  person signed out. Built from `siteOrigin(request)`, so it does not emit
+  `http://` from behind Vercel's TLS termination.
+- **A "Check your email" screen**, naming the address, saying why the account is
+  locked, and pointing at the spam folder.
+- **`POST /api/auth/resend-confirmation`**, plus a button. Without a resend, a
+  confirmation email that lands in spam or expires leaves the account
+  permanently unusable — the address is taken, so signing up again fails too,
+  and the only way out is an administrator deleting the account. The response is
+  identical whether or not the address is registered, so it cannot be used to
+  test who has an account here. Rate-limited on IP **and** address, so it cannot
+  be turned into a way to mail-bomb someone.
+
+**A real bug the testing found**
+
+Writing the profile row was outside any specific error handling, so a **P2002
+unique-constraint violation was reported as "We couldn't reach our database"** —
+telling someone the site is down when their username had just been taken. It is
+reachable: two signups claiming one username can both pass the availability
+check before either writes, and a repeat signup on an unconfirmed account
+collides on the primary key. Now returns 409 with the right message; anything
+that is not P2002 still throws.
+
+Found because a test fixture returned a fixed user id and the second signup
+collided — the kind of thing reading the code would not have surfaced.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/api/auth/signup/route.ts` | Modified — `emailRedirectTo`, echo the email back, handle P2002 |
+| `src/app/signup/SignupForm.tsx` | Modified — confirmation screen and resend |
+| `src/app/api/auth/resend-confirmation/route.ts` | Added |
+
+**Verification — driven in a real browser**
+
+Ran the app against a local Postgres and a stand-in Supabase that withholds the
+session exactly as the real one does with confirmation on. Chromium via
+Playwright:
+
+- stays on `/signup` rather than bouncing to `/home` ✓
+- heading reads "Check your email", names the address ✓
+- resend button goes "Send it again" → "Sent — check your inbox", disabled ✓
+- duplicate username returns **409**, not 503 ✓
+- resend returns `{ok:true}` identically for registered and unregistered ✓
+- the redirect sent to Supabase is
+  `redirect_to=.../auth/callback?next=/home` ✓
+
+Screenshotted and read back: renders in the existing auth styles, no new design.
+`tsc`, `lint` and `build` clean.
+
+**Not done, and it is the part that matters**
+
+1. **Supabase > Authentication > Sign In / Providers > Email > Confirm email:
+   turn ON.** Until then signup still returns a session immediately and none of
+   the above is reached.
+2. **Connect real SMTP** (Project Settings > Auth > SMTP). Supabase's built-in
+   mailer sends a few messages an hour and is explicitly for testing — with it,
+   most confirmation emails silently never arrive.
+3. Not attempted: blocking disposable-email domains. Confirmation already stops
+   addresses the signer-up does not control, which is what was asked for.
+   Domain blocklists need maintaining and reject real people using privacy
+   forwarders, so that is a policy call rather than an obvious win.
+
+---
+
 ### 2026-09-24 — Supabase switchover completed; comma dropped from the home greeting
 
 - **Branch:** `main`
