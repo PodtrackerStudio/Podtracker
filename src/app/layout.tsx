@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PT_Serif_Caption, Roboto, Londrina_Solid } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { JsonLd } from "@/components/JsonLd";
 import { staticSiteOrigin } from "@/lib/siteUrl";
 import "./globals.css";
@@ -134,6 +135,7 @@ export default function RootLayout({
       <body>
         <JsonLd data={siteSchema} />
         {children}
+        <Analytics />
       </body>
     </html>
   );
