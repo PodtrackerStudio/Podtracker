@@ -135,11 +135,41 @@ string rather than the pooler — which `db.ts` already warns runs out of
 connections under any real traffic, and would be the whole answer on its own.
 Vercel's function logs for the failing request would also name the error.
 
+**Follow-up the same day: the page now survives a blip**
+
+`src/lib/dbRetry.ts` — `withDbRetry` retries work that failed *before reaching*
+the database: two attempts, 150ms then 400ms. Applied to the profile page.
+
+Only connection failures qualify. A query that reached Postgres and came back
+wrong will come back wrong again, so retrying it would waste the reader's time
+and hide the bug. `Can't reach database server`, `DatabaseNotReachable`,
+`ECONNRESET` and friends mean no connection was available — which is what pool
+exhaustion looks like, and the case where a moment later usually works.
+
+**The mistake worth recording.** The first attempt wrapped the seven-query
+`Promise.all` and nothing else — and changed nothing, because the page's *first*
+touch of the database is the `db.user.findUnique` lookup above it. With Postgres
+stopped the page still failed in 47ms with zero retries logged. Unit tests on
+the helper passed the whole time; only running the real page against a stopped
+database showed it. **Protect the first query, not the biggest one.**
+
+| Check | Result |
+| --- | --- |
+| Recovers after two transient failures | PASS (3 attempts) |
+| Gives up rather than looping | PASS (3 attempts, then throws) |
+| Real query error not retried | PASS (1 attempt) |
+| DB stopped, real page | 2 retries logged, then an honest 500 at 0.83s |
+| DB healthy | 200 in 0.03-0.14s, no retries, no added latency |
+| `/user/sasha` (demo) | unaffected |
+
 **Still open**
 
-- A database blip still returns a bare 500 on the profile. `DB_UNREACHABLE_MESSAGE`
-  exists and is wired only into signup. Offered; not done.
-- No retry on transient connection failures anywhere.
+- A failed profile is still a bare 500 rather than `DB_UNREACHABLE_MESSAGE`,
+  which is wired only into signup. Offered twice; not asked for.
+- Recovery *in production* is inferred from the helper's unit test plus retries
+  firing against a real outage — no live blip has been observed being survived.
+- Nothing else that reads the database has this protection. The profile page was
+  done because it is the only page a reader can reach that needs the database.
 
 ---
 

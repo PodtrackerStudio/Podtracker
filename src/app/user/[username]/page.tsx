@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { PlusIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { withDbRetry } from "@/lib/dbRetry";
 import { episodeHref } from "@/lib/episodeKey";
 import { ProfileCalendar, type ListenedEntry } from "./ProfileCalendar";
 import { getNextListening } from "@/lib/nextListening";
@@ -283,7 +284,17 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   }
 
   // Real user lookup — every non-demo profile renders from actual database state.
-  const profileUser = await db.user.findUnique({ where: { username } });
+  //
+  // Retried, and this is the one that matters most: it is the page's first
+  // touch of the database, so a connection problem kills the render here before
+  // anything below runs. Wrapping only the query batch further down left this
+  // unprotected, and the page still failed on the first refused connection.
+  // A missing account returns null rather than throwing, so a genuine 404 is
+  // unaffected by the retry.
+  const profileUser = await withDbRetry(
+    () => db.user.findUnique({ where: { username } }),
+    "profile:lookup",
+  );
 
   if (!profileUser) {
     return (
@@ -300,7 +311,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const viewer = await getCurrentUser();
   const isOwnProfile = viewer?.id === profileUser.id;
 
-  const [followersCount, followingIds, logEntries, podcastRatings, episodeRatings, nextListening, allLogs] = await Promise.all([
+  // Retried as one unit: these seven run together, so if the pool had no
+  // connection to give, they all failed for the same reason and re-running the
+  // batch is what fixes it. See lib/dbRetry.ts.
+  const [followersCount, followingIds, logEntries, podcastRatings, episodeRatings, nextListening, allLogs] =
+    await withDbRetry(() => Promise.all([
     db.follow.count({ where: { followingId: profileUser.id } }),
     db.follow.findMany({ where: { followerId: profileUser.id }, select: { followingId: true } }),
     db.logEntry.findMany({
@@ -321,12 +336,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       orderBy: { listenedDate: "desc" },
       select: { id: true, listenedDate: true, episode: { select: { title: true } }, podcast: { select: { title: true } } },
     }),
-  ]);
+  ]), "profile");
 
   const followingCount = followingIds.length;
   const friendsCount =
     followingCount > 0
-      ? await db.follow.count({ where: { followerId: { in: followingIds.map((f) => f.followingId) }, followingId: profileUser.id } })
+      ? await withDbRetry(
+          () =>
+            db.follow.count({
+              where: { followerId: { in: followingIds.map((f) => f.followingId) }, followingId: profileUser.id },
+            }),
+          "profile:friends",
+        )
       : 0;
 
   const allRatings = [...podcastRatings, ...episodeRatings];
