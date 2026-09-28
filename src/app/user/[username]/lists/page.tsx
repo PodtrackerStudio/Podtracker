@@ -48,7 +48,7 @@ export default async function ListsPage({ params }: { params: Promise<{ username
     <>
       <SiteNav active="profile" />
       <main className={styles.main}>
-        <ProfileSubHeader username={username} avatarUrl={profileUser.avatarUrl} active="lists" />
+        <ProfileSubHeader username={username} avatarUrl={profileUser.avatarUrl} active="lists" isOwnProfile={isOwnProfile} />
 
         {lists.length === 0 ? (
           <div className={styles.emptyWrap}>

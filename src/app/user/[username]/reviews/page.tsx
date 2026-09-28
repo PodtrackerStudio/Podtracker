@@ -67,7 +67,7 @@ export default async function ReviewsPage({ params }: { params: Promise<{ userna
     <>
       <SiteNav active="profile" />
       <main className={styles.main}>
-        <ProfileSubHeader username={username} avatarUrl={profileUser.avatarUrl} active="reviews" />
+        <ProfileSubHeader username={username} avatarUrl={profileUser.avatarUrl} active="reviews" isOwnProfile={isOwnProfile} />
 
         {reviews.length === 0 ? (
           <div className={styles.emptyWrap}>

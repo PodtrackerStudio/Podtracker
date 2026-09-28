@@ -71,6 +71,70 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-28 — Favorites on someone else's profile showed your own shows
+
+- **Branch:** `main`
+- **Reported by:** sashaknyshjr@gmail.com — opened another member's profile,
+  pressed Favorites, and saw the podcasts *he* follows under their name.
+- **Status:** Fixed. Verified for a visitor; the signed-in owner's view could
+  not be exercised here — see below.
+
+**The bug**
+
+The profile sub-nav linked Favorites at **`/following`** — a fixed URL with no
+username in it — and that page reads `getCurrentUser()`. So it always showed the
+viewer's follows, whoever's profile you were on. Every neighbouring tab
+(`reviews`, `lists`, `diary`) is scoped by the username in its own URL; Favorites
+was the one exception.
+
+`CLAUDE.md` recorded this as deliberate: the old `/user/[username]/favorites`
+page was deleted because "Favorites and Following are the same feature — one
+destination". That was true while a profile was only ever your own. Search finds
+members now, so other people's profiles are reachable and the page has to know
+whose it is. Raised with Sasha, who asked for the user-scoped page back.
+
+**What changed**
+
+- **`src/app/user/[username]/following/page.tsx`** — new, modelled on the
+  reviews tab. Lists the shows *that member* follows, reusing `FollowingGrid`.
+  The "Add Favorites" picker renders only on your own profile, and the chart
+  that fills it is only fetched when it can be used, so a visitor never pays for
+  a request they cannot act on.
+- **`ProfileSubHeader`** and the profile page's own inline `ProfileSubnav` —
+  there were **two** copies of this tab strip with the same two bugs. Both now
+  take `isOwnProfile`.
+- **Wording**, as asked: a profile that is not yours reads **Favorites ·
+  Reviews · Lists**, with no "Your". Your own keeps "Your Reviews" and "Your
+  lists".
+- The empty state names the person on someone else's profile rather than saying
+  "No Favorites...", which reads as an instruction to the wrong reader.
+
+`/following` is untouched and still the signed-in member's own page, reached
+from the main nav.
+
+**Verified**
+
+`tsc` clean, `eslint` clean, build compiles with the new route. Against two
+seeded accounts following different shows:
+
+| Check | Result |
+| --- | --- |
+| `/user/sashaknysh/following` | Joe Rogan Experience, Up First — his |
+| `/user/podfan/following` | Crime Junkie — hers |
+| "Add Favorites" on a profile that isn't yours | absent |
+| Sub-nav links | all `/user/<name>/…`; no bare `/following` left |
+| Labels as a visitor | Favorites · Reviews · Lists |
+
+**Not verified**
+
+The signed-in owner's view — "Your Reviews", "Your lists", and the Add Favorites
+picker — was not exercised. `getCurrentUser()` returns null in this container
+because it has no Supabase keys, so every request here is a signed-out visitor.
+The branch is a single `isOwnProfile` boolean and the visitor half is proven,
+but nobody has watched the owner half render.
+
+---
+
 ### 2026-09-26 — The profile page died on the live site while every other page worked
 
 - **Branch:** `main`

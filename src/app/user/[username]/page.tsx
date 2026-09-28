@@ -80,16 +80,18 @@ const juneWeeks = [
   [29, 30],
 ];
 
-function ProfileSubnav({ username }: { username: string }) {
+function ProfileSubnav({ username, isOwnProfile }: { username: string; isOwnProfile: boolean }) {
   return (
     <div className={styles.profileSubnav}>
       <Link href={`/user/${username}`} className={styles.active}>
         Profile
       </Link>
-      {/* Favorites and Following are the same feature — one destination. */}
-      <Link href="/following">Favorites</Link>
-      <Link href={`/user/${username}/reviews`}>Your Reviews</Link>
-      <Link href={`/user/${username}/lists`}>Your lists</Link>
+      {/* Was `/following`, which reads the *viewer's* follows — so this tab
+          showed your own shows on someone else's profile. Scoped by username
+          now, like every other tab here. */}
+      <Link href={`/user/${username}/following`}>Favorites</Link>
+      <Link href={`/user/${username}/reviews`}>{isOwnProfile ? "Your Reviews" : "Reviews"}</Link>
+      <Link href={`/user/${username}/lists`}>{isOwnProfile ? "Your lists" : "Lists"}</Link>
       <Link href={`/user/${username}/diary`}>Full diary</Link>
     </div>
   );
@@ -157,7 +159,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             </div>
 
             <div className={styles.profileRight}>
-              <ProfileSubnav username={username} />
+              {/* The demo profile exists to show the populated design of your
+                  own profile, so it reads as yours. */}
+              <ProfileSubnav username={username} isOwnProfile />
               <p className={styles.profileLongbio}>{profile.longBio}</p>
             </div>
           </section>
@@ -407,7 +411,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </div>
 
           <div className={styles.profileRight}>
-            <ProfileSubnav username={username} />
+            <ProfileSubnav username={username} isOwnProfile={isOwnProfile} />
             {profileUser.longBio && <p className={styles.profileLongbio}>{profileUser.longBio}</p>}
           </div>
         </section>
