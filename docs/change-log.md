@@ -71,62 +71,72 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
-### 2026-09-30 — Say something when an emailed link is dead
+### 2026-09-30 — A dead-link message on /login, shipped and then reverted same day
 
 - **Branch:** `main`
 - **Requested by:** sashaknyshjr@gmail.com — "make an expired-link screen that
   says 'Sorry something went wrong.. we are working to fix it' and use the same
   font and background colors that is on our site".
-- **Status:** Complete.
+- **Status:** **Reverted.** Shipped in `75099e0`, removed in the commit that
+  carries this entry. `/login` is byte-for-byte back to its `93d8fd2` state.
 
-**What changed**
+**What was built, and what is left of it**
 
-- `/login` now reads the `?error=` parameter that `/auth/callback` has been
-  sending all along and shows the message above the form. Both of the
-  callback's values (`link-expired`, `missing-code`) produce the copy above;
-  so does any unrecognised value, since the callback is the only thing that
-  ever sets the parameter.
-- `.notice` added to `auth.module.css`: an `--accent-blue` content box, 5px
-  radius to match the inputs and button under it, inheriting `.authWrap`'s PT
-  Serif Caption. Deliberately not `.errorMsg` — that is red validation text for
-  something the person just mistyped, and this is neither red nor their fault.
-- Verified against a production build on all four cases: both error values, an
-  unknown value, and a plain `/login` (no box).
+`/login` read the `?error=` parameter that `/auth/callback` has always sent, and
+showed the requested sentence above the form in a `.notice` box — `--accent-blue`,
+5px radius, `.authWrap`'s PT Serif Caption. It was verified on a production
+build against both callback error values, an unknown value, and a plain
+`/login`, and all four behaved correctly.
 
-**Files touched**
+**Nothing of it remains.** `login/page.tsx`, `login/LoginForm.tsx` and the
+`.notice` class in `auth.module.css` were all restored from `93d8fd2`.
+
+**Why it was reverted**
+
+Sasha watched someone sign up, and the message appeared on a flow that **worked**
+— the account was fine and they logged straight in, but the site told them
+something had gone wrong. A false alarm on a successful signup is worse than the
+silence it was meant to fix, so it came out the same day.
+
+The message only ever rendered when `?error=` was present, and nothing but
+`/auth/callback` sets that parameter (checked: there is no middleware, and every
+other `redirect("/login")` in `src/` is bare). So the code exchange really did
+fail — **the link was dead by the time the human clicked it, while the account
+came out confirmed anyway.** Both known causes fit: the person clicked the link
+twice, or something opened it before them. Supabase's links are one-time, and
+mail scanners and inbox prefetchers follow links in email — which consumes the
+code and confirms the account, so the human gets the error and a working login.
+Not chased further; Sasha asked for the message gone, not for a diagnosis.
+
+**Lesson worth keeping:** the wording was flagged as inaccurate *before* it
+shipped ("we are working to fix it" describes a site fault, and an expired
+one-time link is not one) and shipped anyway because it was what was asked for.
+The flag was right, and the real-world failure was the predicted one. Next time
+this shape of disagreement comes up, ship the accurate sentence and offer the
+requested one, rather than the reverse.
+
+**Files touched (this revert)**
 
 | File | Change |
 | --- | --- |
-| `src/app/login/page.tsx` | Modified — reads `searchParams.error`, maps it to a message, passes it down |
-| `src/app/login/LoginForm.tsx` | Modified — optional `notice` prop rendered above the heading |
-| `src/app/signup/auth.module.css` | Modified — added `.notice` |
-
-**Why**
-
-The bug was silence, not styling. `/auth/callback` already redirected a failed
-code exchange to `/login?error=…`, but `page.tsx` ignored the parameter, so
-clicking an expired or already-used confirmation link dropped you on a bare
-login form — indistinguishable from the link doing nothing at all.
-
-**A separate full-page screen was considered and rejected**, for two reasons.
-`CLAUDE.md` says not to invent design, and there is no Figma frame for one; the
-auth pages already have a vocabulary for this, and `/reset-password` uses it for
-exactly this case ("Link expired", note, action). More importantly the login
-form *is* the remedy: the common case is a link that already worked once and an
-account that is confirmed, so the person needs to log in, not to be sent to a
-dead end and then back again.
+| `src/app/login/page.tsx` | Restored — no longer reads `searchParams` |
+| `src/app/login/LoginForm.tsx` | Restored — `notice` prop gone |
+| `src/app/signup/auth.module.css` | Restored — `.notice` removed |
 
 **Follow-ups**
 
-- **The copy is worth a second look.** "We are working to fix it" is the
-  requested wording and is what shipped, but for an expired link it is not
-  accurate — a one-time link expiring is normal, not a site fault — and it tells
-  people to wait when logging in is what actually works. Say the word and it
-  becomes something like "That link has expired or was already used — log in
-  below", which is one line to change.
-- No way to resend a confirmation email from this screen. `/api/auth/resend-confirmation`
-  exists and `SignupForm` uses it, but there is no UI for it outside signup.
-  Only matters for a link that genuinely expired unused.
+- **A dead confirmation link is silent again.** That is the pre-existing
+  behaviour and nobody has complained about it, but it is a real gap: the link
+  does nothing visible and the person is left on a login form with no
+  explanation. If it is ever worth filling, the message has to distinguish a
+  link that was already used (log in — you are fine) from one that truly
+  expired (request a new email), because saying the wrong one is what just
+  failed.
+- **Confirmation links may be getting consumed before the recipient clicks
+  them.** Unconfirmed, but it is the likeliest reading of what was seen. If
+  signups start reporting dead links, that is the first thing to test — and
+  Supabase's `token_hash` / `verifyOtp` flow is the usual fix, since it does not
+  burn on a prefetch the way the PKCE `code` exchange does.
 
 ### 2026-09-30 — Every confirmation email pointed at localhost (a Supabase setting, not code)
 

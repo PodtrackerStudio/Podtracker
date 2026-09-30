@@ -5,13 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "../signup/auth.module.css";
 
-/**
- * `notice` is the dead-emailed-link message, decided server-side in page.tsx.
- * Kept separate from `errorMsg` below: that one is red, reports something the
- * person just typed wrong, and clears on the next submit — this one is neither
- * their fault nor about the form.
- */
-export function LoginForm({ notice = null }: { notice?: string | null }) {
+export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,11 +43,6 @@ export function LoginForm({ notice = null }: { notice?: string | null }) {
   return (
     <>
       <div className={styles.authWrap}>
-        {notice && (
-          <div className={styles.notice} role="status">
-            {notice}
-          </div>
-        )}
         <h1>Login</h1>
         <form onSubmit={handleSubmit}>
           <div className={styles.field}>
