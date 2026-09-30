@@ -71,6 +71,63 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-30 — Every confirmation email pointed at localhost (a Supabase setting, not code)
+
+- **Branch:** none — **nothing in this repository changed.**
+- **Reported and fixed by:** sashaknyshjr@gmail.com, in the Supabase dashboard.
+- **Status:** Fixed and confirmed. A fresh signup on the live site produced a
+  working link that signed the account in.
+
+**Recorded here even though no code changed**, because the cause is invisible
+from the codebase. Anyone debugging this by reading `signup/route.ts` and
+`auth/callback/route.ts` will find both correct and lose an afternoon.
+
+**The symptom**
+
+New accounts received a confirmation email whose link was dead. Signing in
+manually afterwards worked, so the account itself was fine — only the link was
+useless.
+
+**The cause**
+
+Supabase has its own **Site URL**, and it still held the `http://localhost:3000`
+default from when the project was created. Its **Redirect URLs** allow-list
+contained only `https://podtracker-six.vercel.app/**` — not the domain people
+actually use.
+
+So `signUp` correctly sent `emailRedirectTo: https://www.podtracker.studio/auth/callback?next=/home`,
+Supabase found no matching entry in the allow-list, **discarded it, and fell back
+to Site URL**. Every email therefore linked to the recipient's own machine.
+
+The app was right throughout. `siteOrigin()` builds the production URL properly
+from Vercel's forwarded headers.
+
+**The fix — Authentication → URL Configuration**
+
+- **Site URL**: `http://localhost:3000` → `https://www.podtracker.studio`
+- **Redirect URLs**: added `https://www.podtracker.studio/**`
+
+The `/**` wildcard is required; without it the `?next=` query is enough to miss
+the match and fall back to Site URL again. The `vercel.app` entry was kept for
+preview deployments.
+
+Changing an org member's role from read-only to Owner was needed first — the
+Site URL field renders disabled rather than erroring, which reads as a broken
+page rather than a permission.
+
+**Applies immediately.** No deploy: it changes what Supabase puts in the next
+email. Links already sent stay broken.
+
+**Related gap, still open**
+
+`/auth/callback` redirects failures to `/login?error=link-expired`, and
+**`/login` ignores that parameter entirely** — it just renders the form. So an
+expired or already-used link drops someone on a login page with no explanation,
+which is indistinguishable from the link doing nothing. Expired links are
+permanent, not an edge case. Sasha is designing the screen for it.
+
+---
+
 ### 2026-09-28 — Favorites on someone else's profile showed your own shows
 
 - **Branch:** `main`
