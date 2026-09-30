@@ -71,6 +71,63 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-09-30 — Say something when an emailed link is dead
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — "make an expired-link screen that
+  says 'Sorry something went wrong.. we are working to fix it' and use the same
+  font and background colors that is on our site".
+- **Status:** Complete.
+
+**What changed**
+
+- `/login` now reads the `?error=` parameter that `/auth/callback` has been
+  sending all along and shows the message above the form. Both of the
+  callback's values (`link-expired`, `missing-code`) produce the copy above;
+  so does any unrecognised value, since the callback is the only thing that
+  ever sets the parameter.
+- `.notice` added to `auth.module.css`: an `--accent-blue` content box, 5px
+  radius to match the inputs and button under it, inheriting `.authWrap`'s PT
+  Serif Caption. Deliberately not `.errorMsg` — that is red validation text for
+  something the person just mistyped, and this is neither red nor their fault.
+- Verified against a production build on all four cases: both error values, an
+  unknown value, and a plain `/login` (no box).
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/login/page.tsx` | Modified — reads `searchParams.error`, maps it to a message, passes it down |
+| `src/app/login/LoginForm.tsx` | Modified — optional `notice` prop rendered above the heading |
+| `src/app/signup/auth.module.css` | Modified — added `.notice` |
+
+**Why**
+
+The bug was silence, not styling. `/auth/callback` already redirected a failed
+code exchange to `/login?error=…`, but `page.tsx` ignored the parameter, so
+clicking an expired or already-used confirmation link dropped you on a bare
+login form — indistinguishable from the link doing nothing at all.
+
+**A separate full-page screen was considered and rejected**, for two reasons.
+`CLAUDE.md` says not to invent design, and there is no Figma frame for one; the
+auth pages already have a vocabulary for this, and `/reset-password` uses it for
+exactly this case ("Link expired", note, action). More importantly the login
+form *is* the remedy: the common case is a link that already worked once and an
+account that is confirmed, so the person needs to log in, not to be sent to a
+dead end and then back again.
+
+**Follow-ups**
+
+- **The copy is worth a second look.** "We are working to fix it" is the
+  requested wording and is what shipped, but for an expired link it is not
+  accurate — a one-time link expiring is normal, not a site fault — and it tells
+  people to wait when logging in is what actually works. Say the word and it
+  becomes something like "That link has expired or was already used — log in
+  below", which is one line to change.
+- No way to resend a confirmation email from this screen. `/api/auth/resend-confirmation`
+  exists and `SignupForm` uses it, but there is no UI for it outside signup.
+  Only matters for a link that genuinely expired unused.
+
 ### 2026-09-30 — Every confirmation email pointed at localhost (a Supabase setting, not code)
 
 - **Branch:** none — **nothing in this repository changed.**

@@ -127,6 +127,22 @@
   text-decoration: underline;
 }
 
+/* ── DEAD EMAILED LINK ──
+   Shown above the login form when someone arrives from a confirmation or reset
+   link that no longer works (see login/page.tsx). Not styled like .errorMsg:
+   that is red validation text for something the person just typed wrong, and
+   this is neither red nor their fault. It is a content box, so it takes
+   --accent-blue like the other content boxes on the site, 5px to match the
+   inputs and buttons above it, and inherits .authWrap's serif. */
+.notice {
+  background: var(--accent-blue);
+  border-radius: 5px;
+  padding: 14px 16px;
+  margin-bottom: 28px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
 /* Sits under the password field, right-aligned, the way this pattern is
    conventionally placed on a login form. */
 .forgotRow {
