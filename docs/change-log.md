@@ -71,6 +71,67 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-02 — Correct three stale facts in CLAUDE.md, and document `HAS_COMMUNITY_DATA`
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com, after I told him Explore was
+  hardcoded and he corrected me: "explore is real the site is live". He was
+  right. I had quoted CLAUDE.md's build-status table instead of reading the code.
+- **Status:** Complete. Documentation only — **no behaviour changed, and
+  `HAS_COMMUNITY_DATA` was not flipped.**
+
+**What changed**
+
+Every correction below was checked against the source first, not reasoned from
+the old text:
+
+- **`/explore` is real.** Top podcasts and Popular episodes come from
+  `getPopularPodcasts` and `getTrendingEpisodes`, both live off Apple's charts,
+  revalidated hourly. The hardcoded `trendingUsers` / `popularLists` /
+  `curatedLists` constants are real but sit inside `{HAS_COMMUNITY_DATA && …}`,
+  which is `false`, so no visitor has ever seen them. The table said "Built,
+  hardcoded data", which reads as the whole page being fake.
+- **The popularity source is Apple, not iTunes Search, and Spotify is dead.**
+  `popularPodcasts.ts` hits `rss.applemarketingtools.com` and needs no API key.
+  "Next steps" still promised Spotify charts pending credentials; those never
+  arrived and Apple's charts made them unnecessary.
+- **Auth is Supabase, not bcrypt.** The table still described the `/login` and
+  `/signup` stack that was replaced on 2026-09-07.
+- **`HAS_COMMUNITY_DATA` was not mentioned anywhere in CLAUDE.md** despite
+  gating sections across Explore, podcast pages, episode pages, profiles and
+  `MediaThumbCard`. Added a section on what it hides, that flipping it is
+  Sasha's call, that rating and review controls must never be gated on it, and
+  the trap below.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `CLAUDE.md` | Modified — build-status intro and three table rows corrected, Spotify next-step replaced, `HAS_COMMUNITY_DATA` section added |
+
+**Why**
+
+CLAUDE.md is the first thing every session reads, so a stale line there is worse
+than no line — it gets repeated with confidence. This one already cost
+something: I used it to advise Sasha to delay posting in Discord communities
+until "Explore is real", which would have held up his launch for a problem that
+did not exist.
+
+**The trap worth knowing:** the gated Explore blocks still contain invented
+people and shows with `href="#"`. Flipping `HAS_COMMUNITY_DATA` to see how a
+page looks would publish fake users with fake follower counts. Each "turn this
+page on" request is really a request to put real queries behind that section
+first. Recorded in CLAUDE.md so the next session doesn't learn it the hard way.
+
+**Follow-ups**
+
+- **Sasha drives the page-by-page switch-on** (his words, 2026-10-02): he'll
+  write reviews, get others doing the same, and ask when a section has enough
+  behind it. Don't pre-empt it.
+- Two rows in that table were **not** verified this session and may be stale
+  too: `/home` ("Feed content is mock") and `/user/[username]` (the `sasha` demo
+  branch). Both are plausible but unchecked — read the code before quoting them.
+
 ### 2026-09-30 — A dead-link message on /login, shipped and then reverted same day
 
 - **Branch:** `main`

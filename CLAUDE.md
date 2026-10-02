@@ -70,16 +70,16 @@ Raise these rather than fixing them unprompted:
 
 ## Build status
 
-Most pages render from hardcoded constants, not the database. Auth and follows are real; nearly everything else is placeholder. Sasha has said the placeholder podcasts and images don't matter — they'll be replaced when the API work happens.
+Podcast data is real and comes from Apple. What is still missing is *community* data — ratings, reviews, lists, follower counts — because that only exists once people use the site. See `HAS_COMMUNITY_DATA` below: the sections needing it are gated off rather than faked.
 
 | Page | State |
 |---|---|
 | `/` landing | **Pre-launch version only.** Real. |
 | `/home` | Both states built — empty vs populated, branched on `PodcastFollow` count. Feed content is mock. |
 | `/following` | **Real.** Lists the shows you follow; both empty and populated states work. |
-| `/explore` | Built, hardcoded data. |
+| `/explore` | **Real.** Top podcasts and Popular episodes both come from Apple's charts, live, revalidated hourly. Trending users / Popular lists / Curated lists are still hardcoded but sit behind `HAS_COMMUNITY_DATA`, so nothing renders them today. |
 | `/user/[username]` | Demo branch for `sasha`, real data otherwise. |
-| `/login`, `/signup` | Real — bcrypt, sessions, Postgres. No nav bar by design. |
+| `/login`, `/signup` | Real — **Supabase Auth** (since 2026-09-07; the old bcrypt + `Session` table is gone). No nav bar by design. |
 
 **Designed but never built** — these exist as Figma frames only:
 
@@ -88,6 +88,27 @@ Most pages render from hardcoded constants, not the database. Auth and follows a
 The Following empty state — "No Favorites… / Add Favorites ⊕" — used to be listed here as unbuildable. It renders now: the page reads `PodcastFollow`, so following nothing shows it.
 
 `DEMO_USERNAME = "sasha"` in `src/app/home/page.tsx` and `src/app/user/[username]/page.tsx` forces the populated design so it stays viewable while the data is mock. `sasha` is not a real database user — don't try to make it one.
+
+### `HAS_COMMUNITY_DATA` — the one switch for anything needing a user base
+
+`src/lib/community.ts` exports a single boolean, currently `false`. It gates
+every section that ranks or averages something only real users can produce:
+average ratings and rating distributions, friends' activity, popular reviews and
+lists, follower counts, Explore's Trending users / Popular lists / Curated lists.
+Those sections simply don't render while it's off — the site is short, not fake.
+
+Three things to know before touching it:
+
+- **It is Sasha's call when it flips**, as he and others start logging and
+  reviewing. He'll ask page by page. Flipping it to preview something and
+  pushing that is how placeholder names end up live.
+- **Never gate rating or reviewing controls on it.** They are how the first real
+  data gets made, so they have to work while it is `false`.
+- **Some gated blocks still hold placeholder constants** — Explore's
+  `trendingUsers` and `popularLists` are invented people and shows with `href`
+  set to `#`. Flipping the switch without replacing them publishes those. They
+  need real queries behind them first, which is the actual work each "turn this
+  page on" request means.
 
 ## Gotchas that cost real time — read before debugging
 
@@ -141,8 +162,15 @@ All of these are deliberate or already known. Fixing them unasked wastes a turn 
 
 ## Next steps Sasha has named
 
-- Explore will use **Spotify charts** for popularity until there's a real user base. Credentials aren't available yet; `src/lib/popularPodcasts.ts` currently uses the iTunes Search API as a stand-in.
+- Popularity comes from **Apple's charts** (`rss.applemarketingtools.com`, no API
+  key) until Podtracker has its own signal — Sasha's marker is roughly 100 users,
+  then it switches to popularity derived from follows, ratings and logs here.
+  Spotify charts were the original plan and were dropped: credentials never
+  arrived and Apple's charts needed none.
 - Swap in landing v1 once there are roughly 5–10 users generating data.
+- **Flip `HAS_COMMUNITY_DATA` when Sasha says so, not before.** His plan
+  (2026-10-02) is to write reviews and get others doing the same, then ask for
+  the gated sections page by page. Don't flip it to "see how it looks".
 
 ## Committing and pushing
 
