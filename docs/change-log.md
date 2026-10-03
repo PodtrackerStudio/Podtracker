@@ -71,6 +71,131 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-03 — Turn on real community data: ratings, and the home page feed
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com. Reviews written, accounts made,
+  shows followed, things rated — "take all of the activity on the site and start
+  implementing it". His order: **(1)** average rating and distribution, **(2)**
+  home page showing new uploads from followed shows, **(3)** his reviews in
+  trending reviews on the home page. Explicitly **not** Explore's popular users.
+- **Status:** All three built. **None of it has run against a database** — see
+  Follow-ups first.
+
+**The decision that shaped everything: `HAS_COMMUNITY_DATA` was not flipped.**
+
+One global boolean cannot say "ratings on, Explore's popular users off", which
+is exactly what was asked for. Flipping it would also have published the
+invented `trendingUsers` and `popularLists` constants — the trap recorded in
+CLAUDE.md the day before. So each section that went live **stopped consulting
+the flag and now gates on its own data**: `ratings.total > 0`,
+`reviews.length > 0`, `newEpisodes.length > 0`. Better regardless — a show with
+two ratings shows two ratings instead of waiting on a site-wide switch, and a
+section with nothing in it renders nothing rather than an empty frame. The flag
+still covers what nobody asked for yet.
+
+**1. Average rating and distribution** (`src/lib/ratingScale.ts`,
+`src/lib/ratingSummary.ts`)
+
+- Replaces the mock blocks: 3.6 over 1,083 invented ratings on the show page,
+  3.8 over 591 on the episode page. Both gone.
+- **The scale was already settled and is not reinvented.** `ratingTier.ts` and
+  the landing page fix it: Highly Recommend 4, Recommend 3, Ok 2, Don't
+  recommend 1, **Didn't finish excluded from the average**. It still appears in
+  the bars, because "a lot of people bailed" is the signal this site exists to
+  surface; it is not scored, because someone who stopped after five minutes has
+  not judged the show, and scoring it zero would drag an average below the worst
+  opinion anyone actually held. When *every* rating is Didn't finish the average
+  is `null`, never `0.0`.
+- Averages read `PodcastRating`/`EpisodeRating`, never `LogEntry.tier` — the
+  separation the schema already documents, so one person's three relistens count
+  once.
+- The average is shown with the number of ratings beside it. "3.5" reads as a
+  settled verdict and is currently two people.
+- Episodes are matched by walking the show's stored `Episode` rows, because
+  `Episode.externalId` is the feed GUID while the route carries a hash of it, so
+  SQL cannot join them. That list is only episodes someone has acted on. **It
+  deliberately does not parse the feed.**
+
+**2 and 3. The home page feed** (`src/lib/followedEpisodes.ts`,
+`src/lib/trendingReviews.ts`, `src/app/home/page.tsx`)
+
+- The page was stripped to Popular podcasts on 2026-08-18. Two sections return:
+  new episodes from followed shows, and reviews ranked by likes then recency.
+- **No design was invented.** `home.module.css` still carried every class from
+  the original feed — `.episodeGrid`, `.hoverCard`, `.reviewsGrid`,
+  `.reviewCard`, `.ratingTag` — so this is the old markup rebuilt on real
+  queries, not a new layout.
+- Review cards use `MediaThumbCard` for the artwork and **do not print the show
+  or episode name**, per CLAUDE.md. Hovering reveals it.
+- "Trending" is likes first, recency as tie-break. With almost no likes yet that
+  *is* a recency list, and it becomes popularity-ranked on its own. Said plainly
+  rather than faked with a score.
+- Popular podcasts stays, last, as the fallback for an account that follows
+  nothing — which is every new account.
+
+**Performance — the part most likely to bite**
+
+Feeds are 2.5–7MB and parse single-threaded; this is what took `/explore` past
+400s and failed a Vercel build. Three defences, copied from `getTrendingEpisodes`
+because they are already proven here: `MAX_SHOWS = 12`, a **per-show** cache
+(keyed on the show, not the viewer, so a show five people follow parses once an
+hour rather than five times a render), and a **10s hard deadline** — whatever has
+arrived renders, because a short feed beats a hung page.
+
+**`/home` is now `export const dynamic = "force-dynamic"`.** It already rendered
+dynamically in production via `cookies()`, but only because Supabase is
+configured there; without those keys `getCurrentUser()` returns null before
+touching a cookie, which is why it builds static here. A feed of *your* follows
+should not rest on an environment variable — served static once, the first
+visitor's feed goes to everyone.
+
+**`ratingScale.ts` is deliberately import-free.** The tier constants moved out of
+`userRatings.ts`, which imports `db` and therefore `pg`, so anything reaching in
+for a label dragged the database driver toward the browser bundle — the bug that
+broke the production build from `search.ts` and produced `searchItem.ts`.
+`userRatings.ts` re-exports them, so no existing import changed. It also made the
+arithmetic runnable without a database, which is the only reason any of this
+could be checked at all.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/ratingScale.ts` | Added — tiers, scores, and the pure summarise function |
+| `src/lib/ratingSummary.ts` | Added — the database half, for shows and episodes |
+| `src/lib/followedEpisodes.ts` | Added — new uploads from followed shows, capped, cached per show, deadlined |
+| `src/lib/trendingReviews.ts` | Added — reviews by likes then recency |
+| `src/lib/userRatings.ts` | Modified — tier constants moved to `ratingScale`, re-exported |
+| `src/app/podcast/[id]/page.tsx` | Modified — real average and bars; mock `community` deleted |
+| `src/app/podcast/[id]/episode/[epId]/page.tsx` | Modified — same |
+| `src/app/podcast/[id]/podcast.module.css`, `.../episode.module.css` | Modified — `.avgBasis` |
+| `src/app/home/page.tsx` | Rewritten — two real sections, force-dynamic |
+| `CLAUDE.md` | Modified — `/home` row, and `HAS_COMMUNITY_DATA` rewritten as retiring section by section |
+
+**Follow-ups**
+
+- **Nothing here has touched a database.** This container cannot reach port 5432
+  (`npm run check:db`). What *was* verified: `tsc`, `eslint` and a production
+  build clean; **16 executed cases** over the rating arithmetic — empty, single
+  rating, mixed, all-bailed, rounding, bar order — all passing, by compiling the
+  import-free `ratingScale.ts` and running it; `/home` confirmed `ƒ` not `○` in
+  the build output; and `/`, `/explore`, `/home`, `/login`, `/about` all 200 with
+  a clean server log. **Every query is unrun.** Worth checking first: a show
+  Sasha rated shows the right average and bars; the home feed lists episodes from
+  shows he follows and nothing else; his reviews appear under Trending reviews.
+- **The home feed's speed is unknown.** The caps and the deadline are sized from
+  `getTrendingEpisodes`' numbers, not measured here. If `/home` feels slow on the
+  first load after a deploy, it is the feed parse and the per-show cache is cold;
+  the second load is the one to judge.
+- **`MediaThumbCard` still gates its hover rating on `HAS_COMMUNITY_DATA`**, so a
+  show page now prints a real average while the hover popup over the same artwork
+  shows none. Inconsistent, and converting it needs an average per card at each
+  call site — a real piece of work, not a flag change. Left alone.
+- **Still unbuilt on the home page:** Recent activity from friends, New lists,
+  Popular lists.
+- **Explore untouched**, as asked.
+
 ### 2026-10-03 — Delete a review
 
 - **Branch:** `main`

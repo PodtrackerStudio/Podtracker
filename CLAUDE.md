@@ -75,7 +75,7 @@ Podcast data is real and comes from Apple. What is still missing is *community* 
 | Page | State |
 |---|---|
 | `/` landing | **Pre-launch version only.** Real. |
-| `/home` | Both states built — empty vs populated, branched on `PodcastFollow` count. Feed content is mock. |
+| `/home` | **Real** as of 2026-10-03. New episodes from the shows you follow, plus Trending reviews ranked by likes, each rendering only when it has something. Popular podcasts stays as the fallback for an account that follows nothing. Friends' activity, New lists and Popular lists are still unbuilt. |
 | `/following` | **Real.** Lists the shows you follow; both empty and populated states work. |
 | `/explore` | **Real.** Top podcasts and Popular episodes both come from Apple's charts, live, revalidated hourly. Trending users / Popular lists / Curated lists are still hardcoded but sit behind `HAS_COMMUNITY_DATA`, so nothing renders them today. |
 | `/user/[username]` | Demo branch for `sasha`, real data otherwise. |
@@ -92,12 +92,21 @@ The Following empty state — "No Favorites… / Add Favorites ⊕" — used to 
 ### `HAS_COMMUNITY_DATA` — the one switch for anything needing a user base
 
 `src/lib/community.ts` exports a single boolean, currently `false`. It gates
-every section that ranks or averages something only real users can produce:
-average ratings and rating distributions, friends' activity, popular reviews and
-lists, follower counts, Explore's Trending users / Popular lists / Curated lists.
+the sections that rank or average something only real users can produce:
+friends' activity, popular reviews and lists on show and episode pages,
+follower counts, Explore's Trending users / Popular lists / Curated lists.
 Those sections simply don't render while it's off — the site is short, not fake.
 
-Three things to know before touching it:
+**It is being retired section by section, not flipped.** On 2026-10-03 Sasha
+asked for ratings and the home page once real data existed, and explicitly *not*
+for Explore's popular users. One global boolean cannot express that, so each
+section that goes live stops consulting the flag and gates on **its own data**
+instead — `ratings.total > 0`, `reviews.length > 0`. That is strictly better
+anyway: a show with two ratings shows two ratings, rather than waiting for a
+site-wide switch. Already converted: average ratings and distribution on show
+and episode pages, and both home page feeds.
+
+Three things to know before touching what is left:
 
 - **It is Sasha's call when it flips**, as he and others start logging and
   reviewing. He'll ask page by page. Flipping it to preview something and
