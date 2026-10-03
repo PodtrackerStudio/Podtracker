@@ -111,3 +111,39 @@
 .tierRow .tier {
   margin-bottom: 0;
 }
+
+/* ── DELETE REVIEW (author only) ──
+   No Figma frame covers this control, so nothing here is invented: the text
+   sizing and muted colour come from the quiet actions already in this app, and
+   the hover red is --dont, the existing "Don't recommend" token, rather than a
+   new colour. Kept deliberately quiet — it sits under the author's own review
+   and should not compete with the review itself.
+
+   Flagged to Sasha (2026-10-03) as awaiting a frame. */
+.ownerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+.ownerActions button {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.ownerActions button:hover:not(:disabled) {
+  color: var(--dont);
+  text-decoration: underline;
+}
+.ownerActions button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.ownerActions [role="alert"] {
+  font-size: 13px;
+  color: var(--dont);
+}

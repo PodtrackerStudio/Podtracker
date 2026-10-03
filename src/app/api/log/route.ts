@@ -88,3 +88,52 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not save that log." }, { status: 502 });
   }
 }
+
+/**
+ * Delete one `LogEntry` by id — which is what "delete my review" means, since a
+ * review is a `LogEntry` carrying `reviewText` and there is no separate table.
+ *
+ * **The whole entry goes, not just the text.** Clearing `reviewText` would
+ * leave the listen sitting in the diary with its date and tier snapshot, which
+ * is an edit, not a delete — and `/review/[id]` 404s without review text, so
+ * the row would survive as something with no page and no way to reach it. The
+ * caller is told what is being removed before it asks for this.
+ *
+ * **Comments and likes need no cleanup.** Both relate to `LogEntry` with
+ * `onDelete: Cascade`, so Postgres removes them with the row.
+ *
+ * **The rating is deliberately left alone.** `PodcastRating`/`EpisodeRating` is
+ * the author's *current* opinion and is separate from the diary on purpose —
+ * see the schema. Deleting one of three relistens must not wipe a rating that
+ * describes all of them, and a rating is changed through `/api/rate`.
+ */
+export async function DELETE(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+
+  const { logEntryId } = await request.json().catch(() => ({}));
+  if (!logEntryId) return NextResponse.json({ error: "Missing logEntryId." }, { status: 400 });
+
+  const entry = await db.logEntry.findUnique({
+    where: { id: String(logEntryId) },
+    select: { id: true, userId: true },
+  });
+
+  // Already gone is a success, matching /api/lists/items: a double click, or a
+  // page left open while another tab deleted the same entry, is not an error.
+  if (!entry) return NextResponse.json({ ok: true, deleted: false });
+
+  // Checked against the row's own userId rather than anything the client sent —
+  // a request body can claim to be anyone.
+  if (entry.userId !== user.id) {
+    return NextResponse.json({ error: "That isn't your review." }, { status: 403 });
+  }
+
+  try {
+    await db.logEntry.delete({ where: { id: entry.id } });
+  } catch {
+    return NextResponse.json({ error: "Could not delete that review." }, { status: 502 });
+  }
+
+  return NextResponse.json({ ok: true, deleted: true });
+}

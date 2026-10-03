@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { episodeHref } from "@/lib/episodeKey";
 import { Comments } from "@/components/Comments";
 import { LikeButton } from "@/components/LikeButton";
+import { DeleteReviewButton } from "@/components/DeleteReviewButton";
 import styles from "./review.module.css";
 
 /** RatingTier enum → the label and colour class the design uses. */
@@ -179,6 +180,16 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             </div>
 
             <p className={styles.body}>{entry.reviewText}</p>
+
+            {/* Author only. The server checks ownership as well — this just
+                keeps the control off everyone else's screen. */}
+            {viewer?.id === entry.userId && (
+              <DeleteReviewButton
+                logEntryId={entry.id}
+                returnTo={`/user/${entry.user.username}/reviews`}
+                className={styles.ownerActions}
+              />
+            )}
           </div>
         </article>
 

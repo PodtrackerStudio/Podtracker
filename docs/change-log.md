@@ -71,6 +71,79 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-03 — Delete a review
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — "quickly add a delete feature for
+  reviews".
+- **Status:** Complete, but **not verified against a database** — see Follow-ups
+  before trusting it.
+
+**What changed**
+
+- **`DELETE /api/log`**, taking a `logEntryId`. Requires a session, checks the
+  row's own `userId` rather than anything the client sent, 403s otherwise, and
+  treats an already-deleted entry as success — the `/api/lists/items` pattern,
+  so a double click or a stale tab isn't an error.
+- **`DeleteReviewButton`**, rendered on `/review/[id]` for the author only.
+  Confirms first, then redirects to the author's reviews tab.
+- Styles appended to `review.module.css`.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/api/log/route.ts` | Modified — added the `DELETE` handler |
+| `src/components/DeleteReviewButton.tsx` | Added |
+| `src/app/review/[id]/page.tsx` | Modified — renders the button when `viewer.id === entry.userId` |
+| `src/app/review/[id]/review.module.css` | Modified — `.ownerActions` |
+
+**Why**
+
+**A review is a `LogEntry` carrying `reviewText`** — there is no `Review` table —
+so "delete a review" had to mean one of two different things, and the choice is
+the whole design of this feature:
+
+1. **Delete the row.** The listen leaves the diary too, and comments and likes
+   go with it through `onDelete: Cascade`.
+2. **Clear `reviewText`.** The diary entry survives with its date and tier.
+
+**Chose (1).** Clearing the text is an edit, not a delete, and it strands the
+row: `/review/[id]` calls `notFound()` when `reviewText` is null, so the entry
+would live on with no page and no way to reach it. The risk of (1) is that it
+destroys more than the person meant to, which is why the confirm names the diary
+entry, the comments and the likes instead of asking "are you sure".
+
+**Ratings are deliberately not deleted.** `PodcastRating`/`EpisodeRating` is the
+author's current opinion and is separate from the diary by design. Deleting one
+of three relistens must not wipe a rating that describes all of them, and
+ratings are changed through `/api/rate`.
+
+**Not optimistic**, unlike Like and Follow. Those are cheap to get wrong for a
+moment; a delete that only *appears* to have worked is a lie with nothing left
+to click.
+
+**Follow-ups**
+
+- **Verify it on the live site before relying on it.** This container blocks
+  outbound 5432 (`npm run check:db` confirms), so nothing touching the database
+  could be exercised here. What *was* checked: `tsc`, `eslint` and a production
+  build are clean, and `DELETE /api/log` returns 401 when logged out, so the
+  route is wired and the auth gate fires. **The ownership check, the cascade and
+  the deletion itself have never actually run.** The test is: write a review,
+  open it, delete it, then confirm it is gone from `/review/[id]`, from the
+  profile reviews tab and from the diary, and that the show's rating survives.
+- **No delete control in the profile reviews list** — only on a review's own
+  page. Each row there is a single `<Link>` wrapping the whole card, so putting
+  a button inside means nested interactive elements; worth doing, but it is a
+  change to that row's markup rather than a drop-in.
+- **No Figma frame covers this control**, so its placement and styling are a
+  guess within existing tokens: muted serif text under the review body, hovering
+  to `--dont`. Flagged to Sasha the same day. Deliberately quiet rather than a
+  red button, because inventing a prominent component was the bigger risk.
+- **No edit.** Fixing a typo still means deleting and rewriting, which now also
+  costs the review's likes and comments.
+
 ### 2026-10-02 — Correct three stale facts in CLAUDE.md, and document `HAS_COMMUNITY_DATA`
 
 - **Branch:** `main`
