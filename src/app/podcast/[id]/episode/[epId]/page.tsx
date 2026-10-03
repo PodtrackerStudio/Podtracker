@@ -11,23 +11,13 @@ import { ReviewWidget } from "@/components/ReviewWidget";
 import { NextListeningButton } from "@/components/NextListeningButton";
 import { AddToListButton } from "@/components/AddToListButton";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
+import { getEpisodeRatingSummaryByKey } from "@/lib/ratingSummary";
 import { getEpisodeDetail } from "@/lib/episodeDetail";
 import styles from "./episode.module.css";
 
-// Community data — the consensus score and distribution bars. Not from any API;
-// it is this app's own and there is no user base generating it, so it stays
-// mock while the episode's own details come live from the show's RSS feed.
-// Only rendered when HAS_COMMUNITY_DATA is true.
-const community = {
-  avgScore: "3.8",
-  distribution: [
-    { tier: "highly", label: "Highly Recommend", pct: 48, count: 284 },
-    { tier: "recommend", label: "Recommend", pct: 30, count: 177 },
-    { tier: "ok", label: "OK", pct: 12, count: 71 },
-    { tier: "dont", label: "Don't Recommend", pct: 7, count: 41 },
-    { tier: "didnt", label: "Didn't Finish", pct: 3, count: 18 },
-  ],
-};
+// The mock `community` block that used to sit here — a 3.8 average over 591
+// invented ratings — is gone as of 2026-10-03. Both numbers come from
+// `getEpisodeRatingSummaryByKey` now, which reads EpisodeRating.
 
 const reviews = [
   { id: "r1", avatar: "/default-avatar.webp", name: "JohnJam", tier: "recommend", tierLabel: "Recommend", date: "6/24/2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. Ezra Klein brought a lot of nuance to the political discussion that you rarely hear…" },
@@ -108,6 +98,10 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
   }
   const episode = result.episode;
 
+  // Real ratings as of 2026-10-03, replacing the mock block that sat behind
+  // HAS_COMMUNITY_DATA. Gated on having any, not on the global switch.
+  const ratings = await getEpisodeRatingSummaryByKey(id, epId);
+
   const origin = staticSiteOrigin();
   const schema = [
     {
@@ -149,23 +143,38 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
           <div className={styles.episodeLeft}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className={styles.episodeCover} src={episode.coverUrl} alt="Episode cover" />
-            {HAS_COMMUNITY_DATA && (
+            {/* Same rule as the show page: visible once anyone has rated this
+                episode, absent entirely when nobody has. */}
+            {ratings.total > 0 && (
               <>
-                <div className={styles.avgMic}>
-                  <MicIcon />
-                </div>
-                <div className={styles.scoreDisplay}>{community.avgScore}</div>
-                <div className={styles.avgLabel}>Average rating</div>
+                {/* Absent when every rating so far is "Didn't finish", which
+                    counts in the bars but carries no score. */}
+                {ratings.average !== null && (
+                  <>
+                    <div className={styles.avgMic}>
+                      <MicIcon />
+                    </div>
+                    <div className={styles.scoreDisplay}>{ratings.average.toFixed(1)}</div>
+                    <div className={styles.avgLabel}>
+                      Average rating{" "}
+                      <span className={styles.avgBasis}>
+                        ({ratings.scored} {ratings.scored === 1 ? "rating" : "ratings"})
+                      </span>
+                    </div>
+                  </>
+                )}
 
                 <div className={styles.distSection}>
                   <div className={styles.distSectionTitle}>Ratings distribution</div>
-                  {community.distribution.map((d) => (
+                  {ratings.distribution.map((d) => (
                     <div className={styles.distRow} key={d.tier}>
                       <div className={styles.distTrack}>
-                        <div className={`${styles.distFill} ${styles[d.tier]}`} style={{ width: `${d.pct}%` }} />
-                        <span className={styles.distTooltip}>{d.count} ratings</span>
+                        <div className={`${styles.distFill} ${styles[d.key]}`} style={{ width: `${d.pct}%` }} />
+                        <span className={styles.distTooltip}>
+                          {d.count} {d.count === 1 ? "rating" : "ratings"}
+                        </span>
                       </div>
-                      <span className={`${styles.distLabelText} ${styles[d.tier]}`}>{d.label}</span>
+                      <span className={`${styles.distLabelText} ${styles[d.key]}`}>{d.label}</span>
                     </div>
                   ))}
                 </div>

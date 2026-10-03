@@ -543,3 +543,13 @@
     align-items: stretch;
   }
 }
+
+/* How many ratings the average is over. Added 2026-10-03 with the switch to
+   real ratings: "3.5" reads as a settled verdict, and while the site has a
+   handful of users it is usually two people. The count is what keeps it
+   honest. Muted and inline so it reads as a footnote to the label, not a
+   second label. */
+.avgBasis {
+  opacity: 0.75;
+  white-space: nowrap;
+}

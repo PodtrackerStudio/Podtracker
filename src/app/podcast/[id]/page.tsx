@@ -12,26 +12,14 @@ import { JsonLd } from "@/components/JsonLd";
 import { staticSiteOrigin } from "@/lib/siteUrl";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
+import { getPodcastRatingSummary } from "@/lib/ratingSummary";
 import { getViewerPodcastState } from "@/lib/viewerState";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import styles from "./podcast.module.css";
 
-// Community data — ratings, listens, likes, the distribution bars. None of this
-// comes from a podcast API; it is this app's own data and there is no user base
-// generating it yet, so it stays mock while the show's own details come live
-// from `getPodcastDetail`.
-const community = {
-  listens: "980k",
-  likes: "405k",
-  avgScore: "3.6",
-  distribution: [
-    { tier: "highly", label: "Highly Recommend", pct: 38, count: 412 },
-    { tier: "recommend", label: "Recommend", pct: 29, count: 314 },
-    { tier: "ok", label: "OK", pct: 18, count: 195 },
-    { tier: "dont", label: "Don't Recommend", pct: 11, count: 119 },
-    { tier: "didnt", label: "Didn't Finish", pct: 4, count: 43 },
-  ],
-};
+// The mock `community` block that used to sit here — a 3.6 average over 1,083
+// invented ratings — is gone as of 2026-10-03. Both numbers come from
+// `getPodcastRatingSummary` now, which reads PodcastRating.
 
 const friendsActivity = [
   { id: "fa1", avatar: "/default-avatar.webp", tier: "highly", tierLabel: "Highly Recommend", hasReview: false },
@@ -112,6 +100,11 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
   // Listens and Likes are this app's own numbers, so they come from the
   // database, not the API. Zero until people start using the site.
   const stats = await getPodcastCommunityStats(id);
+  // Real ratings as of 2026-10-03, replacing the mock block that used to sit
+  // behind HAS_COMMUNITY_DATA. Gated on having any rather than on the global
+  // switch: one person's rating is a real average, and a show nobody has rated
+  // shows nothing at all rather than an empty frame.
+  const ratings = await getPodcastRatingSummary(id);
   // What THIS viewer has already done, so the controls show their real state
   // instead of resetting to Follow / unrated on every refresh.
   const viewerState = await getViewerPodcastState(id);
@@ -162,23 +155,40 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
           <div className={styles.podcastLeft}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className={styles.podcastCover} src={podcast.coverUrl} alt={`${podcast.title} cover`} />
-            {HAS_COMMUNITY_DATA && (
+            {/* Shown as soon as one person has rated the show, not on the
+                global switch: an average over two people is real, just small.
+                A show nobody has rated renders nothing here rather than an
+                empty scaffold. */}
+            {ratings.total > 0 && (
               <>
-                <div className={styles.avgMic}>
-                  <MicIcon />
-                </div>
-                <div className={styles.scoreDisplay}>{community.avgScore}</div>
-                <div className={styles.avgLabel}>Average rating</div>
+                {/* The average can be absent while ratings exist — everyone so
+                    far pressed "Didn't finish", which counts but doesn't score. */}
+                {ratings.average !== null && (
+                  <>
+                    <div className={styles.avgMic}>
+                      <MicIcon />
+                    </div>
+                    <div className={styles.scoreDisplay}>{ratings.average.toFixed(1)}</div>
+                    <div className={styles.avgLabel}>
+                      Average rating{" "}
+                      <span className={styles.avgBasis}>
+                        ({ratings.scored} {ratings.scored === 1 ? "rating" : "ratings"})
+                      </span>
+                    </div>
+                  </>
+                )}
 
                 <div className={styles.distSection}>
                   <div className={styles.distSectionTitle}>Ratings distribution</div>
-                  {community.distribution.map((d) => (
+                  {ratings.distribution.map((d) => (
                     <div className={styles.distRow} key={d.tier}>
                       <div className={styles.distTrack}>
-                        <div className={`${styles.distFill} ${styles[d.tier]}`} style={{ width: `${d.pct}%` }} />
-                        <span className={styles.distTooltip}>{d.count} ratings</span>
+                        <div className={`${styles.distFill} ${styles[d.key]}`} style={{ width: `${d.pct}%` }} />
+                        <span className={styles.distTooltip}>
+                          {d.count} {d.count === 1 ? "rating" : "ratings"}
+                        </span>
                       </div>
-                      <span className={`${styles.distLabelText} ${styles[d.tier]}`}>{d.label}</span>
+                      <span className={`${styles.distLabelText} ${styles[d.key]}`}>{d.label}</span>
                     </div>
                   ))}
                 </div>

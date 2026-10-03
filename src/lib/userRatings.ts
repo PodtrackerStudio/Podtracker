@@ -3,25 +3,12 @@ import { episodeHref } from "./episodeKey";
 
 export const RATINGS_PER_PAGE = 32; // 4 across × 8 down, per Sasha's cap
 
-export const TIER_ORDER = ["HIGHLY_RECOMMEND", "RECOMMEND", "OK", "DONT_RECOMMEND", "DIDNT_FINISH"] as const;
-export type Tier = (typeof TIER_ORDER)[number];
-
-export const TIER_LABEL: Record<Tier, string> = {
-  HIGHLY_RECOMMEND: "Highly Recommend",
-  RECOMMEND: "Recommend",
-  OK: "Ok",
-  DONT_RECOMMEND: "Don't recommend",
-  DIDNT_FINISH: "Didn't finish",
-};
-
-/** Maps a tier to the colour class in globals.css. */
-export const TIER_CLASS: Record<Tier, string> = {
-  HIGHLY_RECOMMEND: "highly",
-  RECOMMEND: "recommend",
-  OK: "ok",
-  DONT_RECOMMEND: "dont",
-  DIDNT_FINISH: "didnt",
-};
+// Moved to `ratingScale.ts` (2026-10-03) and re-exported here so every existing
+// import keeps working. They left because this module imports `db`, so anything
+// reaching in for a label dragged the database driver with it — the bug that
+// broke the production build from `search.ts` and produced `searchItem.ts`.
+export { TIER_ORDER, TIER_LABEL, TIER_CLASS, type Tier } from "./ratingScale";
+import { TIER_ORDER, type Tier } from "./ratingScale";
 
 export type MediaFilter = "all" | "shows" | "episodes";
 export type SortMode = "released-newest" | "released-oldest" | "rated-newest" | "rated-oldest";
