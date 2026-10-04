@@ -44,7 +44,23 @@ const curatedLists = [
 export default async function ExplorePage() {
   // Both from Apple's charts — real popularity, replacing hardcoded lists.
   // Fetched together: the episode chart resolves feeds, so it's the slower one.
-  const [topPodcasts, trendingEpisodes] = await Promise.all([getPopularPodcasts(8), getTrendingEpisodes(8)]);
+  // `false` is the third argument, and it is why this row is reliable now.
+  //
+  // It used to resolve each entry to its exact episode page, which means
+  // parsing that show's RSS feed. `fetchPodcastFeed`'s cache is per server
+  // instance and every Vercel instance starts cold, and the feeds are too large
+  // for Next's fetch cache to hold, so rendering this row meant parsing up to a
+  // dozen multi-megabyte feeds from scratch — under a 20s budget, inside a page
+  // that is also statically regenerated. That is the fragile path, and the full
+  // list behind "See full list" has always passed `false` and has never broken.
+  //
+  // The cost is that a thumbnail links to `/episode/find`, which resolves that
+  // one show's feed on click, instead of straight to the episode. One feed on
+  // demand beats twelve on every render, and the link reaches the same page.
+  const [topPodcasts, trendingEpisodes] = await Promise.all([
+    getPopularPodcasts(8),
+    getTrendingEpisodes(8, "us", false),
+  ]);
 
   return (
     <>

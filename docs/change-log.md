@@ -121,22 +121,54 @@ is the first thing to revisit.**
 | `src/lib/trendingEpisodes.ts` | Modified — fixed chart size, slice locally |
 | `src/app/explore/page.tsx` | Modified — section hidden when the row is empty |
 
+**IT BROKE AGAIN, same day — and the recurrence is what identified the real
+cause.** The `top/8` fix above is kept (both pages issuing the same request is
+still right), but it was not the problem: **a deterministic bad URL cannot work,
+then fail.** Intermittent means the fragile path, not the wrong path. Two
+changes, and the second is the one that made it *stay* broken:
+
+**1. The Explore row no longer resolves episode links.** It passed
+`resolveEpisodeLinks: true`; the full list behind "See full list" has always
+passed `false` and has never once broken. That is the *other* difference between
+them, and it is the expensive one: resolving means parsing each show's RSS feed,
+`fetchPodcastFeed`'s cache is **per server instance** so every Vercel instance
+starts cold, and the feeds are too large for Next's fetch cache to hold them (it
+refuses them outright, 2.5–7.2MB). So every cold render parsed up to twelve
+multi-megabyte feeds under a 20s budget, inside a page that is also statically
+regenerated. **Cost of the fix:** a thumbnail now links to `/episode/find`,
+which resolves that one show on click, instead of straight to the episode. One
+feed on demand beats twelve on every render, and the link reaches the same page.
+
+**2. A failed chart fetch is no longer cached.** This is why it stayed broken
+rather than flickering. `computeTrendingEpisodes` returned `[]` on failure and
+`unstable_cache` dutifully stored that for an hour as though it were an answer —
+and because `/explore` is statically regenerated, the empty row then outlived
+the cause by an hour or more. It now **throws**, and an error is not cached, so
+the next request retries. The exported wrapper catches it, which is what keeps a
+failing chart from failing a build — the risk that stopped this being fixed
+yesterday. The catch also logs the status and URL, because a row rendering
+nothing and a chart containing nothing look identical otherwise.
+
+**This failure path was executed, not just reasoned about.** Apple's domain is
+blocked by this container's egress proxy, so the production build *is* the test:
+it logged `chart unavailable … returned 403 for …/top/100/podcast-episodes.json`
+twice, completed successfully, and `/explore` then served 200 with Top podcasts
+present and the Popular episodes section correctly absent.
+
 **Follow-ups**
 
-- **The cause is reasoned, not confirmed.** `rss.applemarketingtools.com` is
-  blocked by this container's egress proxy (403 on CONNECT, via curl and
-  WebFetch both), so Apple's actual response to `top/8` was never seen. The
-  10-second confirmation is to open both URLs in a browser and compare:
-  `https://rss.applemarketingtools.com/api/v2/us/podcasts/top/8/podcast-episodes.json`
-  against the same URL with `100`. Worth doing — if `top/8` returns valid JSON,
-  this fix is harmless but the real cause is still out there.
-- **A failed chart fetch is cached as if it were a result.**
-  `computeTrendingEpisodes` returns `[]` on error and `unstable_cache` stores
-  that for an hour, so one transient failure keeps the row empty long after the
-  cause has passed — and `/explore` is ISR, so a failure at build time bakes in
-  until the next regeneration. That is a plausible contributing cause here and is
-  worth fixing on its own, but it needs care: making it throw instead would risk
-  failing the Vercel build, which this page has already done three times.
+- **`top/8` was never confirmed or refuted.** `rss.applemarketingtools.com` is
+  blocked here (403 on CONNECT, curl and WebFetch both), so Apple's real
+  response was never seen. Still worth ten seconds in a browser —
+  `…/top/8/podcast-episodes.json` against `…/top/100/…` — purely to know.
+  Nothing depends on the answer now.
+- **If the row empties a third time, the remaining suspect is the chart fetch
+  itself failing from Vercel** — a rate limit or a block, not our caching. The
+  log line added here names the status and URL, so the Vercel logs will say so
+  directly instead of leaving it to inference.
+- `getPopularPodcasts` still renders its heading over an empty grid when its own
+  chart fails, the way this row used to. It works today, so it was left alone,
+  but it is the same shape.
 
 ### 2026-10-03 — Turn on real community data: ratings, and the home page feed
 

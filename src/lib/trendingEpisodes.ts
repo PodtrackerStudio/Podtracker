@@ -101,15 +101,22 @@ async function computeTrendingEpisodes(
   const CHART_SIZE = 100;
   const url = `${CHARTS_BASE}/${country}/podcasts/top/${CHART_SIZE}/podcast-episodes.json`;
 
-  let results: ChartResult[];
-  try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-    if (!res.ok) return [];
-    const data = (await res.json()) as { feed?: { results?: ChartResult[] } };
-    results = (data.feed?.results ?? []).slice(0, limit);
-  } catch {
-    return [];
+  // **Throws rather than returning [] — deliberately.** This function is wrapped
+  // in `unstable_cache` below, which stores whatever it returns. Returning an
+  // empty array on a failed fetch meant one transient hiccup was cached as if it
+  // were a real answer, and `/explore` is statically regenerated, so the empty
+  // row then survived for an hour or more after the cause had passed. That is
+  // why the row broke, came back, and broke again on 2026-10-04.
+  //
+  // An error is not cached, so the next request simply tries again. The
+  // exported wrapper catches it, which is what keeps a failing chart from
+  // failing a Vercel build — a risk this page has already realised three times.
+  const res = await fetch(url, { next: { revalidate: 3600 } });
+  if (!res.ok) {
+    throw new Error(`Apple's episode chart returned ${res.status} for ${url}`);
   }
+  const data = (await res.json()) as { feed?: { results?: ChartResult[] } };
+  const results = (data.feed?.results ?? []).slice(0, limit);
 
   // One feed fetch per distinct show, reused across that show's episodes.
   //
@@ -209,8 +216,32 @@ async function computeTrendingEpisodes(
  * the app-wide `cacheComponents` flag turned on. That is a deliberate migration
  * for its own session, not something to fold into a deploy fix.
  */
-export const getTrendingEpisodes = unstable_cache(
-  computeTrendingEpisodes,
-  ["trending-episodes"],
-  { revalidate: 3600, tags: ["trending-episodes"] },
-);
+const cachedTrendingEpisodes = unstable_cache(computeTrendingEpisodes, ["trending-episodes"], {
+  revalidate: 3600,
+  tags: ["trending-episodes"],
+});
+
+/**
+ * The public entry point. **The try/catch is load-bearing, in both directions.**
+ *
+ * Because `computeTrendingEpisodes` now throws instead of returning `[]`, a
+ * failed chart fetch is never written to the cache — the next request retries
+ * rather than being served an hour-old failure. Catching it here is what stops
+ * that same throw from taking down a page render or a build.
+ *
+ * The error is logged, because a row that silently renders nothing looks
+ * identical to a chart with nothing in it, and those need telling apart in the
+ * Vercel logs.
+ */
+export async function getTrendingEpisodes(
+  limit = 8,
+  country = "us",
+  resolveEpisodeLinks = true,
+): Promise<TrendingEpisode[]> {
+  try {
+    return await cachedTrendingEpisodes(limit, country, resolveEpisodeLinks);
+  } catch (error) {
+    console.error("[trending-episodes] chart unavailable; rendering without the row", error);
+    return [];
+  }
+}
