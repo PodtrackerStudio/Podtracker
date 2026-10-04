@@ -13,6 +13,7 @@ import { staticSiteOrigin } from "@/lib/siteUrl";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { getPodcastRatingSummary } from "@/lib/ratingSummary";
+import { tierFromScore } from "@/lib/ratingTier";
 import { getViewerPodcastState } from "@/lib/viewerState";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import styles from "./podcast.module.css";
@@ -168,7 +169,19 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                     <div className={styles.avgMic}>
                       <MicIcon />
                     </div>
-                    <div className={styles.scoreDisplay}>{ratings.average.toFixed(1)}</div>
+                    {/* The tier in its own colour, not a number (Sasha,
+                        2026-10-04). Thresholds come from `tierFromScore`, which
+                        existed for exactly this — they are not redefined here.
+                        It never returns "didn't finish", which is right: that
+                        tier is excluded from the average it maps. */}
+                    {(() => {
+                      const avg = tierFromScore(ratings.average);
+                      return (
+                        <div className={`${styles.scoreDisplay} ${styles[avg.tier]} rating-label`}>
+                          {avg.tierLabel}
+                        </div>
+                      );
+                    })()}
                     <div className={styles.avgLabel}>
                       Average rating{" "}
                       <span className={styles.avgBasis}>

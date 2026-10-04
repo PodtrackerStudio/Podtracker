@@ -12,6 +12,7 @@ import { NextListeningButton } from "@/components/NextListeningButton";
 import { AddToListButton } from "@/components/AddToListButton";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import { getEpisodeRatingSummaryByKey } from "@/lib/ratingSummary";
+import { tierFromScore } from "@/lib/ratingTier";
 import { getEpisodeDetail } from "@/lib/episodeDetail";
 import styles from "./episode.module.css";
 
@@ -154,7 +155,16 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
                     <div className={styles.avgMic}>
                       <MicIcon />
                     </div>
-                    <div className={styles.scoreDisplay}>{ratings.average.toFixed(1)}</div>
+                    {/* The tier in its own colour, not a number — same as the
+                        show page. Thresholds come from `tierFromScore`. */}
+                    {(() => {
+                      const avg = tierFromScore(ratings.average);
+                      return (
+                        <div className={`${styles.scoreDisplay} ${styles[avg.tier]} rating-label`}>
+                          {avg.tierLabel}
+                        </div>
+                      );
+                    })()}
                     <div className={styles.avgLabel}>
                       Average rating{" "}
                       <span className={styles.avgBasis}>

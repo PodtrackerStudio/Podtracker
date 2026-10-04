@@ -173,6 +173,29 @@ could be checked at all.
 | `src/app/home/page.tsx` | Rewritten — two real sections, force-dynamic |
 | `CLAUDE.md` | Modified — `/home` row, and `HAS_COMMUNITY_DATA` rewritten as retiring section by section |
 
+**Amendment, 2026-10-04 — the average is a colour, not a number**
+
+Sasha saw it live: "looks good, can you just remove the number rating? instead
+just do the color". So `3.6` is gone and the average renders as its tier in that
+tier's colour — "Recommend" in `--recommend`, and so on.
+
+- **Thresholds were not reinvented.** `lib/ratingTier.ts` already existed for
+  exactly this mapping (≥3.5 Highly Recommend, ≥2.5 Recommend, ≥1.5 Ok, else
+  Don't recommend) and is now what the pages call. It never returns "Didn't
+  finish", which is correct — that tier is excluded from the average it maps.
+- The colours are the same five tokens the distribution bars underneath already
+  use, so the headline and the bars can't disagree. Londrina Solid comes from
+  the global `.rating-label` class, the standing rule for tier labels.
+- `.scoreDisplay` was 28px and sized for three characters; it now holds "Highly
+  Recommend", so it drops to 20px and wraps inside the cover-width column.
+- **The count stayed.** "(2 ratings)" is how many people rated, not a rating, and
+  it is what keeps a one-person verdict from reading as settled. Easy to drop if
+  that was meant to go too.
+
+Checked by running `tierFromScore` against every boundary (1.0, 1.4, 1.5, 2.4,
+2.5, 3.4, 3.5, 4.0) and end-to-end from tier counts through the average to the
+label shown. Still no database: how it *looks* is unverified.
+
 **Follow-ups**
 
 - **Nothing here has touched a database.** This container cannot reach port 5432

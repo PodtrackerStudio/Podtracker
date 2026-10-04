@@ -553,3 +553,28 @@
   opacity: 0.75;
   white-space: nowrap;
 }
+
+/* ── AVERAGE AS A TIER, NOT A NUMBER (Sasha, 2026-10-04) ──
+   `.scoreDisplay` held "3.6" and was sized for three characters; it now holds
+   "Highly Recommend", so the size comes down and it is allowed to wrap inside
+   the cover-width column. The colours are the same five tokens the
+   distribution labels under it already use, so the headline and the bars agree.
+   Londrina Solid comes from the global `.rating-label` class, which is the
+   standing rule for every tier label on the site. */
+.scoreDisplay {
+  font-size: 20px;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.scoreDisplay.highly {
+  color: var(--highly-recommend);
+}
+.scoreDisplay.recommend {
+  color: var(--recommend);
+}
+.scoreDisplay.ok {
+  color: var(--ok);
+}
+.scoreDisplay.dont {
+  color: var(--dont);
+}
