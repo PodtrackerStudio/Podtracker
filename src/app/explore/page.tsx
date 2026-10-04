@@ -76,6 +76,13 @@ export default async function ExplorePage() {
           </div>
         </section>
 
+        {/* Hidden entirely when the chart gives nothing back, rather than
+            rendering a heading over an empty grid — which is how the 2026-10-04
+            report looked: "Popular episodes" and a "See full list" link with a
+            blank space under them. Matches how every other section on the site
+            behaves when it has no content. */}
+        {trendingEpisodes.length > 0 && (
+          <>
         <hr className="divider" />
 
         <section>
@@ -102,6 +109,8 @@ export default async function ExplorePage() {
             ))}
           </div>
         </section>
+          </>
+        )}
 
         {/* Trending users, Popular lists and Curated lists all rank things that
             only exist once people are using the site — followers, user-made

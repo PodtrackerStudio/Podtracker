@@ -84,8 +84,22 @@ async function computeTrendingEpisodes(
    */
   resolveEpisodeLinks = true,
 ): Promise<TrendingEpisode[]> {
-  const fetchCount = Math.min(Math.max(limit, 1), 100);
-  const url = `${CHARTS_BASE}/${country}/podcasts/top/${fetchCount}/podcast-episodes.json`;
+  // **Always ask Apple for the same size, then slice.** The size used to be the
+  // caller's `limit`, which put the number straight into the path —
+  // `.../top/8/podcast-episodes.json` for the Explore row against
+  // `.../top/100/...` for the full list. Reported 2026-10-04: Explore's row was
+  // empty while the full list behind "See full list" was fine, and the request
+  // is the only thing that differs between them. Apple serves this chart at set
+  // sizes, so an unusual one comes back as an error, `res.ok` is false, and the
+  // empty array renders as a section with nothing in it.
+  //
+  // Asking for the documented maximum and slicing locally means **both pages
+  // now issue the identical request** — so the one that works is the one that
+  // runs. It costs nothing: the response is small, it is cached for an hour,
+  // and the two pages now share that cache entry instead of each paying for
+  // their own.
+  const CHART_SIZE = 100;
+  const url = `${CHARTS_BASE}/${country}/podcasts/top/${CHART_SIZE}/podcast-episodes.json`;
 
   let results: ChartResult[];
   try {

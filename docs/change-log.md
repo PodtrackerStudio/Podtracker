@@ -71,6 +71,73 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-04 — Explore's Popular episodes row was empty while its full list worked
+
+- **Branch:** `main`
+- **Reported by:** sashaknyshjr@gmail.com — "the explore page isn't showing top
+  episodes before you click on full list".
+- **Status:** Fixed, **cause inferred rather than observed** — see below.
+
+**The symptom, and why it points where it points**
+
+`/explore`'s Popular episodes section rendered its heading and its "See full
+list →" link over an empty grid, while `/explore/trending-episodes` behind that
+link was fine. Both call the same function. The section is not conditional, so
+an empty array renders exactly that: a header over nothing.
+
+`getTrendingEpisodes` put the caller's `limit` straight into Apple's URL:
+
+| Caller | Request |
+| --- | --- |
+| Explore row | `.../podcasts/top/**8**/podcast-episodes.json` |
+| Full list | `.../podcasts/top/**100**/podcast-episodes.json` |
+
+The number is the *only* difference between the broken call and the working one.
+Apple serves these charts at set sizes; an unusual one comes back not-ok, which
+this function turns into `[]`.
+
+**The fix is to stop varying it.** Both pages now request the documented maximum
+and slice locally, so the call that works is the call that runs. It costs
+nothing — small response, cached an hour, and the two pages now share one cache
+entry instead of each paying for their own.
+
+Also: the section now renders only when it has episodes, matching every other
+section on the site. A future chart failure shows nothing rather than a heading
+over a blank space.
+
+**What was NOT changed, deliberately**
+
+`popularPodcasts.ts` has the identical `top/${fetchCount}` line. It was left
+alone: Popular podcasts renders on the same page from `getPopularPodcasts(8)`,
+so `top/8` demonstrably works for *that* endpoint, and the difference is
+endpoint-specific. Changing working code on a hunch is what CLAUDE.md warns
+against. **If the episodes row is still empty after this deploy, that assumption
+is the first thing to revisit.**
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/trendingEpisodes.ts` | Modified — fixed chart size, slice locally |
+| `src/app/explore/page.tsx` | Modified — section hidden when the row is empty |
+
+**Follow-ups**
+
+- **The cause is reasoned, not confirmed.** `rss.applemarketingtools.com` is
+  blocked by this container's egress proxy (403 on CONNECT, via curl and
+  WebFetch both), so Apple's actual response to `top/8` was never seen. The
+  10-second confirmation is to open both URLs in a browser and compare:
+  `https://rss.applemarketingtools.com/api/v2/us/podcasts/top/8/podcast-episodes.json`
+  against the same URL with `100`. Worth doing — if `top/8` returns valid JSON,
+  this fix is harmless but the real cause is still out there.
+- **A failed chart fetch is cached as if it were a result.**
+  `computeTrendingEpisodes` returns `[]` on error and `unstable_cache` stores
+  that for an hour, so one transient failure keeps the row empty long after the
+  cause has passed — and `/explore` is ISR, so a failure at build time bakes in
+  until the next regeneration. That is a plausible contributing cause here and is
+  worth fixing on its own, but it needs care: making it throw instead would risk
+  failing the Vercel build, which this page has already done three times.
+
 ### 2026-10-03 — Turn on real community data: ratings, and the home page feed
 
 - **Branch:** `main`
