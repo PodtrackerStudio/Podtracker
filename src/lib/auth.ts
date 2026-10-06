@@ -96,7 +96,21 @@ export function authErrorMessage(message: string | undefined): string {
   if (raw.includes("email not confirmed")) {
     return "Please confirm your email address first — check your inbox for the link.";
   }
-  if (raw.includes("rate limit")) {
+  // **Two different rate limits, and they must not share a message.** Supabase
+  // caps how many *emails a project may send*, separately from how many times a
+  // person may try. When the mail cap is hit — which is what happens when a lot
+  // of people sign up at once, exactly the situation a launch creates — the
+  // account is usually created fine and only the email fails. Telling that
+  // person "too many attempts" blames them for something the server did, and
+  // sends them away retrying instead of waiting for an email that is coming.
+  //
+  // If this is showing up in the logs during a push for users, the fix is not
+  // in this file: it is custom SMTP in the Supabase dashboard. See
+  // `docs/supabase-smtp.md`.
+  if (raw.includes("email rate limit") || (raw.includes("rate limit") && raw.includes("email"))) {
+    return "We couldn't send that email just now — too many going out at once. Your account is fine; wait a minute and ask for the link again.";
+  }
+  if (raw.includes("rate limit") || raw.includes("too many requests")) {
     return "Too many attempts. Please wait a few minutes before trying again.";
   }
   // Supabase rejects addresses it considers unroutable, `example.com` among

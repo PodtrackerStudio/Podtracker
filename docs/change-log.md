@@ -71,6 +71,65 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-06 — Make signup survive a launch: the app half of custom SMTP
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com. He is gathering ~50 users before a
+  Product Hunt launch and asked me to "set up the smtp side".
+- **Status:** App side complete. **The SMTP switch itself is still not done** —
+  it is dashboard work only Sasha can do. `docs/supabase-smtp.md` is the runbook.
+
+**The problem this is about**
+
+Supabase's built-in email sender is capped at a few messages an hour and is not
+meant for production. The failure mode is what makes it dangerous: the account is
+created, the email is never sent, the person is told to check their inbox, and
+nothing arrives. They cannot sign up again because the address is taken. **Nobody
+complains, because people who can't get in don't write to you** — so a push for
+50 users would lose most of them and read as disinterest rather than a mail cap.
+
+**What changed in the app**
+
+1. **`/login` can resend the confirmation email.** Previously a dead end: the
+   resend control existed only on the signup form, so anyone who closed that tab
+   had an account they could never use. The login route now returns
+   `code: "email-not-confirmed"` — a marker rather than prose, so the client
+   isn't string-matching a message that may be reworded. Safe to disclose:
+   reaching that branch means the password was correct. Styled with `.authNote`
+   and `.linkButton`, which `/forgot-password` already uses for this exact
+   shape. No new design.
+2. **The two rate limits no longer share a message.** Supabase caps how many
+   emails a *project* may send separately from how many times a *person* may
+   try, and `authErrorMessage` answered "Too many attempts" to both. That is the
+   error a launch actually produces, and it blames the person for something the
+   server did — sending them away retrying instead of waiting for mail that is
+   coming. The mail cap now says so, and says the account is fine.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/auth.ts` | Modified — email-send cap split from per-person attempts |
+| `src/app/api/auth/login/route.ts` | Modified — returns `code: "email-not-confirmed"` |
+| `src/app/login/LoginForm.tsx` | Modified — resend control on that case |
+| `docs/supabase-smtp.md` | Added — the dashboard runbook |
+
+**Follow-ups**
+
+- **The actual SMTP switch is outstanding and is the point of all this.**
+  Provider, domain verification with SPF/DKIM, Supabase SMTP settings, and
+  raising the email rate limit — all in `docs/supabase-smtp.md`. Until it is
+  done, the ceiling is a few signups an hour no matter what the app does.
+- **Verified by build only.** `tsc`, `eslint` and a production build are clean,
+  and the resend control and its `email-not-confirmed` marker are confirmed
+  present in the shipped client bundle. But Supabase is not reachable from this
+  container, so **neither new path has been triggered**: the resend control has
+  never been rendered by a real failed login, and the new rate-limit wording has
+  never been produced by a real Supabase error. Both are worth one manual pass —
+  sign up, don't click the link, then try to log in.
+- DKIM in particular is not optional for `podtracker.studio`: a new domain with
+  unauthenticated mail goes to spam, and a `.studio` has no reputation to lean on.
+
 ### 2026-10-04 — Explore's Popular episodes row was empty while its full list worked
 
 - **Branch:** `main`

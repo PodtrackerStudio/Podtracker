@@ -37,8 +37,17 @@ export async function POST(request: Request) {
     // from a wrong password.
     const rejected = /invalid login credentials|email not confirmed/i.test(error?.message ?? "");
     if (!rejected) console.error("[login] supabase error:", error?.message);
+
+    // A machine-readable marker for the one case the form can actually help
+    // with. Without it the client would have to string-match the prose from
+    // `authErrorMessage`, which breaks the moment that wording is edited.
+    //
+    // Safe to disclose: reaching this means the password was correct, so it
+    // tells the caller nothing they did not already supply.
+    const unconfirmed = /email not confirmed/i.test(error?.message ?? "");
+
     return NextResponse.json(
-      { error: authErrorMessage(error?.message) },
+      { error: authErrorMessage(error?.message), ...(unconfirmed && { code: "email-not-confirmed" }) },
       { status: rejected ? 401 : 503 },
     );
   }
