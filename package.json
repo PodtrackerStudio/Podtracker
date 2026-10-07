@@ -10,6 +10,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "check:db": "node scripts/check-db.mjs",
+    "stats": "node scripts/stats.mjs",
     "setup:supabase": "node scripts/setup-supabase.mjs",
     "env:from-clipboard": "node scripts/env-from-clipboard.mjs"
   },

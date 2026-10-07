@@ -71,6 +71,73 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-07 — `npm run stats`: where the site actually stands
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com, who asked how many users the site
+  has. The answer lived across three Supabase dashboard screens, and the number
+  that matters most wasn't on any of them.
+- **Status:** Complete, and **verified against a real Postgres** — unusually for
+  this environment. See below.
+
+**What it reports**
+
+People (accounts, signups this week, **how many have actually done something**,
+how many have written a review), what they have made (logs, reviews, show and
+episode ratings, follows, lists) and social (user follows, likes, comments).
+
+"Have done something" is the point of the thing — a signup who has never rated,
+logged or followed anything has seen the site but not used it, and that
+distinction is invisible in the dashboard. When it is zero the script says so in
+a sentence, because it is the one number that can quietly be zero while
+everything else looks healthy.
+
+It also prints the reminder that accounts here are *profile rows*: signup writes
+one before the email is confirmed, so this should equal Supabase's
+Authentication → Users. A lower number means signups are breaking halfway.
+
+**Raw `pg`, not Prisma** — the generated client is TypeScript and a `.mjs`
+cannot import it. `check-db.mjs` is the same shape for the same reason, and the
+TLS handling is copied from it verbatim so both behave identically on a bad
+network. Every statement is a SELECT; safe against production.
+
+**How it was verified, which is worth recording**
+
+The usual caveat on this work is "no database here, port 5432 is blocked". That
+applies to *outbound* connections. **A local Postgres is a different thing**, and
+one turned out to be installed:
+
+1. `initdb` as the `postgres` user (it refuses to run as root) on port 55432.
+2. `prisma migrate deploy` against it — so the tables came from
+   `prisma/migrations`, not from my assumptions about their names. This is what
+   makes the hand-written SQL trustworthy; it caught two wrong guesses
+   immediately (`PodcastFollow` has no `id`, `List` has no `updatedAt`).
+3. Seeded three accounts — one with activity and a review, one with a review, one
+   that signed up a month ago and did nothing — plus ratings, follows, a list, a
+   like and a comment.
+4. Ran the script. **All thirteen numbers matched the seed exactly**, including
+   "2 of 3 accounts have used the site".
+5. Deleted the activity rows and re-ran to exercise the zero-activity branch.
+6. Stopped the server and removed the data directory.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `scripts/stats.mjs` | Added |
+| `package.json` | Modified — `npm run stats` |
+
+**Follow-ups**
+
+- **A local Postgres is available in this container and nothing here knew it.**
+  Every "could not be verified against a database" note in the entries above was
+  true about Supabase and unnecessarily pessimistic about testing. Anything with
+  non-trivial SQL — the rating summaries, the followed-episodes query, the
+  trending-reviews ordering — could be checked this way: `initdb` as `postgres`,
+  `prisma migrate deploy`, seed, assert. Worth doing for the rating averages in
+  particular, since those are now on every show page and have only ever been
+  checked as arithmetic.
+
 ### 2026-10-07 — Any username with a space was unreachable on every profile route
 
 - **Branch:** `main`
