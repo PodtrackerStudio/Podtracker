@@ -10,9 +10,12 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { getNextListening } from "@/lib/nextListening";
 import styles from "./nextListening.module.css";
+import { usernameFromParam } from "@/lib/routeParams";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
-  const { username } = await params;
+  const { username: usernameParam } = await params;
+  // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
+  const username = usernameFromParam(usernameParam);
   // Somebody's queue is a private-feeling page that changes constantly. It is
   // reachable, but there is nothing in it worth putting in an index.
   return { title: `${username}'s next listening`, robots: { index: false, follow: true } };
@@ -41,7 +44,9 @@ export default async function NextListeningPage({
   params: Promise<{ username: string }>;
   searchParams: Promise<{ media?: string }>;
 }) {
-  const { username } = await params;
+  const { username: usernameParam } = await params;
+  // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
+  const username = usernameFromParam(usernameParam);
   const sp = await searchParams;
 
   const profileUser = await db.user.findUnique({ where: { username }, select: { id: true } });

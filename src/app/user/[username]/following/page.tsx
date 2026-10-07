@@ -9,6 +9,7 @@ import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import { FollowingGrid, type FollowedShow } from "@/app/following/FollowingGrid";
 import { ProfileSubHeader } from "../ProfileSubHeader";
 import styles from "../profileSub.module.css";
+import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
 
 /**
  * The shows a given member follows.
@@ -27,16 +28,20 @@ import styles from "../profileSub.module.css";
  * page has to know whose it is.
  */
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
-  const { username } = await params;
+  const { username: usernameParam } = await params;
+  // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
+  const username = usernameFromParam(usernameParam);
   return {
     title: `${username}'s favorites`,
     description: `Podcasts followed by ${username} on Podtracker.`,
-    alternates: { canonical: `/user/${username}/following` },
+    alternates: { canonical: `/user/${usernameToPath(username)}/following` },
   };
 }
 
 export default async function ProfileFollowingPage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params;
+  const { username: usernameParam } = await params;
+  // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
+  const username = usernameFromParam(usernameParam);
 
   // Retried: the page's first touch of the database, so a moment without a
   // connection would otherwise kill the render outright. See lib/dbRetry.ts.

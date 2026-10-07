@@ -10,6 +10,7 @@ import { episodeHref } from "@/lib/episodeKey";
 import { ProfileCalendar, type ListenedEntry } from "./ProfileCalendar";
 import { getNextListening } from "@/lib/nextListening";
 import styles from "./profile.module.css";
+import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
 
 // A seeded demo account kept around to show what a populated profile looks
 // like — real signups won't have activity until rating/review persistence
@@ -83,22 +84,24 @@ const juneWeeks = [
 function ProfileSubnav({ username, isOwnProfile }: { username: string; isOwnProfile: boolean }) {
   return (
     <div className={styles.profileSubnav}>
-      <Link href={`/user/${username}`} className={styles.active}>
+      <Link href={`/user/${usernameToPath(username)}`} className={styles.active}>
         Profile
       </Link>
       {/* Was `/following`, which reads the *viewer's* follows — so this tab
           showed your own shows on someone else's profile. Scoped by username
           now, like every other tab here. */}
-      <Link href={`/user/${username}/following`}>Favorites</Link>
-      <Link href={`/user/${username}/reviews`}>{isOwnProfile ? "Your Reviews" : "Reviews"}</Link>
-      <Link href={`/user/${username}/lists`}>{isOwnProfile ? "Your lists" : "Lists"}</Link>
-      <Link href={`/user/${username}/diary`}>Full diary</Link>
+      <Link href={`/user/${usernameToPath(username)}/following`}>Favorites</Link>
+      <Link href={`/user/${usernameToPath(username)}/reviews`}>{isOwnProfile ? "Your Reviews" : "Reviews"}</Link>
+      <Link href={`/user/${usernameToPath(username)}/lists`}>{isOwnProfile ? "Your lists" : "Lists"}</Link>
+      <Link href={`/user/${usernameToPath(username)}/diary`}>Full diary</Link>
     </div>
   );
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
-  const { username } = await params;
+  const { username: usernameParam } = await params;
+  // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
+  const username = usernameFromParam(usernameParam);
 
   if (username === DEMO_USERNAME) {
     return { title: "Sasha", robots: { index: false, follow: false } };
@@ -115,13 +118,15 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   return {
     title: name,
     description: bio || `${name}'s podcast ratings, reviews and diary on Podtracker.`,
-    alternates: { canonical: `/user/${username}` },
-    openGraph: { type: "profile", title: name, description: bio, url: `/user/${username}` },
+    alternates: { canonical: `/user/${usernameToPath(username)}` },
+    openGraph: { type: "profile", title: name, description: bio, url: `/user/${usernameToPath(username)}` },
   };
 }
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params;
+  const { username: usernameParam } = await params;
+  // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
+  const username = usernameFromParam(usernameParam);
 
   if (username === DEMO_USERNAME) {
     const profile = getDemoProfile();
@@ -489,7 +494,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           <>
             <section className={styles.bottomGrid}>
               <div>
-                <h3 className={styles.bottomColTitle}><Link href={`/user/${username}/ratings`} className={styles.distHeadingLink}>Ratings distribution</Link></h3>
+                <h3 className={styles.bottomColTitle}><Link href={`/user/${usernameToPath(username)}/ratings`} className={styles.distHeadingLink}>Ratings distribution</Link></h3>
                 {(
                   [
                     { tier: "highly", key: "HIGHLY_RECOMMEND" as const, label: "Highly Recommend" },
@@ -502,7 +507,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                   const count = distributionCounts[d.key];
                   const pct = allRatings.length > 0 ? Math.round((count / allRatings.length) * 100) : 0;
                   return (
-                    <Link className={styles.distRow} key={d.tier} href={`/user/${username}/ratings?tier=${d.key}`}>
+                    <Link className={styles.distRow} key={d.tier} href={`/user/${usernameToPath(username)}/ratings?tier=${d.key}`}>
                       <span className={`${styles.distName} ${styles[d.tier]}`}>{d.label}</span>
                       <div className={`${styles.distTrack} ${styles.tooltipWrap}`}>
                         <div className={`${styles.distFill} ${styles[d.tier]}`} style={{ width: `${pct}%` }} />
@@ -519,14 +524,14 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                     "Add podcasts…" bar and the All media menu live there, not
                     here (Sasha, 2026-08-26). */}
                 <h3 className={styles.bottomColTitle}>
-                  <Link href={`/user/${username}/next-listening`} className={styles.distHeadingLink}>
+                  <Link href={`/user/${usernameToPath(username)}/next-listening`} className={styles.distHeadingLink}>
                     Next listening
                   </Link>
                 </h3>
                 {nextListening.length === 0 ? (
                   <p className={styles.nextListeningEmpty}>Nothing queued yet.</p>
                 ) : (
-                  <Link href={`/user/${username}/next-listening`} className={styles.listGallery}>
+                  <Link href={`/user/${usernameToPath(username)}/next-listening`} className={styles.listGallery}>
                     {nextListening.slice(0, 6).map((item) => (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -545,7 +550,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                   profile — the calendar existed only in the demo branch. */}
               <div>
                 <h3 className={styles.bottomColTitle}>
-                  <Link href={`/user/${username}/diary`} className={styles.distHeadingLink}>
+                  <Link href={`/user/${usernameToPath(username)}/diary`} className={styles.distHeadingLink}>
                     Calendar
                   </Link>
                 </h3>

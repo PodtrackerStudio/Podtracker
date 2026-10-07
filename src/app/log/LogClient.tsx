@@ -6,6 +6,7 @@ import { AddPodcastsBar } from "@/components/AddPodcastsBar";
 import { LogReviewPopup } from "@/components/LogReviewPopup";
 import type { SearchItem } from "@/lib/searchItem";
 import styles from "./log.module.css";
+import { usernameToPath } from "@/lib/routeParams";
 
 /**
  * "+ Log podcast": search, pick, then the review popup.
@@ -44,7 +45,7 @@ export function LogClient({ username }: { username: string }) {
             setPicked(null);
             // Land on the diary so the entry just written is visible; closing
             // onto an empty search box reads as though nothing was saved.
-            router.push(`/user/${username}/diary`);
+            router.push(`/user/${usernameToPath(username)}/diary`);
             router.refresh();
           }}
         />

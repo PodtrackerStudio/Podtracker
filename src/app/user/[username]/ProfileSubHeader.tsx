@@ -1,5 +1,6 @@
 import Link from "next/link";
 import styles from "./profileSub.module.css";
+import { usernameToPath } from "@/lib/routeParams";
 
 type Tab = "profile" | "favorites" | "reviews" | "lists" | "diary";
 
@@ -30,22 +31,22 @@ export function ProfileSubHeader({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className={styles.avatar} src={avatarUrl ?? "/default-avatar.webp"} alt="Profile picture" />
       <div className={styles.subnav}>
-        <Link href={`/user/${username}`} className={active === "profile" ? styles.active : undefined}>
+        <Link href={`/user/${usernameToPath(username)}`} className={active === "profile" ? styles.active : undefined}>
           Profile
         </Link>
         <Link
-          href={`/user/${username}/following`}
+          href={`/user/${usernameToPath(username)}/following`}
           className={active === "favorites" ? styles.active : undefined}
         >
           Favorites
         </Link>
-        <Link href={`/user/${username}/reviews`} className={active === "reviews" ? styles.active : undefined}>
+        <Link href={`/user/${usernameToPath(username)}/reviews`} className={active === "reviews" ? styles.active : undefined}>
           {isOwnProfile ? "Your Reviews" : "Reviews"}
         </Link>
-        <Link href={`/user/${username}/lists`} className={active === "lists" ? styles.active : undefined}>
+        <Link href={`/user/${usernameToPath(username)}/lists`} className={active === "lists" ? styles.active : undefined}>
           {isOwnProfile ? "Your lists" : "Lists"}
         </Link>
-        <Link href={`/user/${username}/diary`} className={active === "diary" ? styles.active : undefined}>
+        <Link href={`/user/${usernameToPath(username)}/diary`} className={active === "diary" ? styles.active : undefined}>
           Full diary
         </Link>
       </div>

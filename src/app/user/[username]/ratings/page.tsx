@@ -16,13 +16,16 @@ import {
   type SortMode,
 } from "@/lib/userRatings";
 import styles from "./ratings.module.css";
+import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
-  const { username } = await params;
+  const { username: usernameParam } = await params;
+  // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
+  const username = usernameFromParam(usernameParam);
   return {
     title: `${username}'s ratings`,
     description: `How ${username} rated the podcasts and episodes they have listened to.`,
-    alternates: { canonical: `/user/${username}/ratings` },
+    alternates: { canonical: `/user/${usernameToPath(username)}/ratings` },
   };
 }
 
@@ -64,7 +67,9 @@ export default async function RatingsPage({
   params: Promise<{ username: string }>;
   searchParams: Promise<{ tier?: string; media?: string; sort?: string; page?: string }>;
 }) {
-  const { username } = await params;
+  const { username: usernameParam } = await params;
+  // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
+  const username = usernameFromParam(usernameParam);
   const sp = await searchParams;
 
   const profileUser = await db.user.findUnique({ where: { username }, select: { id: true, displayName: true } });
@@ -85,7 +90,7 @@ export default async function RatingsPage({
     if (media !== "all") q.set("media", media);
     if (sort !== "rated-newest") q.set("sort", sort);
     if (n > 1) q.set("page", String(n));
-    return `/user/${username}/ratings${q.toString() ? `?${q}` : ""}`;
+    return `/user/${usernameToPath(username)}/ratings${q.toString() ? `?${q}` : ""}`;
   }
 
   return (

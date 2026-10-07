@@ -71,6 +71,71 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-07 — Any username with a space was unreachable on every profile route
+
+- **Branch:** `main`
+- **Reported by:** sashaknyshjr@gmail.com — "I can't lookup new users", with a
+  screenshot of `/user/Palm%20Beach%20Pete` showing *No user found with username
+  "Palm%20Beach%20Pete"*.
+- **Status:** Fixed.
+
+**What was wrong**
+
+Next hands a dynamic route segment over **exactly as it appears in the URL**,
+percent-escapes included. All seven `/user/[username]` routes took that string
+and passed it straight to `findUnique({ where: { username } })`, so a member
+called "Palm Beach Pete" was looked up as `Palm%20Beach%20Pete` and matched
+nothing. The error message printing the escapes is what gave it away.
+
+**Nothing was wrong with the links.** Search builds `/user/<username>` correctly
+from `UserSearchItem.username`, and the browser escapes the space on the way out,
+as it has to. The missing half was undoing that on the way in.
+
+This hit **every** profile route — profile, reviews, lists, diary, following,
+ratings, next-listening — for any username containing a space, an accent, `&`,
+`+`, or anything else that escapes. It was invisible until now only because
+earlier accounts had single-word usernames.
+
+**The fix, and its second half**
+
+`lib/routeParams.ts`, applied at all 14 param sites:
+
+- `usernameFromParam` decodes, and **survives malformed input**.
+  `decodeURIComponent` throws `URIError` on a stray `%`, so `/user/%` would have
+  turned a 404 into a 500; bad input passes through untouched and simply matches
+  no user, which is the same honest answer without the crash. It also trims, to
+  match how signup stores the name.
+- `usernameToPath` re-encodes. **Needed because of the fix itself:** now that
+  `username` is decoded, the ~24 places building `` `/user/${username}/...` ``
+  would have emitted paths with raw spaces. Browsers paper over that; canonical
+  tags and link previews do not.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/routeParams.ts` | Added — decode/encode, import-free so it is testable and client-safe |
+| `src/app/user/[username]/*` (7 routes) | Modified — decode the param; encode when building paths |
+| `src/app/user/[username]/ProfileSubHeader.tsx` | Modified — encodes its five links |
+| `src/app/log/LogClient.tsx` | Modified — encodes its redirect |
+
+**Follow-ups**
+
+- **Signup does not validate username format** — only non-empty, trimmed and
+  unique. That is why "Palm Beach Pete" is a username at all. Worth deciding
+  separately whether new signups should be restricted to URL-safe handles;
+  **doing it now would strand accounts that already exist**, so it needs a
+  display-name/handle split rather than a validation rule. Not done.
+- **Verified by running it, not by reasoning.** `routeParams.ts` imports nothing,
+  so it was compiled and executed against 13 cases — the exact reported string,
+  round-tripping, accents, `&`, `+`, malformed `%`, and trimming — all passing.
+  `tsc`, `eslint` and a production build are clean. But the database is
+  unreachable from this container, so **no profile page has actually been
+  rendered for a user with a space in their name.** Worth one click on the live
+  site.
+- `/person/[slug]` and `/list/[id]` take params too. Ids are cuids and safe;
+  slugs were not audited.
+
 ### 2026-10-06 — Make signup survive a launch: the app half of custom SMTP
 
 - **Branch:** `main`

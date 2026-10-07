@@ -6,13 +6,16 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ProfileSubHeader } from "../ProfileSubHeader";
 import styles from "../profileSub.module.css";
+import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
-  const { username } = await params;
+  const { username: usernameParam } = await params;
+  // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
+  const username = usernameFromParam(usernameParam);
   return {
     title: `${username}'s reviews`,
     description: `Podcast and episode reviews written by ${username} on Podtracker.`,
-    alternates: { canonical: `/user/${username}/reviews` },
+    alternates: { canonical: `/user/${usernameToPath(username)}/reviews` },
   };
 }
 
@@ -32,7 +35,9 @@ const TIER_CLASS: Record<string, string> = {
 };
 
 export default async function ReviewsPage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params;
+  const { username: usernameParam } = await params;
+  // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
+  const username = usernameFromParam(usernameParam);
   const profileUser = await db.user.findUnique({ where: { username } });
 
   if (!profileUser) {
