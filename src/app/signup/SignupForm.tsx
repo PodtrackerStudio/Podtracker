@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { checkPassword, MIN_PASSWORD_LENGTH } from "@/lib/passwordPolicy";
 import styles from "./auth.module.css";
+
+// Long enough to read three short paragraphs and notice the resend button,
+// short enough that nobody sits wondering whether the page has finished.
+const RETURN_AFTER_SECONDS = 8;
 
 export function SignupForm() {
   const router = useRouter();
@@ -18,6 +22,21 @@ export function SignupForm() {
   // a resend without reading it back out of the form.
   const [awaitingEmail, setAwaitingEmail] = useState<string | null>(null);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
+  // Seconds until we send them to /login. Null means the countdown is off —
+  // either it has not started, or they did something that should stop it.
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (secondsLeft === null) return;
+    if (secondsLeft <= 0) {
+      // The query flag is what tells the login page to explain why they are
+      // here, so they do not arrive at a bare form wondering if signup failed.
+      router.push("/login?confirm=pending");
+      return;
+    }
+    const timer = setTimeout(() => setSecondsLeft((n) => (n === null ? null : n - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [secondsLeft, router]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -59,6 +78,7 @@ export function SignupForm() {
     // them back to /login with no explanation of why.
     if (data?.needsEmailConfirmation) {
       setAwaitingEmail(data.email ?? email.trim());
+      setSecondsLeft(RETURN_AFTER_SECONDS);
       setSubmitting(false);
       return;
     }
@@ -69,6 +89,9 @@ export function SignupForm() {
 
   async function handleResend() {
     if (!awaitingEmail || resendState === "sending") return;
+    // Stop the countdown. Being pulled to another page mid-action is the
+    // clearest way to make an automatic redirect feel broken.
+    setSecondsLeft(null);
     setResendState("sending");
     await fetch("/api/auth/resend-confirmation", {
       method: "POST",
@@ -106,7 +129,13 @@ export function SignupForm() {
           {resendState === "sent" && "Sent — check your inbox"}
         </button>
         <div className={styles.authSwitch}>
-          Already confirmed? <Link href="/login">Login</Link>
+          {secondsLeft === null ? (
+            <Link href="/login">Back to login</Link>
+          ) : (
+            <>
+              Taking you to login in {secondsLeft}… <Link href="/login">Go now</Link>
+            </>
+          )}
         </div>
       </div>
     );

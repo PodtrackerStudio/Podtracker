@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "../signup/auth.module.css";
 
-export function LoginForm() {
+export function LoginForm({ awaitingConfirmation = false }: { awaitingConfirmation?: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,6 +70,11 @@ export function LoginForm() {
     <>
       <div className={styles.authWrap}>
         <h1>Login</h1>
+        {awaitingConfirmation && (
+          <p className={styles.authNote}>
+            Your account is made. Click the link in your email to confirm it, then log in here.
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
           <div className={styles.field}>
             <label htmlFor="email">Email address</label>

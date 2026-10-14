@@ -71,6 +71,67 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-14 — Signup returns to login after the confirmation screen
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "once the user has been sent to
+  the verify your email screen I want you to return them back to the login
+  page". Asked which of three shapes he wanted; answer was no preference, so
+  the literal reading was built.
+- **Status:** Complete.
+
+**What changed**
+
+The "Check your email" screen now counts down from 8 seconds and then goes to
+`/login?confirm=pending`. The countdown is visible — "Taking you to login in
+5… Go now" — because a page that moves on its own with no warning reads as a
+glitch.
+
+**Clicking resend cancels it.** Being pulled to another page mid-action is the
+single clearest way to make an automatic redirect feel broken, so the countdown
+stops and the line becomes a plain "Back to login" link.
+
+The login page reads `?confirm=pending` **on the server** and passes it down,
+rather than `useSearchParams` in the client component, which would need its own
+Suspense boundary. When set, it shows: *"Your account is made. Click the link in
+your email to confirm it, then log in here."* Without that, someone arrives at a
+bare login form seconds after signing up and reasonably concludes signup failed.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/signup/SignupForm.tsx` | Modified — countdown, redirect, cancel-on-resend |
+| `src/app/login/page.tsx` | Modified — reads `?confirm=pending` |
+| `src/app/login/LoginForm.tsx` | Modified — optional notice |
+
+**One lint rule worth obeying rather than silencing**
+
+The countdown started in a `useEffect` watching `awaitingEmail`, which tripped
+`react-hooks/set-state-in-effect` — an effect whose only job is copying one
+piece of state into another. Moved to the point `awaitingEmail` is set, which is
+the same moment with one less render pass.
+
+**Verification — in Chromium**
+
+- heading reads "Check your email", countdown appears and ticks ✓
+- lands on `/login?confirm=pending` without being touched ✓
+- the login page explains why they are there ✓
+- after clicking resend: countdown gone, "Back to login" shown, **still on
+  `/signup` twelve seconds later** ✓
+
+`tsc`, `lint` and `build` clean.
+
+**Also this session, not in the repo**
+
+A setup checklist for Resend was published as an artifact, after Phillip said
+the chat instructions were hard to follow — ten steps with copy buttons for
+every value, the Fastmail "do not touch these records" warning placed in the
+step where the mistake would happen, and the two silent failures (redirect
+allow-list, email rate limit) promoted to steps of their own.
+
+---
+
 ### 2026-10-07 — `npm run stats`: where the site actually stands
 
 - **Branch:** `main`
