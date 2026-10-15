@@ -44,8 +44,28 @@
   width: 44px;
   height: 44px;
 }
+/* currentColor, so the mic follows whatever tier colour is set on .avgMic
+   below. It was `fill: var(--highly-recommend)` — hardcoded pink, left from the
+   mock average of 3.8 — so every episode showed a pink microphone whatever it
+   was actually rated. The show page had the same bug in green. Reported
+   2026-10-15. */
 .avgMic svg path {
-  fill: var(--highly-recommend);
+  fill: currentColor;
+}
+/* Same five tokens as the label above it and the distribution labels below, so
+   the three cannot disagree. `tierFromScore` never returns "didn't finish", so
+   there is deliberately no .avgMic.didnt. */
+.avgMic.highly {
+  color: var(--highly-recommend);
+}
+.avgMic.recommend {
+  color: var(--recommend);
+}
+.avgMic.ok {
+  color: var(--ok);
+}
+.avgMic.dont {
+  color: var(--dont);
 }
 .scoreDisplay {
   font-size: 26px;

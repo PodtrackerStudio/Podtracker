@@ -106,6 +106,10 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
   // switch: one person's rating is a real average, and a show nobody has rated
   // shows nothing at all rather than an empty frame.
   const ratings = await getPodcastRatingSummary(id);
+  // Resolved once, because the mic, the label and their colour all need it.
+  // Null when nothing scoreable is rated — everyone so far pressed "Didn't
+  // finish", which counts in the bars but carries no score.
+  const averageTier = ratings.average !== null ? tierFromScore(ratings.average) : null;
   // What THIS viewer has already done, so the controls show their real state
   // instead of resetting to Follow / unrated on every refresh.
   const viewerState = await getViewerPodcastState(id);
@@ -164,9 +168,13 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
               <>
                 {/* The average can be absent while ratings exist — everyone so
                     far pressed "Didn't finish", which counts but doesn't score. */}
-                {ratings.average !== null && (
+                {averageTier && (
                   <>
-                    <div className={styles.avgMic}>
+                    {/* **The mic takes the tier colour too.** It was hardcoded
+                        to --recommend, left over from the mock average of 3.6,
+                        so a show rated Highly Recommend showed a pink label
+                        over a green microphone — reported 2026-10-15. */}
+                    <div className={`${styles.avgMic} ${styles[averageTier.tier]}`}>
                       <MicIcon />
                     </div>
                     {/* The tier in its own colour, not a number (Sasha,
@@ -174,14 +182,9 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                         existed for exactly this — they are not redefined here.
                         It never returns "didn't finish", which is right: that
                         tier is excluded from the average it maps. */}
-                    {(() => {
-                      const avg = tierFromScore(ratings.average);
-                      return (
-                        <div className={`${styles.scoreDisplay} ${styles[avg.tier]} rating-label`}>
-                          {avg.tierLabel}
-                        </div>
-                      );
-                    })()}
+                    <div className={`${styles.scoreDisplay} ${styles[averageTier.tier]} rating-label`}>
+                      {averageTier.tierLabel}
+                    </div>
                     <div className={styles.avgLabel}>
                       Average rating{" "}
                       <span className={styles.avgBasis}>

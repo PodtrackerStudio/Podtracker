@@ -71,6 +71,74 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-15 — The average-rating microphone ignored the rating
+
+- **Branch:** `main`
+- **Reported by:** sashaknyshjr@gmail.com — "the two average ratings are highly
+  recommend but the microphone is still green", with a screenshot of
+  `/podcast/360084272` showing a pink **Highly Recommend** label under a green
+  mic.
+- **Status:** Fixed, and **verified in a browser** against seeded data.
+
+**What was wrong**
+
+`.avgMic svg path` had a hardcoded `fill`, left over from the mock era when the
+average was a fixed number:
+
+| Page | Was | Meaning |
+| --- | --- | --- |
+| Show | `var(--recommend)` | always green — matched the old mock 3.6 |
+| Episode | `var(--highly-recommend)` | always pink — matched the old mock 3.8 |
+
+Nothing ever made it follow the data. When ratings went real on 2026-10-03 the
+label started tracking the tier and the mic kept its mock colour, so the two
+disagreed for every tier except the one each page happened to be frozen at. The
+episode page was wrong in the other direction, which is why only one of them got
+noticed.
+
+**The fix**
+
+`fill: currentColor`, with the tier class now on `.avgMic` as well as the label,
+drawing on the same five tokens the distribution labels use — so the mic, the
+label and the bars cannot disagree. `tierFromScore` never returns "didn't
+finish", so there is deliberately no `.avgMic.didnt`. Both pages also resolve
+the tier once into `averageTier` instead of an inline IIFE, since three things
+need it now.
+
+**Not changed:** the distribution bars are all `--accent-blue` on purpose — the
+tier is carried by the coloured label beside each bar. That is documented in the
+stylesheet and was left alone.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/podcast/[id]/page.tsx`, `.../episode/[epId]/page.tsx` | Modified — tier resolved once, class on the mic |
+| `src/app/podcast/[id]/podcast.module.css`, `.../episode.module.css` | Modified — `currentColor` plus per-tier colour |
+
+**How it was verified — the local-Postgres route, used for real**
+
+The 2026-10-07 entry noted a local Postgres is available here and that past work
+had been needlessly pessimistic about testing. First time using it on a bug:
+
+1. `initdb` as `postgres`, `prisma migrate deploy`, seeded JRE with two
+   `HIGHLY_RECOMMEND` ratings — the exact case from the screenshot.
+2. Served the production build against it and loaded the real page. Apple's API
+   is blocked here so the show details fall back to the placeholder, but the
+   ratings block renders from the database, which is the part under test.
+3. Asserted **computed styles**, not a screenshot: mic `fill` and label `color`
+   both `rgb(255, 64, 217)` — `--highly-recommend`.
+4. Flipped the seeded tier through `RECOMMEND`, `OK` and `DONT_RECOMMEND`,
+   confirmed the mic class followed each time, then re-asserted agreement on
+   `DONT_RECOMMEND`: both `rgb(255, 0, 0)`.
+5. Stopped the server and removed the data directory.
+
+**Follow-ups**
+
+- None for this. The item from 2026-10-07 still stands: the rating summary
+  queries have only been checked as arithmetic, never as SQL, and this same
+  route would settle them.
+
 ### 2026-10-14 — Signup returns to login after the confirmation screen
 
 - **Branch:** `main`

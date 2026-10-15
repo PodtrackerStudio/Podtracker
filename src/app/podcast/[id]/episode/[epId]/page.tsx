@@ -102,6 +102,8 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
   // Real ratings as of 2026-10-03, replacing the mock block that sat behind
   // HAS_COMMUNITY_DATA. Gated on having any, not on the global switch.
   const ratings = await getEpisodeRatingSummaryByKey(id, epId);
+  // Resolved once — the mic, the label and their colour all need it.
+  const averageTier = ratings.average !== null ? tierFromScore(ratings.average) : null;
 
   const origin = staticSiteOrigin();
   const schema = [
@@ -150,21 +152,18 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
               <>
                 {/* Absent when every rating so far is "Didn't finish", which
                     counts in the bars but carries no score. */}
-                {ratings.average !== null && (
+                {averageTier && (
                   <>
-                    <div className={styles.avgMic}>
+                    {/* Mic takes the tier colour too — it was hardcoded green
+                        from the mock era. Same fix as the show page. */}
+                    <div className={`${styles.avgMic} ${styles[averageTier.tier]}`}>
                       <MicIcon />
                     </div>
                     {/* The tier in its own colour, not a number — same as the
                         show page. Thresholds come from `tierFromScore`. */}
-                    {(() => {
-                      const avg = tierFromScore(ratings.average);
-                      return (
-                        <div className={`${styles.scoreDisplay} ${styles[avg.tier]} rating-label`}>
-                          {avg.tierLabel}
-                        </div>
-                      );
-                    })()}
+                    <div className={`${styles.scoreDisplay} ${styles[averageTier.tier]} rating-label`}>
+                      {averageTier.tierLabel}
+                    </div>
                     <div className={styles.avgLabel}>
                       Average rating{" "}
                       <span className={styles.avgBasis}>

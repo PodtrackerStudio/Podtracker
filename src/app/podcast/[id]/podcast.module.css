@@ -63,8 +63,27 @@
   width: 48px;
   height: 48px;
 }
+/* currentColor, so the mic follows whatever tier colour is set on .avgMic
+   below. It was `fill: var(--recommend)` — hardcoded green, left from the mock
+   average of 3.6 — which meant a show rated Highly Recommend showed a pink
+   label over a green microphone. Reported 2026-10-15. */
 .avgMic svg path {
-  fill: var(--recommend);
+  fill: currentColor;
+}
+/* Same five tokens as the label above it and the distribution labels below, so
+   the three cannot disagree. `tierFromScore` never returns "didn't finish", so
+   there is deliberately no .avgMic.didnt. */
+.avgMic.highly {
+  color: var(--highly-recommend);
+}
+.avgMic.recommend {
+  color: var(--recommend);
+}
+.avgMic.ok {
+  color: var(--ok);
+}
+.avgMic.dont {
+  color: var(--dont);
 }
 .scoreDisplay {
   font-size: 28px;
