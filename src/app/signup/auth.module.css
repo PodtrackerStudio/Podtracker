@@ -11,6 +11,18 @@
   font-weight: 400;
   letter-spacing: -0.5px;
   margin-bottom: 32px;
+  /* Centred to match `.authNote` and `.authSwitch`, which already were. The
+     mismatch showed worst on the message screens — "Check your email" and
+     "Link expired" — where a hard-left heading sat over centred body text and
+     read as a layout bug.
+
+     Field labels stay left-aligned on purpose: a centred label floating over a
+     full-width input is harder to scan, not tidier.
+
+     NOTE: a divergence from Sasha's Figma, requested by Phillip (2026-10-19)
+     along with the site-wide centring. Raise it with Sasha rather than
+     reverting it. */
+  text-align: center;
 }
 
 .field {

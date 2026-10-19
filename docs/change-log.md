@@ -71,6 +71,92 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-19 — Password reset links bounced to login; the callback only understood half of Supabase's links
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "when i do reset password it
+  just returns me back to the login", plus "make sure everything is centered and
+  properly aligned cause it just looks off".
+- **Status:** Complete.
+
+**The bug**
+
+`/auth/callback` read only `?code=`. Supabase sends emailed links in **two**
+shapes, and which one you get depends on the flow and the email template:
+
+| Shape | Flow | Verified with |
+| --- | --- | --- |
+| `?code=…` | PKCE | `exchangeCodeForSession` — same browser only, the verifier is in a cookie there |
+| `?token_hash=…&type=recovery` | what the default templates produce | `verifyOtp` — works in any browser |
+
+Password reset links arrived in the second shape. `code` was null, so the route
+took its "no code" branch and redirected to `/login?error=missing-code`.
+
+**And nothing read that error.** `/login` only looked at `?confirm=`. So the
+whole failure surfaced as: click the link in your email, land back on the login
+page, no message, no explanation. Exactly what was reported.
+
+A note worth keeping: the `code`-only flow would have failed anyway for anyone
+opening the link on a different device from the one that requested it, which is
+most people checking email on a phone.
+
+**What changed**
+
+- **`/auth/callback` accepts both shapes.** `token_hash` + `type` goes through
+  `verifyOtp`, `code` through `exchangeCodeForSession`, and a link carrying
+  neither now redirects with `error=bad-link` instead of blaming a missing
+  code. `type` is checked against an allow-list before being used.
+- **A `recovery` link always lands on `/reset-password`**, whatever `next`
+  says. Proving control of an inbox is not the same as knowing the password, so
+  it should reach the form that sets a new one rather than the signed-in site.
+- **`/login` renders the error**, mapping the code to a sentence plus a link to
+  request a new one. The message lives in the page, not the URL — a message
+  passed in a query string is a message an attacker can choose.
+- Every failure path now logs to the server as well.
+
+**Alignment**
+
+`.authWrap h1` was left-aligned while `.authNote` and `.authSwitch` were
+centred. Worst on the message screens — "Check your email", "Link expired" —
+where a hard-left heading sat over centred body text. The heading is centred
+now. Field labels stay left: a centred label over a full-width input is harder
+to scan, not tidier.
+
+**This diverges from Sasha's Figma** and is noted in the CSS as such. Phillip
+asked for it, alongside the site-wide centring from earlier in the project.
+Raise it with Sasha rather than silently reverting.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/auth/callback/route.ts` | Rewritten — handles both link shapes |
+| `src/app/login/page.tsx` | Modified — maps error codes to messages |
+| `src/app/login/LoginForm.tsx` | Modified — renders the banner |
+| `src/app/signup/auth.module.css` | Modified — centred the auth heading |
+
+**Verification — against a Supabase stand-in serving the recovery flow**
+
+| Link | Result |
+| --- | --- |
+| `token_hash` + `type=recovery` | → `/reset-password` (was → `/login?error=missing-code`) |
+| `type=signup&next=/home` | → `/home` |
+| `type=signup&next=//evil.com` | → `/` — open redirect still refused |
+| `type=bogus` | → `/login?error=bad-link`, never verified |
+| neither code nor token_hash | → `/login?error=bad-link` |
+
+`/login?error=link-expired` and `?error=bad-link` both render their sentence.
+Screenshotted: heading centre measured at 450px on a 900px viewport, matching
+the body text. `tsc`, `lint` and `build` clean.
+
+**Context**
+
+Resend is live — domain verified, SMTP configured in Supabase, Confirm email
+switched on. The reset link failing was the first thing exercised once real
+email started arriving.
+
+---
+
 ### 2026-10-15 — The average-rating microphone ignored the rating
 
 - **Branch:** `main`

@@ -5,7 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "../signup/auth.module.css";
 
-export function LoginForm({ awaitingConfirmation = false }: { awaitingConfirmation?: boolean }) {
+export function LoginForm({
+  awaitingConfirmation = false,
+  linkError = null,
+}: {
+  awaitingConfirmation?: boolean;
+  /** Set when an emailed link could not be used — see LINK_ERRORS in page.tsx. */
+  linkError?: string | null;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,6 +77,11 @@ export function LoginForm({ awaitingConfirmation = false }: { awaitingConfirmati
     <>
       <div className={styles.authWrap}>
         <h1>Login</h1>
+        {linkError && (
+          <div className={styles.errorMsg}>
+            {linkError} <Link href="/forgot-password">Reset your password</Link>
+          </div>
+        )}
         {awaitingConfirmation && (
           <p className={styles.authNote}>
             Your account is made. Click the link in your email to confirm it, then log in here.
