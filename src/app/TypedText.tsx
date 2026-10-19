@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import styles from "./landing.module.css";
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
@@ -21,6 +21,15 @@ type TypedTextProps = {
   speedMs?: number;
   /** Pause before the first character appears, in milliseconds. */
   startDelayMs?: number;
+  /**
+   * Fired once, when the last character lands — so something else can follow on.
+   *
+   * A caller could work the moment out for itself from `startDelayMs` and
+   * `speedMs`, and it would be wrong: reduced motion skips the animation
+   * entirely and finishes on the first paint. Reporting it from here means the
+   * one component that knows is the one that says.
+   */
+  onFinished?: () => void;
 };
 
 /**
@@ -28,7 +37,7 @@ type TypedTextProps = {
  * end. The caret is solid while typing and only starts blinking once the text
  * is complete, the way a real cursor behaves.
  */
-export function TypedText({ text, speedMs = 70, startDelayMs = 350 }: TypedTextProps) {
+export function TypedText({ text, speedMs = 70, startDelayMs = 350, onFinished }: TypedTextProps) {
   const [typedCount, setTypedCount] = useState(0);
 
   // The server has no media query to read, so it renders as "motion allowed";
@@ -55,6 +64,19 @@ export function TypedText({ text, speedMs = 70, startDelayMs = 350 }: TypedTextP
   // stale count from over-running a shorter `text` if the prop ever changes.
   const visibleCount = reducedMotion ? text.length : Math.min(typedCount, text.length);
   const finished = visibleCount >= text.length;
+
+  // Held in a ref so the effect below depends only on `finished`. An inline
+  // arrow from the caller is a new function every render, and depending on it
+  // directly would fire this on every render once typing is done rather than
+  // once when it finishes.
+  const onFinishedRef = useRef(onFinished);
+  useEffect(() => {
+    onFinishedRef.current = onFinished;
+  });
+
+  useEffect(() => {
+    if (finished) onFinishedRef.current?.();
+  }, [finished]);
 
   return (
     <span className={styles.typedWrap}>

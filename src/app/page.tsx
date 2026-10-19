@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getCurrentUser } from "@/lib/auth";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
-import { TypedText } from "./TypedText";
+import { HeroIntro } from "./HeroIntro";
 import { WhatIsPodtracker } from "./WhatIsPodtracker";
 import styles from "./landing.module.css";
 
@@ -25,9 +25,10 @@ export default async function LandingPage() {
     <main className={styles.page}>
       {/* HERO */}
       <section className={styles.hero}>
-        <h1>
-          <TypedText text="Welcome to Podtracker!" />
-        </h1>
+        {/* Headline plus the subheading that fades in once it has typed out.
+            They share a component because only TypedText knows when that is —
+            see HeroIntro. */}
+        <HeroIntro />
         <div className={styles.heroCta}>
           <Link href="/signup" className={styles.btnPrimary}>
             Create account

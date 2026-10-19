@@ -71,6 +71,76 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-19 — A subheading under the landing headline, fading in after it types
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — a subheading under "Welcome to
+  Podtracker" saying "Your Podcast listening diary." then "Log, rate, and review
+  every podcast you listen to.", fading in once the headline has typed out.
+- **Status:** Complete, verified in a browser.
+
+**What changed**
+
+- `HeroIntro.tsx` (new) holds the `<h1>` and the two new lines together, and the
+  landing page renders it instead of the bare heading.
+- `TypedText` gained an optional `onFinished`, fired once when the last
+  character lands.
+- `.heroSub` in `landing.module.css`: hidden, lifted 8px, fading in over 600ms
+  when `HeroIntro` adds `.heroSubVisible`.
+
+**Why it is shaped this way**
+
+**The timing is not recreated from `speedMs` and `startDelayMs`.** That was the
+obvious approach and it is wrong: `TypedText` skips the animation entirely under
+`prefers-reduced-motion` and is finished on the first paint, so a caller
+computing `350 + 22 × 70` would hold the subheading back nearly two seconds for
+exactly the visitors who asked for no movement. The component that knows when it
+finished is the one that says so.
+
+**They live in one component** because the landing page is a Server Component
+and cannot pass a callback to a client one.
+
+`onFinished` is held in a ref inside `TypedText`. An inline arrow from the
+caller is a new function on every render, so depending on it directly would fire
+the callback on every render once typing was done, rather than once when it
+finished.
+
+The subheading is **not** `aria-hidden` and is hidden with `opacity`, not
+`display`, so it stays in the accessibility tree and in what a crawler reads
+whether or not the animation has run — it is the clearest statement on the site
+of what Podtracker actually is.
+
+Serif, like everything else on the landing page; Roboto stays reserved for
+reviews. Lead line 23px in `--text`, detail 17px in `--text-muted`, so it reads
+as the line under the headline rather than a second headline.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/HeroIntro.tsx` | Added |
+| `src/app/TypedText.tsx` | Modified — optional `onFinished` |
+| `src/app/page.tsx` | Modified — renders `HeroIntro` |
+| `src/app/landing.module.css` | Modified — `.heroSub` and friends; `h1` margin 28px → 20px |
+
+**Verified**
+
+Driven in a real browser, asserting computed opacity rather than eyeballing a
+screenshot:
+
+| Moment | Headline | Subheading opacity |
+| --- | --- | --- |
+| 600ms in | `Wel` | `0` |
+| After typing | `Welcome to Podtracker!` | `1` |
+| Reduced motion | complete immediately | `1`, no transition |
+
+**Follow-ups**
+
+- **"Your Podcast listening diary."** is set exactly as asked, capital P and all.
+  It reads as a typo mid-sentence — say the word and it becomes "podcast".
+- Both lines fade together. A short stagger between them would be a nicer
+  effect, but it was not asked for and this page has no other staggered motion.
+
 ### 2026-10-19 — "Link expired" on links that had not expired
 
 - **Branch:** `main`

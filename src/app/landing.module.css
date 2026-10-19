@@ -12,7 +12,53 @@
 .hero h1 {
   font-size: 46px;
   font-weight: 400;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
+}
+
+/* ── HERO SUBHEADING (Sasha, 2026-10-19) ──
+   Fades in once the headline has finished typing; HeroIntro adds
+   .heroSubVisible when TypedText reports done. Serif like the rest of the
+   landing page — PT Serif Caption is the default for everything here, Roboto is
+   reserved for reviews.
+
+   The 8px lift is the whole movement. A fade that also travels any further
+   reads as a slide, and nothing else on this page slides. */
+.heroSub {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 auto 28px;
+  max-width: 560px;
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 600ms ease, transform 600ms ease;
+}
+.heroSubVisible {
+  opacity: 1;
+  transform: none;
+}
+/* Half the headline, so it reads as the line below it rather than a second
+   headline competing with it. */
+.heroSubLead {
+  font-size: 23px;
+  color: var(--text);
+}
+.heroSubDetail {
+  font-size: 17px;
+  color: var(--text-muted);
+}
+
+/* Reduced motion gets the finished state with no transition. TypedText already
+   skips the typing for these visitors and reports itself done on the first
+   paint, so without this the subheading would still fade — the one piece of
+   movement left on a page that was supposed to have none. */
+@media (prefers-reduced-motion: reduce) {
+  .heroSub {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 /* Typing effect on the hero heading — see TypedText.tsx. */
