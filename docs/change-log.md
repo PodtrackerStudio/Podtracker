@@ -136,8 +136,9 @@ screenshot:
 
 **Follow-ups**
 
-- **"Your Podcast listening diary."** is set exactly as asked, capital P and all.
-  It reads as a typo mid-sentence — say the word and it becomes "podcast".
+- **"Your Podcast listening diary." keeps its capital P — that is deliberate.**
+  Flagged to Sasha as reading like a typo mid-sentence; he looked at it and
+  chose to keep it (2026-10-19). **Do not "fix" it to lowercase.**
 - Both lines fade together. A short stagger between them would be a nicer
   effect, but it was not asked for and this page has no other staggered motion.
 
