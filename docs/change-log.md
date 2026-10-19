@@ -71,6 +71,69 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-19 — "Link expired" on links that had not expired
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — immediately after the callback
+  fix: "now it just says link expired even when it definitely has not expired".
+- **Status:** Complete.
+
+**The bug**
+
+`/reset-password` gated on `getCurrentUser()`, which needs **two** things: a
+Supabase session, and a matching `User` row in our Postgres. The endpoint the
+page submits to, `/api/auth/reset-password`, asks only for the session.
+
+So the page and the form behind it disagreed about who was allowed in. Anyone
+with a valid session but no profile row saw **"Link expired"** on a link that
+was fine — and the API would have accepted them.
+
+Who has no profile row: every account created before the move off Neon, whose
+profile was left behind in that database. Those are exactly the accounts most
+likely to be reset-testing, because they are the ones that cannot sign in.
+
+**Why the coupling was wrong anyway**
+
+Setting a new password needs proof you control the inbox, which the link already
+is. The profile row has no bearing on it. Requiring one was both incorrect and
+actively misleading about the cause.
+
+**What changed**
+
+`/reset-password` now reads `supabase.auth.getUser()` directly, matching the
+endpoint. It also handles Supabase being unconfigured, and the genuine
+no-session case gained a line about opening the link on a different device from
+the one that requested it — which is a real cause of failure with the PKCE flow
+and was invisible before.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/reset-password/page.tsx` | Rewritten — session check instead of `getCurrentUser()` |
+
+**Verification**
+
+Against a Supabase stand-in and a database with **zero** `User` rows, which is
+the exact failing condition:
+
+| Case | Before | After |
+| --- | --- | --- |
+| Recovery link, session, no profile row | "Link expired" | **"Set a new password"** with the form |
+| No session at all | "Link expired" | "Link expired", now naming the once-only rule, the device caveat, and a way to request another |
+
+`tsc`, `lint` and `build` clean.
+
+**Worth saying**
+
+Two bugs in a row here both reported as "it returns me to login" / "it says
+expired", and neither was about expiry. Both were a mismatch between what one
+piece of the flow produced and what the next piece expected. The lesson for this
+flow specifically: the page and the endpoint behind it must agree on what counts
+as authorised, or the page will refuse people the endpoint would serve.
+
+---
+
 ### 2026-10-19 — Password reset links bounced to login; the callback only understood half of Supabase's links
 
 - **Branch:** `main`
