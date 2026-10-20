@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   const origin = siteOrigin(request);
 
   await supabase.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: `${origin}/auth/callback?next=/reset-password`,
+    redirectTo: `${origin}/auth/confirm?type=recovery`,
   });
 
   // The result is ignored on purpose: an error here would reveal whether the

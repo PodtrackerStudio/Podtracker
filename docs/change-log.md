@@ -71,6 +71,91 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-20 — Emailed links were being spent by scanners before anyone clicked them
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — "the sending email system works
+  like 10 percent of the time and when it works it just says the link expired".
+- **Status:** Code complete. **Takes effect only after the Supabase email
+  templates are changed** — see below. Without that the links still go through
+  Supabase's own verifier and the problem remains.
+
+**The actual cause, after two rounds of fixing the wrong thing**
+
+Every link so far verified on **GET**. Supabase's default templates point at its
+own `/auth/v1/verify`, which spends the one-time token on arrival; our
+`/auth/callback` did the same.
+
+Mail does not reach a person untouched. Outlook Safe Links, Gmail, corporate
+antivirus and chat-app link previewers all fetch URLs before a human sees them.
+Whichever gets there first spends the token. The person then clicks and is told
+the link expired — intermittently, because it depends on whether anything
+scanned that particular message.
+
+That is "works about 10% of the time", and it explains the two earlier rounds:
+the callback fix and the `/reset-password` fix were both real bugs, but neither
+was this one.
+
+**Reproduced, not assumed.** Against a stand-in whose tokens are genuinely
+single-use:
+
+```
+OLD /auth/callback   scanner GET -> /reset-password      (token spent)
+                     human   GET -> /login?error=link-expired
+NEW /auth/confirm    scanner GET -> 200, nothing spent
+                     scanner GET -> 200, nothing spent
+                     human  POST -> /reset-password
+```
+
+**What changed**
+
+- **`/auth/confirm`** — new. A GET renders a button and **verifies nothing**.
+  Copy varies by link type: "Reset your password", "Confirm your email", and so
+  on.
+- **`POST /api/auth/confirm`** — new. The only thing that spends a token.
+  Scanners issue GETs; none submit forms. Redirects with **303** so the browser
+  follows with a GET rather than re-POSTing to the destination.
+- A `recovery` link always lands on `/reset-password`, whatever `next` asks
+  for; everything else sanitises `next` against open redirects as before.
+- The token moves in a hidden field rather than staying in the URL, keeping it
+  out of browser history and out of any `Referer` sent onward.
+- `forgot-password`, `signup` and `resend-confirmation` now send people to
+  `/auth/confirm` instead of `/auth/callback`.
+
+`/auth/callback` is kept, unchanged, for links already sitting in inboxes.
+
+**The half that is not code, and without which none of this helps**
+
+Supabase's default templates use `{{ .ConfirmationURL }}`, which points at
+Supabase's verifier regardless of the `redirectTo` we pass — so the token is
+still spent on a GET, just one hop earlier. The templates have to send people
+straight to our page instead. Under **Authentication > Emails > Templates**:
+
+*Reset password:*
+```html
+<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery">Reset your password</a>
+```
+
+*Confirm signup:*
+```html
+<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup&next=/home">Confirm your email</a>
+```
+
+`{{ .TokenHash }}` rather than `{{ .ConfirmationURL }}` is the whole point.
+
+**Verification**
+
+Browser-driven against the single-use stand-in: the page shows the right copy
+per type, clicking lands on `/reset-password` with "Set a new password", a
+second use of the same token gives `/login?error=link-expired`, and a signup
+link shows its own copy. `tsc`, `lint` and `build` clean.
+
+**Not verified:** anything against real Supabase or a real inbox — the sandbox
+cannot reach either. Whether real scanners leave the new page alone can only be
+confirmed by sending real mail.
+
+---
+
 ### 2026-10-19 — A subheading under the landing headline, fading in after it types
 
 - **Branch:** `main`

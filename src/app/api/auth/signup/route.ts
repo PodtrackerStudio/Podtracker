@@ -67,7 +67,7 @@ export async function POST(request: Request) {
         // termination the server can see `http://`, which would put a
         // downgraded link in somebody's inbox that Supabase's redirect
         // allow-list then refuses.
-        emailRedirectTo: `${siteOrigin(request)}/auth/callback?next=/home`,
+        emailRedirectTo: `${siteOrigin(request)}/auth/confirm?type=signup&next=/home`,
       },
     });
 

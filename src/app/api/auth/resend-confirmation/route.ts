@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const { error } = await supabase.auth.resend({
     type: "signup",
     email: cleanEmail,
-    options: { emailRedirectTo: `${siteOrigin(request)}/auth/callback?next=/home` },
+    options: { emailRedirectTo: `${siteOrigin(request)}/auth/confirm?type=signup&next=/home` },
   });
 
   if (error) {
