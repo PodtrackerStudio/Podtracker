@@ -1,9 +1,28 @@
 # Sending auth email: custom SMTP
 
-**Status: not done yet.** Podtracker still uses Supabase's built-in email
-sender. That is fine for a handful of signups and will not survive a launch.
+**Status: DONE.** Phillip set it up around 2026-10-19 — **Resend**, domain
+verified, SMTP configured in Supabase, Confirm email switched on. Auth mail now
+leaves through Resend from `podtracker.studio`, not Supabase's shared sender.
 
-## Why this matters more than it looks
+> **This file said "not done yet" for two days after it was true, and that cost
+> something:** on 2026-10-21 it was quoted back at Sasha as a reason to delay
+> recruiting testers. **None of this is code**, so nothing in the repository
+> changes when it is done and no hook can notice — the only thing that keeps
+> this honest is somebody editing this line. If you change the mail setup,
+> change this paragraph in the same sitting.
+
+**Still worth checking, because it is a separate setting:** Authentication →
+Rate Limits. The email cap does **not** lift on its own when custom SMTP is
+switched on — the default is sized for the built-in sender, and a launch-day
+spike will hit it whatever Resend can handle. Unconfirmed whether this was
+raised.
+
+**How to verify from outside the dashboard**, in thirty seconds: trigger a
+password reset, open the email, and view its source. From Resend it is signed
+for `podtracker.studio` (`DKIM d=podtracker.studio`) and the sender is on your
+own domain; from Supabase's built-in service it is `mail.app.supabase.io`.
+
+## Why this mattered
 
 Supabase's built-in sender is a shared, heavily rate-limited service that their
 own docs describe as being for development, not production. The cap is a few
@@ -21,7 +40,7 @@ on `/login` they are stuck with an account they can never use. Nobody complains,
 because people who can't get in don't write to you. **A push for 50 users would
 lose most of them and look like disinterest rather than a mail cap.**
 
-## What to do
+## What was done — kept as the record, and as the runbook if it ever moves
 
 All of this is in the Supabase dashboard. **None of it is a code change** —
 `supabase.auth.signUp` and `auth.resend` keep working exactly as they do now;
