@@ -71,6 +71,76 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-22 — `<p>` tags showing in podcast descriptions
+
+- **Branch:** `main`
+- **Reported by:** sashaknyshjr@gmail.com — "change all the descriptions and
+  remove the `<p>` part from them".
+- **Status:** Fixed.
+
+**What was wrong**
+
+Feed descriptions are HTML. A show's `<itunes:summary>` and an episode's
+`<content:encoded>` arrive wrapped in `<p>`, with `<a href>` and `<br>` inside,
+and this app prints them into React text nodes — so the markup showed verbatim.
+
+Episode **pages** escaped it, because `summaryOnly` ran a private `stripHtml`
+first. Two paths never did:
+
+- **The show description**, which went from `feed.description` straight to
+  `/podcast/[id]`. This is the `<p>` that was reported.
+- **The "guest" line under each recent episode**, which used
+  `item.contentSnippet ?? item.content`. `contentSnippet` is rss-parser's
+  pre-stripped version and is usually there; the `content` fallback is raw HTML.
+
+**The fix**
+
+`lib/feedText.ts` — `feedTextToPlain`, applied in `podcastApi.ts` at the
+boundary where feed text enters, so everything downstream gets text. The private
+copy in `episodeDetail.ts` now points at it; two implementations of this would
+have drifted.
+
+Two things the old stripper got wrong, both now covered:
+
+- **It left entities alone**, so `&amp;` and `&#39;` printed literally. Named,
+  decimal and hex escapes are decoded now — **after** tags are removed, because
+  the other order turns a feed's escaped `&lt;p&gt;` into a real tag the
+  stripper has already run past.
+- **It stranded spaces before punctuation.** Tags become a space (deleting them
+  turns `one</p><p>two` into "onetwo"), which meant
+  `<a href="…">our page</a>.` came out as "our page ." Feed descriptions are
+  mostly links, so this was constant — and because episode pages shared the
+  stripper, they had it too.
+
+**Found by testing, not by reading.** The stranded-space bug failed a case
+written to check something else, and would otherwise have shipped.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/feedText.ts` | Added — strip tags, decode entities, tidy punctuation |
+| `src/lib/podcastApi.ts` | Modified — applied to show and episode descriptions |
+| `src/lib/episodeDetail.ts` | Modified — private `stripHtml` now delegates |
+
+**Verified**
+
+`feedText.ts` imports nothing, so it was compiled and run against **22 cases**:
+the reported `<p>` wrapper, adjacent paragraphs not gluing words together,
+`<br>`, anchors keeping their text, `&amp;`/`&#39;`/`&#8217;`/`&nbsp;`/`&hellip;`
+and hex escapes, escaped markup staying text, double-escaped ampersands,
+unclosed tags, an out-of-range numeric escape, and five guards that the
+punctuation fix leaves decimals and ellipses alone. All pass. `tsc`, `eslint`
+and a production build clean.
+
+**Follow-ups**
+
+- **Titles are not run through this.** A show or episode called `AT&amp;T` still
+  prints the escape. Same helper would fix it; not asked for, and titles rarely
+  carry tags the way descriptions do.
+- Descriptions are flattened to one paragraph. They were already rendered inside
+  a single `<p>`, so no structure is lost that was previously visible.
+
 ### 2026-10-22 — Home page shows up to 8 reviews instead of 3
 
 - **Branch:** `main`

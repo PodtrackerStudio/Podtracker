@@ -1,5 +1,6 @@
 import { lookupPodcast, fetchPodcastFeed } from "./podcastApi";
 import { episodeKeyFromGuid } from "./episodeKey";
+import { feedTextToPlain } from "./feedText";
 
 export type EpisodeDetail = {
   /** Hashed guid — the route key. */
@@ -38,9 +39,11 @@ function formatDuration(seconds: number | null): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function stripHtml(text: string): string {
-  return text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-}
+// Was a private copy here that removed tags but left entities alone, so an
+// episode summary containing `&amp;` or `&#39;` printed them literally. Moved to
+// `feedText.ts` (2026-10-22) and shared with `podcastApi.ts`, which needed the
+// same thing for show descriptions — two copies of this would drift.
+const stripHtml = feedTextToPlain;
 
 /**
  * Signals that a sentence is promotional rather than part of the summary.

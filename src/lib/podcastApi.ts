@@ -1,4 +1,5 @@
 import Parser from "rss-parser";
+import { feedTextToPlain } from "./feedText";
 
 const rssParser = new Parser();
 
@@ -167,7 +168,9 @@ export async function fetchPodcastFeed(feedUrl: string): Promise<PodcastFeed> {
   const oldest = episodes[episodes.length - 1];
 
   const parsed: PodcastFeed = {
-    description: feed.description ?? "",
+    // Stripped here, at the boundary, so every consumer downstream gets text.
+    // This one went straight to the podcast page and was the `<p>` Sasha saw.
+    description: feedTextToPlain(feed.description ?? ""),
     episodes,
     firstPublishedAt: oldest?.publishedAt ?? null,
   };
@@ -181,7 +184,11 @@ function toFeedEpisode(item: Parser.Item): FeedEpisode {
   return {
     title: item.title ?? "Untitled episode",
     publishedAt: item.isoDate ?? item.pubDate ?? null,
-    description: item.contentSnippet ?? item.content ?? "",
+    // `contentSnippet` is rss-parser's already-stripped version and is usually
+    // present; `content` is raw HTML. The fallback was the gap — a feed without
+    // a snippet put markup into the "guest" line under every recent episode.
+    // Running both through costs nothing, since stripping plain text is a no-op.
+    description: feedTextToPlain(item.contentSnippet ?? item.content ?? ""),
     audioUrl: itunesExt.enclosure?.url ?? null,
     durationSeconds: parseDurationToSeconds(itunesExt.itunes?.duration),
     coverUrl: itunesExt.itunes?.image ?? null,
