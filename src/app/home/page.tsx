@@ -55,7 +55,16 @@ export default async function HomePage() {
   // the three, so running it alongside the other two costs nothing extra.
   const [newEpisodes, reviews, popularPodcasts] = await Promise.all([
     getFollowedEpisodes(user.id),
-    getTrendingReviews(3),
+    // 8, not 3 (Sasha, 2026-10-22): show what has actually been written rather
+    // than a sample of it, because the site reads as empty otherwise. Nothing
+    // was being filtered out before — every review with text is eligible, and 3
+    // was simply the number asked for.
+    //
+    // Even on purpose: `.reviewsGrid` is two columns, so an odd cap guaranteed
+    // a half-empty last row no matter how many reviews existed. A ceiling
+    // rather than "all of them", so the section stays a section once there are
+    // hundreds.
+    getTrendingReviews(8),
     getPopularPodcasts(),
   ]);
 

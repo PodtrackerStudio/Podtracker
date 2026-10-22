@@ -71,6 +71,64 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-22 — Home page shows up to 8 reviews instead of 3
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com. He asked whether reviews could be
+  auto-liked so more of them reached the home page — "so the site feels less
+  dead". The answer was no, and the real fix was one number.
+- **Status:** Complete.
+
+**Why auto-liking would not have worked**
+
+`getTrendingReviews` orders by `[likes _count desc, listenedDate desc]`. With no
+likes every review ties at zero and recency decides. Liking all of them makes
+every review tie at **one** — same tie, same tiebreaker, same order.
+
+Demonstrated rather than asserted, on a scratch database with five reviews, one
+of them genuinely liked:
+
+| | Order |
+| --- | --- |
+| Before | r2 (1 like), r5, r4, r3, r1 |
+| After liking all five | r2 (2 likes), r5, r4, r3, r1 |
+
+Identical. The only thing that changed was the counts shown on the page — and
+those are **displayed** to visitors, so it would have published numbers that
+were not true, under a `userId` belonging to a real account. For a site whose
+pitch is "which episodes are worth it, based on audience reactions", that is the
+worst number to fabricate.
+
+**What was actually wrong**
+
+Nothing was being filtered. Every review carrying text is eligible; the home
+page asked for `getTrendingReviews(3)` and got the top three of a short list.
+Raised to **8**.
+
+Even on purpose: `.reviewsGrid` is `1fr 1fr`, so an odd cap guaranteed a
+half-empty last row however many reviews existed — part of why the section read
+as sparse. A ceiling rather than "all of them", so it stays a section once there
+are hundreds.
+
+Verified on the same scratch database: limit 3 returned three of five rows,
+limit 8 returned all five, with the genuinely liked review still on top.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/home/page.tsx` | Modified — `getTrendingReviews(3)` → `(8)` |
+
+**Follow-ups**
+
+- **The bigger surface is podcast pages.** Their "Popular reviews" section is
+  still behind `HAS_COMMUNITY_DATA` with placeholder content. Wiring it to real
+  reviews would put them on every show page rather than one home-page row —
+  offered, not yet asked for.
+- **The heading still says "Trending reviews"** while nothing has likes, so it
+  is really a recency list. Raised with Sasha; left as it is unless he wants it
+  changed.
+
 ### 2026-10-20 — Emailed links were being spent by scanners before anyone clicked them
 
 - **Branch:** `main`
