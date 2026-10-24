@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon } from "@/components/icons";
+import { PASSWORD_HINT } from "@/lib/passwordPolicy";
 import styles from "./settings.module.css";
 
 type User = {
@@ -178,6 +179,9 @@ export function SettingsForm({ user }: { user: User }) {
           <div className={styles.authField}>
             <label htmlFor="newPassword">New Password</label>
             <input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            {/* This form had no hint at all, so changing a password was the one
+                place the rules were entirely invisible until you broke one. */}
+            <div className={styles.fieldHint}>{PASSWORD_HINT}</div>
           </div>
 
           <div className={styles.authField}>

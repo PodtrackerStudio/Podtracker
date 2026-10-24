@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { checkPassword, MIN_PASSWORD_LENGTH } from "@/lib/passwordPolicy";
+import { checkPassword, MIN_PASSWORD_LENGTH, PASSWORD_HINT } from "@/lib/passwordPolicy";
 import styles from "./auth.module.css";
 
 // Long enough to read three short paragraphs and notice the resend button,
@@ -157,7 +157,7 @@ export function SignupForm() {
           <div className={styles.field}>
             <label htmlFor="password">Create password</label>
             <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={MIN_PASSWORD_LENGTH} />
-            <div className={styles.fieldHint}>At least {MIN_PASSWORD_LENGTH} characters.</div>
+            <div className={styles.fieldHint}>{PASSWORD_HINT}</div>
           </div>
           {errorMsg && <div className={styles.errorMsg}>{errorMsg}</div>}
           <button type="submit" className={styles.btnPrimary} disabled={submitting}>

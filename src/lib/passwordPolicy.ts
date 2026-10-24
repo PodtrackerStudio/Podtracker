@@ -10,6 +10,21 @@
 export const MIN_PASSWORD_LENGTH = 10;
 
 /**
+ * What the forms tell somebody *before* they type, in one place so the three
+ * that set a password cannot drift apart.
+ *
+ * **It names the breach check even though that rule isn't enforced here.**
+ * Supabase runs it (leaked-password protection, backed by Have I Been Pwned)
+ * and this app cannot — checking a breach corpus needs HIBP's range API, which
+ * is the "worth adding later" noted above. That split is invisible to the
+ * person signing up, and on 2026-10-23 it cost a real one: the hint promised
+ * "at least 10 characters", he supplied twelve, and Supabase refused him on a
+ * rule no screen had mentioned. A hint that states only the rules we happen to
+ * own is worse than no hint, because it reads as the complete list.
+ */
+export const PASSWORD_HINT = `At least ${MIN_PASSWORD_LENGTH} characters, and not a password that has appeared in a known data breach.`;
+
+/**
  * The handful of passwords that turn up first in every credential-stuffing
  * list. This is not a substitute for a full breach corpus (that is what Have I
  * Been Pwned's range API is for, and is worth adding later) — it exists to stop

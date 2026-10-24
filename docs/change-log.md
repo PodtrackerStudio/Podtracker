@@ -137,17 +137,60 @@ checks covering every other branch (wrong password, unconfirmed email, both rate
 limits, bad address, already registered, signups disabled, unknown, `undefined`).
 All pass. `tsc`, `eslint` and a production build clean.
 
+**Amendment, same day — the rule was identified, and the forms were the bigger
+problem**
+
+Sasha reproduced it: **leaked-password protection**, Supabase's Have I Been
+Pwned check. Length-independent, which is exactly why it refused a twelve-
+character password and made no sense to the person hitting it.
+
+**Kept on.** It is real protection, people reuse passwords across sites, and
+this app cannot do the check itself — a breach corpus needs HIBP's range API,
+the "worth adding later" noted in `passwordPolicy.ts`. Turning it off to gain a
+few signups would trade a real safeguard for marginal growth.
+
+**The friction was never the rule. It was that no screen mentioned it.** The
+signup form reads:
+
+> At least 10 characters.
+
+— which is `MIN_PASSWORD_LENGTH`, *our* rule, and the only one it knows. So the
+form stated a requirement, he met it with twelve characters, and was refused by
+a rule it had not named. **A hint listing only the rules we happen to own is
+worse than no hint, because it reads as the complete list.**
+
+So `PASSWORD_HINT` now lives in `passwordPolicy.ts` and names both rules,
+including the one Supabase enforces and we do not. All three forms that set a
+password use it:
+
+| Form | Before | Now |
+| --- | --- | --- |
+| `/signup` | "At least 10 characters." | shared hint |
+| `/reset-password` | "At least 10 characters." | shared hint |
+| `/settings` | **nothing at all** | shared hint |
+
+`/settings` was the worst of the three — changing a password was the one place
+the rules were entirely invisible until you broke one. It also had no
+`.fieldHint` class, so that was copied from `auth.module.css` to keep the three
+identical.
+
+**Verified:** `/signup` serves the new text. `/reset-password` and `/settings`
+are auth-gated and cannot render for an anonymous request, so they were checked
+in the built client bundles instead — the string appears in three, matching the
+three forms. `tsc`, `eslint` and a production build clean.
+
 **Follow-ups**
 
-- **Which rule fired is still unknown.** The signup route logs it —
-  `[signup] supabase rejected:` in the Vercel logs — and that line names the
-  cause. Worth checking, because if it is leaked-password protection or a
-  character-class requirement, those are **dashboard settings** and may be worth
-  relaxing rather than only explaining. Sasha was asked and had not looked yet.
 - **Supabase's minimum and `MIN_PASSWORD_LENGTH` are configured separately** and
   nothing keeps them in step. If Supabase's is higher than 10, a password this
-  app accepts is refused there. The new message now reports Supabase's number, so
-  the gap is at least visible rather than silent.
+  app accepts is refused there, and `PASSWORD_HINT` would be stating a number
+  that is not the real floor. The error message reports Supabase's figure, so a
+  mismatch is visible once someone hits it — but nothing checks the two agree.
+- **The policy still has two owners.** `passwordPolicy.ts` holds length, the
+  banned list and the identifier check; Supabase holds breach detection and
+  whatever else is toggled in its dashboard. That split is now *described* to
+  users rather than hidden from them, which was the bug — but a rule added in
+  the dashboard tomorrow still would not reach `PASSWORD_HINT`.
 
 ### 2026-10-22 — `<p>` tags showing in podcast descriptions
 

@@ -3,7 +3,7 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MIN_PASSWORD_LENGTH } from "@/lib/passwordPolicy";
+import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from "@/lib/passwordPolicy";
 import styles from "../signup/auth.module.css";
 
 export function ResetPasswordForm() {
@@ -71,7 +71,7 @@ export function ResetPasswordForm() {
             minLength={MIN_PASSWORD_LENGTH}
             autoFocus
           />
-          <div className={styles.fieldHint}>At least {MIN_PASSWORD_LENGTH} characters.</div>
+          <div className={styles.fieldHint}>{PASSWORD_HINT}</div>
         </div>
         <div className={styles.field}>
           <label htmlFor="confirm-password">Confirm new password</label>

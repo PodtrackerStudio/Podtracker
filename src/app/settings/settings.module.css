@@ -221,3 +221,12 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* The password requirements under the New Password field. Values copied from
+   `.fieldHint` in signup/auth.module.css so the hint reads identically on the
+   three forms that set a password — this one had none at all until 2026-10-24. */
+.fieldHint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
