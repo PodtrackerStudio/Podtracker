@@ -82,52 +82,10 @@ export const getCurrentUser = cache(async () => {
   });
 });
 
-/**
- * Turns a Supabase auth error into something worth showing a person.
- *
- * Supabase's own messages are aimed at developers ("Invalid login credentials",
- * "User already registered"), and a couple leak more than we want to say — see
- * the note about email enumeration in the signup route.
- */
-export function authErrorMessage(message: string | undefined): string {
-  const raw = (message ?? "").toLowerCase();
-
-  if (raw.includes("invalid login credentials")) return "Incorrect email or password.";
-  if (raw.includes("email not confirmed")) {
-    return "Please confirm your email address first — check your inbox for the link.";
-  }
-  // **Two different rate limits, and they must not share a message.** Supabase
-  // caps how many *emails a project may send*, separately from how many times a
-  // person may try. When the mail cap is hit — which is what happens when a lot
-  // of people sign up at once, exactly the situation a launch creates — the
-  // account is usually created fine and only the email fails. Telling that
-  // person "too many attempts" blames them for something the server did, and
-  // sends them away retrying instead of waiting for an email that is coming.
-  //
-  // If this is showing up in the logs during a push for users, the fix is not
-  // in this file: it is custom SMTP in the Supabase dashboard. See
-  // `docs/supabase-smtp.md`.
-  if (raw.includes("email rate limit") || (raw.includes("rate limit") && raw.includes("email"))) {
-    return "We couldn't send that email just now — too many going out at once. Your account is fine; wait a minute and ask for the link again.";
-  }
-  if (raw.includes("rate limit") || raw.includes("too many requests")) {
-    return "Too many attempts. Please wait a few minutes before trying again.";
-  }
-  // Supabase rejects addresses it considers unroutable, `example.com` among
-  // them, so the obvious placeholder to test with is the one it refuses.
-  if (raw.includes("invalid") && raw.includes("email")) {
-    return "That email address wasn't accepted. Please use a real address you can receive mail at.";
-  }
-  if (raw.includes("already registered") || raw.includes("already been registered")) {
-    return "An account with that email already exists.";
-  }
-  // Signups are switchable off per-project in the Supabase dashboard.
-  if (raw.includes("signups not allowed") || raw.includes("signup is disabled")) {
-    return "New accounts are disabled at the moment.";
-  }
-  if (raw.includes("password")) return "That password isn't allowed. Please pick another.";
-
-  // Deliberately not "signing you in" — this is shared by signup, login and the
-  // password routes, and the wrong verb sends people looking in the wrong place.
-  return "Something went wrong. Please try again.";
-}
+// `authErrorMessage` moved to `authErrors.ts` (2026-10-24) and is re-exported
+// here so every existing import keeps working. It left because this module
+// imports `db`, and therefore `pg`, so nothing importing it can be compiled and
+// run without a database — which is how its password branch went unexamined
+// until a real signup was refused by it. Same split as `ratingScale.ts` and
+// `searchItem.ts`.
+export { authErrorMessage } from "./authErrors";

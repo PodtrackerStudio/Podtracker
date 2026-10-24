@@ -71,6 +71,84 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-24 — "That password isn't allowed" never said why
+
+- **Branch:** `main`
+- **Reported by:** sashaknyshjr@gmail.com — a friend signing up was refused with
+  a password well over ten characters and could not tell what was wrong.
+- **Status:** Fixed. **The underlying Supabase setting is still unidentified** —
+  see Follow-ups.
+
+**What was wrong**
+
+The message was not from our own policy. `passwordPolicy.ts` returns specific
+wording ("Password needs to be at least 10 characters", "That password is one of
+the most commonly used ones"), and none of it matches what he saw. *"That
+password isn't allowed. Please pick another."* came from one catch-all line in
+`authErrorMessage`:
+
+```ts
+if (raw.includes("password")) return "That password isn't allowed. Please pick another.";
+```
+
+So Supabase refused it **after** our checks passed, and the reason — the only
+thing the person needed — was thrown away on the way to the screen.
+
+**The fix**
+
+That branch now distinguishes the three rules Supabase actually enforces, and
+passes anything else through in Supabase's own words:
+
+| Supabase says | We now say |
+| --- | --- |
+| known to be weak / easy to guess | "...appeared in a known data breach..." |
+| should be at least N characters | "Password needs to be at least N characters" (N lifted from the message, so the two can't disagree) |
+| should contain one character of each: abc…, ABC…, 012… | "a mix of upper and lower case letters, numbers and symbols" |
+| anything else | its own text, rather than "pick another" |
+
+The leaked-password case is the one worth having: it is length-independent, so
+it is exactly the rule that refuses a long password and leaves someone baffled.
+Supabase states the character-class rule by listing the whole alphabet, which is
+why that one is translated rather than passed through.
+
+**Being specific is safe here**, unlike the email branches above it. Every one of
+these describes the password just typed, so it discloses nothing the person did
+not supply — there is no account to enumerate.
+
+**`authErrorMessage` moved to `src/lib/authErrors.ts`.** `auth.ts` imports `db`
+and therefore `pg`, so nothing importing it can be compiled and run without a
+database — which is how this branch went two months without anyone checking what
+it said out loud. The new module imports nothing; `auth.ts` re-exports it, so all
+four call sites are untouched. Third time this split has paid for itself, after
+`searchItem.ts` and `ratingScale.ts`.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/authErrors.ts` | Added — the whole function, with the password branch rewritten |
+| `src/lib/auth.ts` | Modified — copy removed, re-exports the new module |
+
+**Verified**
+
+Compiled and run against **13 cases**: all three Supabase password rules in their
+real wording, an unknown password rule passing through, and nine regression
+checks covering every other branch (wrong password, unconfirmed email, both rate
+limits, bad address, already registered, signups disabled, unknown, `undefined`).
+All pass. `tsc`, `eslint` and a production build clean.
+
+**Follow-ups**
+
+- **Which rule fired is still unknown.** The signup route logs it —
+  `[signup] supabase rejected:` in the Vercel logs — and that line names the
+  cause. Worth checking, because if it is leaked-password protection or a
+  character-class requirement, those are **dashboard settings** and may be worth
+  relaxing rather than only explaining. Sasha was asked and had not looked yet.
+- **Supabase's minimum and `MIN_PASSWORD_LENGTH` are configured separately** and
+  nothing keeps them in step. If Supabase's is higher than 10, a password this
+  app accepts is refused there. The new message now reports Supabase's number, so
+  the gap is at least visible rather than silent.
+
 ### 2026-10-22 — `<p>` tags showing in podcast descriptions
 
 - **Branch:** `main`
