@@ -1,9 +1,9 @@
 import styles from "./landing.module.css";
 
 const features = [
-  "Rate episodes and allow other users to know whether a show or episode is worth watching or a skip.",
+  "Rate episodes and allow other users to know whether a show or episode is worth a listen or a skip.",
   "Create lists to organize episodes or shows based on your own selected categories.",
-  "Write reviews for episodes and share your thoughts to the world.",
+  "Write reviews for episodes and share your thoughts with the world.",
   "Follow accounts and discover new podcasts in the process.",
 ];
 

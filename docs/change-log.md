@@ -71,6 +71,62 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-27 — Two landing-page copy fixes; the third report was not a defect
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — three copy slips reported as live
+  for a week, to be fixed in one push.
+- **Status:** Two fixed and pushed. The third does not exist in this repo — see
+  below and Follow-ups.
+
+**What changed**
+
+- `"worth watching"` → `"worth a listen"` in the first feature tile. "Watching"
+  was wrong for a podcast site.
+- `"share your thoughts to the world"` → `"share your thoughts with the world"`
+  in the third tile.
+
+Both strings live in `WhatIsPodtracker`, which renders on the landing page
+**and** at `/about`, so each fix lands in two places.
+
+**The third report: a second "Welcome to Podtracker!"**
+
+There isn't one, and there never has been. Checked rather than assumed:
+
+| Check | Result |
+| --- | --- |
+| Occurrences in `src/` at HEAD | 1, in `HeroIntro.tsx` |
+| `<h1>` elements on the landing page | 1 |
+| Commits that ever changed the string's count | 2 |
+| `d3bc841` ("Add a hero subheading…") | Removed the `<h1>` from `page.tsx` and added it to `HeroIntro.tsx` — net count unchanged |
+
+**Why it looks duplicated if you read the DOM.** `TypedText` renders `text`
+three times on purpose:
+
+- `.typedSrOnly` — the whole heading at once for screen readers, because the
+  animation is decorative. Hidden with the standard clip pattern.
+- `.typedGhost` — `visibility: hidden`, holds the final width so the heading
+  does not reflow while typing. `aria-hidden`.
+- `.typedVisible` — absolutely positioned over the ghost; the copy that animates.
+
+All three are styled correctly in `landing.module.css`, so only one is visible.
+**Do not "deduplicate" them.** Removing the first breaks screen-reader access;
+removing the second reintroduces layout shift during typing.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/WhatIsPodtracker.tsx` | Modified — two feature-tile strings |
+
+**Follow-ups**
+
+- **If a second "Welcome to Podtracker!" is genuinely on screen somewhere, it is
+  not in this repository and remains unidentified.** The likeliest candidate is a
+  Supabase auth email template: those are configured in the Supabase dashboard
+  and leave no trace in the repo, which has already cost this project a session
+  once (see the custom-SMTP entry). A URL or a screenshot would settle it.
+
 ### 2026-10-24 — "That password isn't allowed" never said why
 
 - **Branch:** `main`
