@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { getCurrentUser } from "./auth";
+import { episodeKeyFromGuid } from "./episodeKey";
 
 /** UI tier keys, matching RatingWidget's. */
 export type TierKey = "highly" | "recommend" | "ok" | "dont" | "didnt";
@@ -65,5 +66,81 @@ export async function getViewerPodcastState(externalId: string): Promise<ViewerP
     };
   } catch {
     return NONE;
+  }
+}
+
+/** No `following`: you follow a show, not an episode. */
+export type ViewerEpisodeState = {
+  tier: TierKey | null;
+  inNextListening: boolean;
+};
+
+const NONE_EPISODE: ViewerEpisodeState = { tier: null, inNextListening: false };
+
+/**
+ * The episode equivalent, from what an episode page has: the show's iTunes id
+ * and the episode key in its URL.
+ *
+ * **Without this the episode page's controls were write-only.** The page
+ * rendered `RatingWidget` and `NextListeningButton` with no initial state, so
+ * both fell back to their defaults on every load: you rated an episode, the
+ * rating saved and moved the average, and the mic was still grey when you came
+ * back to it. The show page had passed its state in since the controls were
+ * built; the episode page never did.
+ *
+ * The episode is resolved the same way `getEpisodeRatingSummaryByKey` does, and
+ * for the same reason: `Episode.externalId` is the feed's GUID while the route
+ * carries a hash of it, so nothing can match in SQL. Matching the summary's
+ * resolution exactly is the point — if these two disagreed about which row the
+ * episode is, the average would count a rating the mic doesn't show, which is
+ * the bug this fixes wearing a different hat.
+ *
+ * Never throws, like its show-page twin: a database blip leaves the controls at
+ * their defaults rather than 500ing a page whose content came from the feed.
+ */
+export async function getViewerEpisodeState(
+  podcastExternalId: string,
+  episodeKey: string,
+): Promise<ViewerEpisodeState> {
+  if (!podcastExternalId || !episodeKey) return NONE_EPISODE;
+
+  try {
+    const user = await getCurrentUser();
+    if (!user) return NONE_EPISODE;
+
+    const podcast = await db.podcast.findUnique({
+      where: { externalId: podcastExternalId },
+      select: { id: true },
+    });
+    if (!podcast) return NONE_EPISODE;
+
+    // Small by construction: `ensureEpisode` only writes a row once somebody
+    // rates, logs or lists an episode, so this is the handful anyone has
+    // touched rather than the show's whole back catalogue.
+    const episodes = await db.episode.findMany({
+      where: { podcastId: podcast.id, externalId: { not: null } },
+      select: { id: true, externalId: true },
+    });
+
+    const match = episodes.find((e) => e.externalId && episodeKeyFromGuid(e.externalId) === episodeKey);
+    if (!match) return NONE_EPISODE;
+
+    const [rating, watchItem] = await Promise.all([
+      db.episodeRating.findUnique({
+        where: { userId_episodeId: { userId: user.id, episodeId: match.id } },
+        select: { tier: true },
+      }),
+      db.listItem.findFirst({
+        where: { episodeId: match.id, list: { userId: user.id, isWatchlist: true } },
+        select: { id: true },
+      }),
+    ]);
+
+    return {
+      tier: rating ? API_TO_TIER[rating.tier] ?? null : null,
+      inNextListening: Boolean(watchItem),
+    };
+  } catch {
+    return NONE_EPISODE;
   }
 }

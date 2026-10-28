@@ -71,6 +71,91 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-10-28 — Episode pages never showed you your own rating
+
+- **Branch:** `main`
+- **Reported by:** sashaknyshjr@gmail.com — rated a Theo Von episode "Ok", the
+  average moved, but the mic was still grey when he opened the episode again.
+- **Status:** Fixed and verified against a real Postgres.
+
+**The bug**
+
+The episode page rendered its controls with no viewer state at all:
+
+```tsx
+<RatingWidget styles={styles} externalId={id} episodeKey={epId} />
+```
+
+`RatingWidget`'s `initialTier` defaults to `null`, so `rating` started null on
+every load and the `ratedClass` colour was never applied. **This affected every
+user on every episode**, not one episode — the rating saved correctly and
+counted toward the average, so only the viewer's own indicator was wrong, which
+is why it read as a display glitch rather than a lost write.
+
+The show page had been passing `initialTier={viewerState.tier}` since the
+controls were built. The episode page was simply never wired up — there was no
+episode equivalent of `getViewerPodcastState`.
+
+**`NextListeningButton` had the identical bug** two lines below, and is fixed in
+the same change: it takes `initialAdded`, the episode page passed nothing, so
+"Add to next listening" reset to "Add" on every refresh. `AddToListButton`
+fetches its own state and was unaffected.
+
+**The fix**
+
+`getViewerEpisodeState(podcastExternalId, episodeKey)` in `viewerState.ts`,
+mirroring `getViewerPodcastState`. It resolves the episode **exactly** the way
+`getEpisodeRatingSummaryByKey` does — `Episode.externalId` is the feed GUID and
+the route carries `episodeKeyFromGuid` of it, so nothing matches in SQL and the
+show's stored episodes are matched in JS. Matching the summary's resolution is
+the point: if the two disagreed about which row the episode is, the average
+would count a rating the mic doesn't show, which is this bug again.
+
+The page now resolves both in one `Promise.all`.
+
+**Verified**
+
+Real Postgres 16, migrations applied, running the function's query body with the
+real `episodeKeyFromGuid` and the real Prisma client. `getCurrentUser()` was
+stood in for with a literal id — it needs Supabase, and it is the same call the
+show page already makes.
+
+| Check | Result |
+| --- | --- |
+| Rated episode → our tier | `OK` |
+| Rated episode → in next listening | `true` |
+| Unrated episode → tier | `null` |
+| Second user rating the same episode | sees `HIGHLY_RECOMMEND`, not ours |
+| Second user → our next listening | `false` |
+| Episode key matching nothing | `null`, no throw |
+
+`npx tsc --noEmit` clean.
+
+**Per-viewer data on a shared page.** Checked rather than assumed: `next.config.ts`
+sets no `cacheComponents`/`dynamicIO`, and the Next 16.2.11 docs state that
+`cookies` "will opt a route into dynamic rendering". `getCurrentUser` reads
+cookies via the Supabase server client, so the episode page is now rendered per
+request and one viewer's rating cannot be cached and served to another. The show
+page has worked this way since it was built.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/viewerState.ts` | Added `getViewerEpisodeState` and `ViewerEpisodeState` |
+| `src/app/podcast/[id]/episode/[epId]/page.tsx` | Modified — loads viewer state, passes `initialTier` and `initialAdded` |
+
+**Follow-ups**
+
+- `GET /api/rate` already did this exact lookup for `/log`, which picks its
+  target in the browser. The two now duplicate the key-resolution walk. Worth
+  collapsing the route onto `getViewerEpisodeState` next time either is touched;
+  not done here to keep a user-facing fix small.
+- **`ReviewWidget` was not examined.** The `GET /api/rate` comment says the
+  log/review popup should open showing a rating you already gave, and the
+  episode page passes it no initial state either. It may have the same bug; it
+  was outside what was reported and is untested either way.
+
 ### 2026-10-27 — Two landing-page copy fixes; the third report was not a defect
 
 - **Branch:** `main`

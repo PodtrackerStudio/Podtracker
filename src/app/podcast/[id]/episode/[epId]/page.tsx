@@ -12,6 +12,7 @@ import { NextListeningButton } from "@/components/NextListeningButton";
 import { AddToListButton } from "@/components/AddToListButton";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import { getEpisodeRatingSummaryByKey } from "@/lib/ratingSummary";
+import { getViewerEpisodeState } from "@/lib/viewerState";
 import { tierFromScore } from "@/lib/ratingTier";
 import { getEpisodeDetail } from "@/lib/episodeDetail";
 import styles from "./episode.module.css";
@@ -101,7 +102,12 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
 
   // Real ratings as of 2026-10-03, replacing the mock block that sat behind
   // HAS_COMMUNITY_DATA. Gated on having any, not on the global switch.
-  const ratings = await getEpisodeRatingSummaryByKey(id, epId);
+  const [ratings, viewerState] = await Promise.all([
+    getEpisodeRatingSummaryByKey(id, epId),
+    // What THIS viewer has already done, so the Rate mic and Next listening
+    // show their real state instead of resetting to blank on every load.
+    getViewerEpisodeState(id, epId),
+  ]);
   // Resolved once — the mic, the label and their colour all need it.
   const averageTier = ratings.average !== null ? tierFromScore(ratings.average) : null;
 
@@ -212,10 +218,15 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
             </div>
 
             <div className={styles.actionRow}>
-              <RatingWidget styles={styles} externalId={id} episodeKey={epId} />
+              <RatingWidget styles={styles} externalId={id} episodeKey={epId} initialTier={viewerState.tier} />
               <ReviewWidget buttonClassName={styles.btnLog} externalId={id} episodeKey={epId} />
               <AddToListButton className={styles.btnAddList} externalId={id} episodeKey={epId} />
-              <NextListeningButton className={styles.btnAddList} externalId={id} episodeKey={epId} />
+              <NextListeningButton
+                className={styles.btnAddList}
+                externalId={id}
+                episodeKey={epId}
+                initialAdded={viewerState.inNextListening}
+              />
             </div>
 
             {/* Neighbours come from the feed order. Either can be absent — the
