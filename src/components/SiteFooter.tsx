@@ -26,6 +26,9 @@ export function SiteFooter() {
         {/* Also in the nav now, top right. Kept here too: the footer is where
             people look for a donate link on a page that isn't the home page. */}
         <Link href="/donate">Donate</Link>
+        {/* Last, the way legal links conventionally sit — findable without
+            competing with the links people actually came for. */}
+        <Link href="/terms">Terms</Link>
       </div>
       <div className="footer-social">
         {/* Were the letters "f", "𝕏", "▶" and "d" — a stand-in for the marks,

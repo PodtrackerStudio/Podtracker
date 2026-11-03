@@ -1,0 +1,88 @@
+/* Legal pages: one readable column of running prose. Deliberately plain — the
+   point is that someone can actually read it. Type and colour come from the
+   site's tokens so it doesn't look bolted on, and the measure is held near 70
+   characters because long legal paragraphs are punishing at full width. */
+.main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-inline: 24px;
+  padding-block: 48px 80px;
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  line-height: 1.7;
+}
+
+.main h1 {
+  font-size: clamp(32px, 5vw, 44px);
+  line-height: 1.15;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+
+.updated {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+
+/* The plain-English summary. Set apart because it is the part most people
+   will actually read, and it is explicitly not the agreement itself. */
+.summary {
+  background: var(--accent-blue);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 0 0 40px;
+}
+.summary h2 {
+  font-size: 18px;
+  margin: 0 0 10px;
+}
+.summary ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.summary li {
+  margin-bottom: 6px;
+}
+.summary p {
+  margin: 12px 0 0;
+  font-size: 15px;
+  color: #3c4654;
+}
+
+.main h2 {
+  font-size: 24px;
+  margin: 36px 0 10px;
+  text-wrap: balance;
+}
+.main h2:first-of-type {
+  margin-top: 0;
+}
+
+.main p,
+.main li {
+  margin: 0 0 14px;
+}
+.main ul {
+  padding-left: 22px;
+}
+
+.main a {
+  color: var(--text);
+}
+
+/* Fields the site owner has to fill in before this is worth anything. Marked
+   so they are impossible to miss and impossible to ship by accident. */
+.todo {
+  background: #fff4d6;
+  border-left: 4px solid #d9a521;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: 0.92em;
+}
+
+.contact {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}

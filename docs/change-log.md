@@ -71,6 +71,66 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-03 — Terms of Service page (drafted, not finished)
+
+- **Branch:** `main`
+- **Requested by:** phillipn@podtracker.studio — sent a screenshot of a reel
+  listing "20 things to have Claude do so your app doesn't get sued" and asked
+  for a TOS based on it.
+- **Status:** Partial — the page is live and linked, but **three `TODO` fields
+  in the text have to be filled in before it is worth anything**, and it has
+  not been read by a lawyer.
+
+**What changed**
+
+- New `/terms` page: a plain-English summary box followed by 14 numbered
+  sections — who we are, age limits (13+, 16 in the UK/EEA), accounts, user
+  content ownership and the licence to display it, prohibited conduct,
+  moderation, where podcast data comes from, copyright complaints, donations,
+  data, as-is, limitation of liability, changes, governing law.
+- Footer link to `/terms`, placed last.
+- `/terms` added to the sitemap.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/terms/page.tsx` | Added — the terms themselves |
+| `src/app/terms/legal.module.css` | Added — one 760px column of readable prose |
+| `src/components/SiteFooter.tsx` | Modified — Terms link |
+| `src/app/sitemap.ts` | Modified — `/terms` entry |
+
+**Why**
+
+Written against what the site actually does, not from a template: accounts via
+Supabase, user-written reviews and lists, podcast metadata and artwork taken
+from Apple's charts and public RSS feeds, and **real money through Stripe on
+`/donate`**. That last one is why this came up now — taking payments is what
+raises the stakes on having terms at all, so §9 says plainly that donations are
+gifts, buy nothing, and are not refundable, and §7 states Podtracker is not
+affiliated with any show and will take a show down on request.
+
+The `TODO` spans are deliberate and styled to be impossible to miss (amber,
+left-bordered). They mark the three things that genuinely cannot be guessed:
+who legally operates the site, where that entity is, and which law governs
+disputes. A fourth marks the Privacy Policy link, which has nowhere to point
+yet.
+
+**Verified**
+
+`npx tsc --noEmit` clean, `npm run lint` clean, production build compiles.
+Rendered in a browser: 16 sections, 4 TODOs, footer link present, no
+horizontal scroll at 390px.
+
+**Follow-ups**
+
+- Fill the four `TODO` fields. Until then the page is a draft in public.
+- Have a lawyer read it. This is a drafted starting point, not legal advice.
+- The reel's list spans a TOS, a privacy policy, a cookie policy and
+  accessibility work. **Only the TOS exists.** The Privacy Policy is the next
+  one that matters, because §10 points at it and because the site collects
+  email addresses.
+
 ### 2026-10-28 — Episode pages never showed you your own rating
 
 - **Branch:** `main`
