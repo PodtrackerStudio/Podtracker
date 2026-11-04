@@ -77,9 +77,24 @@ rejected. This is the part that saves the most time later.
 - **Requested by:** phillipn@podtracker.studio — sent a screenshot of a reel
   listing "20 things to have Claude do so your app doesn't get sued" and asked
   for a TOS based on it.
-- **Status:** Partial — the page is live and linked, but **three `TODO` fields
+- **Status:** Partial, then **taken back off the site on 2026-11-04** — see the
+  update directly below. The page was live and linked, but **three `TODO` fields
   in the text have to be filled in before it is worth anything**, and it has
   not been read by a lawyer.
+
+> **UPDATE 2026-11-04 — reverted, not abandoned.** Sasha asked for the page to
+> come down until the `TODO` fields are filled, rather than leave amber
+> placeholders public while the site is submitted to directories. Reverted in
+> the commit directly after this one: the page, its stylesheet, the footer link
+> and the sitemap entry all went together, because a footer link to a 404 and a
+> sitemap advertising a dead URL to Google are both worse than no page.
+>
+> **The work is intact in history and is one command to restore:**
+> `git revert <the revert commit>` brings all four back exactly as written.
+> Restore it once the operator's legal name, the country/state, the governing
+> jurisdiction and the Privacy Policy link are known — the page is good, it was
+> only ever missing those four facts. Everything below describes what is in that
+> commit and still applies when it comes back.
 
 **What changed**
 
