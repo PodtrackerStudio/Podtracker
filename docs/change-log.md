@@ -76,8 +76,29 @@ rejected. This is the part that saves the most time later.
 - **Branch:** `main`
 - **Requested by:** sashaknyshjr@gmail.com — answered the three questions the
   page was reverted over: no LLC, he operates it personally, Michigan.
-- **Status:** Complete. The page is back up with no placeholders. **Still not
-  read by a lawyer.**
+- **Status:** Complete, then **taken down again the same day for legal review**
+  — see the update below. The page went back up with no placeholders, but was
+  **never read by a lawyer**, which is what the review is for.
+
+> **UPDATE 2026-11-04 (later) — down again, pending legal review.** Sasha is
+> having his brother, a law student, read it before it is public. Reverted in
+> the commit directly after this one; the page, stylesheet, footer link and
+> sitemap entry went together again, for the same reason as the first time.
+>
+> **This is the second round trip for this page.** Do not restore it on the
+> strength of the TODOs being filled — they are, and that was not the blocker.
+> It goes back up when Sasha says the review is done, and the text may come
+> back changed. `git revert <the revert commit>` restores the version below
+> verbatim if the review returns no changes.
+>
+> A plain-text copy was exported for the review before it came down, with the
+> five known issues listed at the top so the reviewer is not hunting for them.
+> It lives outside the repo.
+>
+> **The signup checkbox still says "I have read the terms and conditions"** and
+> there is now nothing for it to refer to. It was written as plain text rather
+> than a link precisely so this would not produce a 404, so nothing is broken —
+> but the wording is pointing at a document the public cannot read.
 
 **What changed**
 
