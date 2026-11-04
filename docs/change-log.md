@@ -71,6 +71,79 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-04 — Terms page restored with its placeholders answered
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — answered the three questions the
+  page was reverted over: no LLC, he operates it personally, Michigan.
+- **Status:** Complete. The page is back up with no placeholders. **Still not
+  read by a lawyer.**
+
+**What changed**
+
+Reverts the revert (`0a960f6`), restoring Phillip's page, its stylesheet, the
+footer link and the sitemap entry, then fills in the three answers:
+
+| Field | Answer |
+| --- | --- |
+| Operator | **Alexander Knysh, an individual** — no company |
+| Based in | **Michigan, USA** |
+| Governing law | **the State of Michigan, USA** |
+
+**Two sentences describe the site as it should be, not as it is.** Both were
+found while filling the placeholders and both are marked at the line:
+
+- **§10 promised self-serve account deletion, which does not exist.** The text
+  read "You can delete your account at any time." `src/app/api/account/` has a
+  password route and a profile `PATCH` and no `DELETE`. Publishing that is a
+  written commitment the site cannot honour, so it now reads "You can ask us to
+  delete your account at any time by emailing us" — true, keepable, and
+  reversible to the stronger wording the moment deletion is built.
+- **§10's Privacy Policy link had nothing to point at.** Rather than a link to a
+  404 it now says a policy is being prepared and gives the contact address.
+  Sasha is generating the policy himself; link it when it is up.
+
+The `.todo` CSS rule is now unused. Kept, with a note saying so, because §10
+needs it again for both of the above.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/terms/page.tsx` | Restored, three fields filled, §10 corrected twice |
+| `src/app/terms/legal.module.css` | Restored; `.todo` marked unused-but-kept |
+| `src/components/SiteFooter.tsx` | Restored — Terms link |
+| `src/app/sitemap.ts` | Restored — `/terms` entry |
+
+**Verified**
+
+Rendered in a real browser:
+
+| Check | Result |
+| --- | --- |
+| `/terms` | `200` |
+| Page text contains "TODO" anywhere | `false` |
+| Operator sentence | "operated by Alexander Knysh, an individual based in Michigan, USA" |
+| Governing law | "the laws of the State of Michigan" |
+| Deletion wording | the honest "you can ask us" version |
+| Footer Terms link | present |
+| JS errors | none |
+
+`npx tsc --noEmit` clean.
+
+**Follow-ups**
+
+- **Build account deletion and restore §10's original sentence.** This is now a
+  published commitment to delete on request, so the email route has to actually
+  be honoured until self-serve exists.
+- Link the Privacy Policy in §10 once Sasha publishes it, and make the signup
+  checkbox label a `<Link href="/terms">` — `/terms` is live again, so that
+  link no longer 404s.
+- `User.termsAcceptedAt` still does not exist, so no account can be shown to
+  have agreed. Asked and not yet answered.
+- **Phillip has not been told any of this happened** — his page was reverted
+  and restored, and §10 was edited, all without him in the loop.
+
 ### 2026-11-04 — Age and terms confirmation on signup
 
 - **Branch:** `main`
