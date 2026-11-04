@@ -71,6 +71,75 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-04 — Age and terms confirmation on signup
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — a checkbox on the create-account
+  form reading "I'm at least 16 years old and I have read the terms and
+  conditions", **not** a link, since `/terms` came down the same day. "Make it
+  so the checkmark actually works."
+- **Status:** Complete, driven in a real browser.
+
+**What changed**
+
+- A checkbox above the Create account button. Never pre-checked — a
+  confirmation nobody actively made is not a confirmation.
+- **The button is disabled until it is ticked**, and `handleSubmit` checks it
+  again. Both, because a disabled submit button does not stop Enter from
+  submitting the form from a text input.
+- **`/api/auth/signup` rejects `agreedToTerms !== true`.** The form's own
+  comment already says the only check that counts is the server one. Strict
+  `!== true`, so a missing field, `"true"` as a string or `0` all fail. It sits
+  before any Supabase or database call, so a bypass attempt costs nothing.
+- `.btnPrimary` had **no disabled style at all**, so "Creating…" looked exactly
+  as clickable as "Create account". Added one. The `:disabled:hover` rule is
+  not redundant: without it the existing `:hover` wins and a disabled button
+  *brightens* when pointed at.
+
+**16, not 13.** Sasha's call, and a safer one — 13 is the US COPPA floor, 16 is
+the GDPR threshold for consent without parental authorisation in most EU states.
+
+**The label is deliberately not a link.** `/terms` was reverted hours earlier
+(entry below) and a link to a 404 is worse than plain text. `SignupForm.tsx`
+carries a comment at the exact spot saying to make it a `<Link href="/terms">`
+when the page returns.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/signup/SignupForm.tsx` | Modified — `agreed` state, submit guard, checkbox, sends `agreedToTerms` |
+| `src/app/signup/auth.module.css` | Modified — `.consentRow`, `.btnPrimary:disabled` |
+| `src/app/api/auth/signup/route.ts` | Modified — rejects without the confirmation |
+
+**Verified**
+
+Dev server plus Playwright, asserting computed state rather than eyeballing:
+
+| Check | Result |
+| --- | --- |
+| Checkbox pre-checked on load | `false` |
+| Button disabled before ticking | `true` |
+| Button disabled after ticking | `false` |
+| Button disabled again after un-ticking | `true` |
+| Clicking the label toggles the box | `true` (`htmlFor` wired) |
+| Disabled button opacity / cursor | `0.5` / `not-allowed` |
+| `POST` with no `agreedToTerms` | `400`, before any DB call |
+| `POST` with `agreedToTerms: "true"` | `400` — strict check holds |
+
+`npx tsc --noEmit` clean.
+
+**Follow-ups**
+
+- **Nothing is recorded.** The confirmation gates the request and is then
+  thrown away — there is no `User.termsAcceptedAt`, so the site cannot show
+  that any given account confirmed anything. That needs a migration and was out
+  of scope for "quickly". **Do it before the terms page goes back up**, or the
+  first year of accounts has no record of agreeing to it.
+- Make the label text a `<Link href="/terms">` when `/terms` returns.
+- Existing accounts have confirmed nothing. If that matters once the terms are
+  real, it needs a one-time prompt on next sign-in.
+
 ### 2026-11-03 — Terms of Service page (drafted, not finished)
 
 - **Branch:** `main`

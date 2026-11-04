@@ -23,10 +23,21 @@ import { siteOrigin } from "@/lib/siteUrl";
  * hold. Checking first makes the bad state unreachable in the common case.
  */
 export async function POST(request: Request) {
-  const { email, username, password } = await request.json().catch(() => ({}));
+  const { email, username, password, agreedToTerms } = await request.json().catch(() => ({}));
 
   if (!email?.trim() || !username?.trim() || !password) {
     return NextResponse.json({ error: "Please fill in every field." }, { status: 400 });
+  }
+
+  // Enforced here and not only on the form, for the same reason the password
+  // policy is: the client copy can be bypassed, and a confirmation that a
+  // direct POST can skip is not a confirmation of anything. Strict `!== true`
+  // so a missing field, `"false"` or `0` all fail rather than only `false`.
+  if (agreedToTerms !== true) {
+    return NextResponse.json(
+      { error: "Please confirm your age and that you've read the terms." },
+      { status: 400 },
+    );
   }
 
   const limited = rateLimit(clientKey(request, "signup"), SIGNUP_LIMIT);

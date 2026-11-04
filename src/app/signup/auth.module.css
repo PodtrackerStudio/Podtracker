@@ -95,6 +95,42 @@
 .btnPrimary:hover {
   opacity: 0.85;
 }
+/* There was no disabled style at all, so "Creating…" looked exactly as
+   clickable as "Create account". The second rule is not redundant: without it
+   the :hover above wins and a disabled button *brightens* when you point at
+   it, which reads as working. */
+.btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btnPrimary:disabled:hover {
+  opacity: 0.5;
+}
+
+/* The age and terms confirmation on signup. Mirrors .rememberRow on the login
+   form — same 18px box, same accent — but this label wraps to two lines, so it
+   aligns to the top of the text instead of its centre. */
+.consentRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.consentRow input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--text);
+  cursor: pointer;
+  /* Without this the box squashes as the label wraps. */
+  flex-shrink: 0;
+  /* Sits on the first line of the label rather than above it. */
+  margin-top: 2px;
+}
+.consentRow label {
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+}
 
 .authSwitch {
   margin-top: 22px;

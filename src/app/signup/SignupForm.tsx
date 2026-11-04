@@ -15,6 +15,9 @@ export function SignupForm() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  // Age and terms confirmation. Starts false and is never pre-checked: a
+  // confirmation somebody did not actively make is not a confirmation.
+  const [agreed, setAgreed] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   // Set once the account exists but the email has not been confirmed. Holding
@@ -45,6 +48,12 @@ export function SignupForm() {
       setErrorMsg("Please fill in every field.");
       return;
     }
+    // Checked here as well as disabling the button, because a disabled submit
+    // button does not stop Enter from submitting the form from a text input.
+    if (!agreed) {
+      setErrorMsg("Please confirm your age and that you've read the terms.");
+      return;
+    }
     // The password rules themselves are checked server-side by `checkPassword`
     // and its message is what gets shown. Duplicating them here would mean two
     // copies to keep in step, and the client copy can be bypassed anyway — the
@@ -60,7 +69,7 @@ export function SignupForm() {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), username: username.trim(), password }),
+      body: JSON.stringify({ email: email.trim(), username: username.trim(), password, agreedToTerms: agreed }),
     });
 
     if (!res.ok) {
@@ -159,8 +168,23 @@ export function SignupForm() {
             <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={MIN_PASSWORD_LENGTH} />
             <div className={styles.fieldHint}>{PASSWORD_HINT}</div>
           </div>
+          <div className={styles.consentRow}>
+            <input
+              type="checkbox"
+              id="consent"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+            />
+            {/* Deliberately NOT a link: `/terms` was reverted on 2026-11-04
+                until its TODO fields are filled, and pointing at a 404 is
+                worse than plain text. Make "terms and conditions" a
+                `<Link href="/terms">` the moment that page is back. */}
+            <label htmlFor="consent">
+              I&apos;m at least 16 years old and I have read the terms and conditions.
+            </label>
+          </div>
           {errorMsg && <div className={styles.errorMsg}>{errorMsg}</div>}
-          <button type="submit" className={styles.btnPrimary} disabled={submitting}>
+          <button type="submit" className={styles.btnPrimary} disabled={submitting || !agreed}>
             {submitting ? "Creating…" : "Create account"}
           </button>
         </form>
