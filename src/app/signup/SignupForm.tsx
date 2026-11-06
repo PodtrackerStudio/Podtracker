@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { checkPassword, MIN_PASSWORD_LENGTH, PASSWORD_HINT } from "@/lib/passwordPolicy";
 import styles from "./auth.module.css";
 
@@ -188,6 +189,11 @@ export function SignupForm() {
             {submitting ? "Creating…" : "Create account"}
           </button>
         </form>
+        {/* Outside the <form>, same reason as on the login page. The age and
+            terms confirmation above is NOT skipped by taking this route — it
+            is asked again on /welcome, where the Google account gets its
+            username. */}
+        <GoogleSignInButton styles={styles} label="Sign up with Google" />
         <div className={styles.authSwitch}>
           Already have an account? <Link href="/login">Login</Link>
         </div>

@@ -71,6 +71,108 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-06 — Sign in with Google
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — "let's just start on google". Apple
+  rejected over the $99/yr developer membership, Facebook over its missing-email
+  case, Discord declined.
+- **Status:** **Code complete, NOT live.** It cannot work until the Google and
+  Supabase dashboards are configured — see Handover.
+
+**Why it was worth doing**
+
+Every signup problem this project has had is on the password path: dead
+verification links, "link expired" on links that had not expired, the custom
+SMTP setup, and a real person turned away for a breached password. Google skips
+all of it — no password to choose, no confirmation email, address already
+verified.
+
+**What the work actually was**
+
+Not the button. **Google returns a verified email and a display name and no
+username**, and `User.username` is required and unique, so the profile row
+cannot be written when the session appears.
+
+That gap is worse than it sounds. The profile row is what `getCurrentUser`
+resolves people by, so between Google returning and the row existing, a person
+is signed in as far as Supabase is concerned and signed out as far as every
+page is concerned. So:
+
+- **`/auth/callback`** — already exchanged the code (it was built for emailed
+  links). It now also asks whether a profile row exists, and sends anyone
+  without one to `/welcome`, carrying `next` so they still land where they
+  meant to. Email-confirmation links are unaffected: `/api/auth/signup` writes
+  the profile row before the email is ever sent, so those always find one.
+- **`/welcome`** — username plus the age/terms confirmation. Suggests a
+  username from the email's local part, and walks `base2…base6` if it is taken
+  rather than hammering the database. Not browsable: no session goes to
+  `/login`, an existing profile goes straight on.
+- **`/api/auth/complete-profile`** — writes the row. `getUser`, never
+  `getSession`.
+
+**The age and terms checkbox is asked again on `/welcome`, deliberately.**
+Google sign-in never touches `/signup`, so without it these would be the only
+accounts on the site created without the confirmation every other account
+makes. Same wording, same strict `!== true` server check.
+
+**The email collision is handled rather than discovered later.** `User.email` is
+unique. If someone has a password account and later signs in with Google on the
+same address, and Supabase mints a second identity rather than linking, creating
+a row would fail on the unique index — and silently making a second account
+would split their ratings and reviews across two profiles with no way back. That
+case is detected and answered with "sign in with your password instead", plus a
+link to `/login`.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/GoogleSignInButton.tsx` | Added |
+| `src/app/welcome/page.tsx` | Added — guard + username suggestion |
+| `src/app/welcome/WelcomeForm.tsx` | Added |
+| `src/app/api/auth/complete-profile/route.ts` | Added |
+| `src/app/auth/callback/route.ts` | Modified — `destinationAfterAuth` |
+| `src/app/login/LoginForm.tsx`, `src/app/signup/SignupForm.tsx` | Modified — the button |
+| `src/app/signup/auth.module.css` | Modified — `.btnGoogle`, `.authDivider` |
+
+**Verified**
+
+Rendered in a real browser: the button appears on both `/login` ("Continue with
+Google") and `/signup` ("Sign up with Google") with its divider, no JS errors,
+and `/welcome` without a session redirects to `/login`. `npx tsc --noEmit`
+clean.
+
+**Not verified, and cannot be from here:** the actual round trip to Google.
+This sandbox has no Supabase credentials and no provider configured.
+
+**Handover — three dashboard steps, none of them code**
+
+1. **Google Cloud Console** → APIs & Services → Credentials → OAuth client ID,
+   type *Web application*. Authorised redirect URI is **Supabase's**, not ours:
+   `https://<project-ref>.supabase.co/auth/v1/callback`.
+2. **Supabase** → Authentication → Providers → Google → enable, paste the client
+   ID and secret.
+3. **Supabase** → Authentication → URL Configuration → add
+   `https://podtracker.studio/auth/callback` (and `http://localhost:3000/auth/callback`
+   for development) to **Redirect URLs**. Missing this is the usual cause of a
+   round trip that returns to the wrong place.
+
+**Follow-ups**
+
+- **The `/welcome` checkbox says "terms and conditions" with nothing public to
+  read**, exactly like the signup one. Both become links when `/terms` returns.
+- **Username validation is as loose as signup's** — trim and uniqueness, no
+  format rule — and usernames appear in URLs. Worth a shared rule rather than a
+  stricter one only here.
+- Avatar is taken from Google's `avatar_url` on creation and never refreshed.
+- The Google button is **not from a Figma frame** — there is none for
+  third-party sign-in. Shaped to match `.btnPrimary`, white with a border per
+  Google's branding guidance. Replace when Sasha has drawn one.
+- Spotify is the obvious second provider: ~20 minutes once this flow exists, and
+  a far better thematic fit than Discord or Facebook. Check its developer-mode
+  user cap before committing.
+
 ### 2026-11-06 — Existing avatars shrunk; database connections leaking between deploys
 
 - **Branch:** `main`

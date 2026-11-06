@@ -192,3 +192,50 @@
   color: var(--text);
   text-decoration: underline;
 }
+
+/* ── Sign in with Google ─────────────────────────────────────────────────
+   NOT from a Figma frame — there is none for third-party sign-in. Shaped to
+   match .btnPrimary (same height, radius and font) so it sits with the rest of
+   the form, but white with a border, which is what Google's own branding
+   guidance asks for. Replace when Sasha has drawn one. */
+.authDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.authDivider::before,
+.authDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.btnGoogle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid #dadce0;
+  border-radius: 5px;
+  padding: 10px 0;
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btnGoogle:hover {
+  background: #f7f8f8;
+}
+.btnGoogle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btnGoogle:disabled:hover {
+  background: #fff;
+}
