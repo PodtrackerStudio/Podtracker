@@ -71,6 +71,52 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-06 — Security upgrade: Next.js 16.4.3, Prisma 7.10.1
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "go through all of the back end code, find any
+  bugs, errors, lag … ensure that vulnerabilities are minimal". This is the
+  first commit of that audit.
+- **Status:** Complete.
+
+**What changed**
+
+`npm audit --omit=dev` reported **13 vulnerable packages: 1 critical, 11 high,
+1 moderate**. Next.js alone had several unauthenticated RCE advisories:
+
+- `next/og` ImageResponse, used by the Discord bot since this morning
+- Image Optimization with SVG or AVIF
+- `use cache` returning typed arrays
+
+It also had SSRF in Image Optimization, cache poisoning, and a Server Actions
+DoS. Prisma's tooling pulled in vulnerable `deepmerge-ts`, `find-my-way`,
+`mysql2` and `valibot`.
+
+- `next` and `eslint-config-next` 16.2.11 → **16.4.3**. 16.4.1 is the first
+  release clear of every advisory. 16.4.3 was taken for its later fixes,
+  because it is two weeks old rather than days: 16.4.4 and 16.4.5 are
+  supply-chain fresh. Every 16.4.x pins the patched `postcss` 8.5.23 and
+  `sharp` ^0.35.5.
+- `prisma` and `@prisma/client` 7.9.0 → **7.10.1** (exact, as before), and
+  `@prisma/adapter-pg` ^7.10.1.
+- `npm audit fix`, with no `--force`, for the transitive `fast-uri`, `nanoid`
+  and `source-map-js`.
+- `CLAUDE.md`'s stack line updated to match.
+
+**Result:** `npm audit --omit=dev` → **0 vulnerabilities**.
+
+**Verified:** `prisma generate`, `tsc --noEmit`, `eslint .` and `next build`
+are clean. On the dev server these all render 200: `/`, `/explore`, `/login`,
+`/signup`, `/forgot-password`, `/auth/confirm`, `/reset-password`, a podcast
+page, `/search`, a profile, `/about` and `/donate`. An unknown route gives 404,
+and a bogus emailed-link POST still lands on `link-expired`. The Discord bot
+still renders its `next/og` image.
+
+**Follow-ups**
+
+- None for the upgrade. The rest of the audit follows in its own commits.
+
+
 ### 2026-11-06 — `/analytics`: one command that looks like Vercel's dashboard
 
 - **Branch:** `main`

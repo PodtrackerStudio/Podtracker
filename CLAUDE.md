@@ -4,7 +4,7 @@
 
 A Letterboxd-style site for podcasts. Two goals: build a community for podcast fans, and help people work out which episodes of a show are worth listening to and which to skip, based on audience reactions.
 
-Stack: Next.js 16.2.11 (App Router) · React 19.2.4 · TypeScript · Prisma 7.9 · Postgres.
+Stack: Next.js 16.4.3 (App Router) · React 19.2.4 · TypeScript · Prisma 7.10 · Postgres.
 
 ## Working agreement
 

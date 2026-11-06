@@ -5,6 +5,11 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Security: Next.js 16.2.11 → 16.4.3, Prisma 7.9 → 7.10.1.**
+  `npm audit` reported 13 vulnerable packages (1 critical, 11 high). Among them
+  were unauthenticated remote-code-execution flaws in Next.js, including one in
+  `next/og`, which the Discord bot uses. Now 0. Build, type check, lint and a
+  smoke test of every main page, the auth links and the bot all pass.
 - **2026-11-06 — Discord bot is now one command, `/analytics`, drawn like
   Vercel's dashboard.** It replies with an image: visitors and page views with
   change against the previous period, a visitors chart, and Pages, Referrers,
