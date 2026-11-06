@@ -83,15 +83,31 @@ async function query<T>(endpoint: "count" | "aggregate", params: Record<string, 
   return json.data;
 }
 
-function range(period: Period) {
-  const until = Date.now();
-  return { since: String(until - PERIOD_MS[period]), until: String(until) };
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+
+/**
+ * **Vercel rounds `until` down to the query's granularity**, and the count
+ * endpoint works in whole days. Passing "now" as `until` therefore cut off at
+ * last midnight UTC, and `/traffic` reported 0 visitors on a day with real
+ * traffic. Found against the live API on 2026-11-06. So `until` is pushed one
+ * unit into the future, which holds no data, and any bucket after "now" is
+ * dropped from the series.
+ */
+function range(period: Period, unitMs: number) {
+  const now = Date.now();
+  return { since: String(now - PERIOD_MS[period]), until: String(now + unitMs) };
 }
 
 export type Totals = { pageviews: number; visitors: number };
 
+/**
+ * Unique visitors and page views over the period. The count endpoint works in
+ * whole UTC days, so for "24h" this covers yesterday and today. Page views in
+ * `/traffic` come from the hourly or daily series instead, which is exact.
+ */
 export async function totals(period: Period): Promise<Totals> {
-  const data = await query<Partial<Totals>>("count", range(period));
+  const data = await query<Partial<Totals>>("count", range(period, DAY_MS));
   return { pageviews: data.pageviews ?? 0, visitors: data.visitors ?? 0 };
 }
 
@@ -99,11 +115,14 @@ export type TimeRow = { timestamp: string; pageviews: number; visitors: number }
 
 /** Hourly for 24h, daily otherwise. */
 export async function overTime(period: Period): Promise<TimeRow[]> {
-  return query<TimeRow[]>("aggregate", {
-    ...range(period),
+  const unit = period === "24h" ? HOUR_MS : DAY_MS;
+  const rows = await query<TimeRow[]>("aggregate", {
+    ...range(period, unit),
     by: period === "24h" ? "hour" : "day",
     limit: "100",
   });
+  const now = Date.now();
+  return rows.filter((row) => new Date(row.timestamp).getTime() <= now);
 }
 
 export type DimensionRow = { key: string; pageviews: number; visitors: number };
@@ -118,13 +137,16 @@ export async function top(
   limit = 10,
 ): Promise<DimensionRow[]> {
   const rows = await query<Array<Record<string, unknown>>>("aggregate", {
-    ...range(period),
+    ...range(period, HOUR_MS),
     by: dimension,
     limit: String(limit),
   });
-  return rows.map((row) => ({
-    key: String(row[dimension] ?? "") || (dimension === "referrerHostname" ? "(direct / none)" : "(unknown)"),
-    pageviews: Number(row.pageviews ?? 0),
-    visitors: Number(row.visitors ?? 0),
-  }));
+  // Vercel does not return these in order, so sort them, keeping "Others" last.
+  return rows
+    .map((row) => ({
+      key: String(row[dimension] ?? "") || (dimension === "referrerHostname" ? "(direct / none)" : "(unknown)"),
+      pageviews: Number(row.pageviews ?? 0),
+      visitors: Number(row.visitors ?? 0),
+    }))
+    .sort((a, b) => Number(a.key === "Others") - Number(b.key === "Others") || b.pageviews - a.pageviews);
 }

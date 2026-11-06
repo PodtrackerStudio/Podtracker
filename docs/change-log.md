@@ -134,9 +134,30 @@ stand-in for Discord's webhook API (`DISCORD_API_BASE`):
 
 `tsc --noEmit` and `eslint` clean.
 
-**Not verified:** real Vercel Analytics responses. There is no token yet, and
-the field names come from Vercel's API reference, not from a live call. Real
-Discord delivery is also unverified, pending the app's creation.
+**Later the same day: fixed against the live API.** Once a real token
+existed, the first live call showed **`until` is rounded down to the query's
+granularity**. The count endpoint works in whole UTC days, so `until=now`
+became last midnight and `/traffic` would have said 0 visitors on a day that
+had traffic. Every query now passes `until` one unit (an hour or a day) into
+the future, and any series bucket after now is dropped. `/traffic` takes its
+page views from the series, which matches the chart exactly, and its unique
+visitors from `count`. Summing per-bucket visitors would count a returning
+person once per hour. For `24h` the visitors figure covers yesterday and today
+(UTC), and the footer says so. Vercel also returns dimension rows unsorted, so
+`top()` now sorts by views with "Others" last.
+
+Live results after the fix: 24h → 1 visitor, 4 page views, 25 hourly buckets
+ending at the current hour; top pages `/home` (2), `/following`, a profile;
+referrers all direct. That matches the test visits made after enabling.
+
+Setup progress: the Discord app is created (application id 1568277062425383023),
+the Interactions Endpoint URL has been accepted by Discord, and `DISCORD_*` and
+`VERCEL_*` are set in Vercel production. `DISCORD_ALLOWED_USER_IDS` is still
+empty, on purpose, so the first `/stats` reveals each person's id. Command
+registration failed with 403 "Missing Access" because the bot was not yet
+invited to the server.
+
+**Still not verified:** an end-to-end command in real Discord.
 
 **Follow-ups**
 

@@ -5,6 +5,10 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Discord bot: today's visits were missing from `/traffic`.**
+  Vercel rounds a query's end time down to midnight, so totals left out the
+  current day and showed 0. Queries now run one unit past "now", and top pages
+  and referrers are sorted by views. Checked against the live Analytics API.
 - **2026-11-06 — Discord analytics bot.** Slash commands `/traffic`,
   `/toppages`, `/referrers` (Vercel Web Analytics) and `/stats` (accounts and
   activity from the database), answered by `src/app/api/discord/route.ts`, so

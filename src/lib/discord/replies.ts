@@ -62,6 +62,10 @@ function ranking(rows: DimensionRow[]): string {
 async function traffic(periodOption: unknown): Promise<Reply> {
   const period = parsePeriod(periodOption);
   const [sum, series] = await Promise.all([totals(period), overTime(period)]);
+  // Page views from the series, which matches the chart exactly. Visitors from
+  // the count endpoint, since summing per-bucket visitors would count one
+  // person once per hour or day they came back.
+  const pageviews = series.reduce((total, row) => total + row.pageviews, 0);
   return {
     embeds: [
       {
@@ -69,15 +73,20 @@ async function traffic(periodOption: unknown): Promise<Reply> {
         color: COLOR,
         fields: [
           { name: "Visitors", value: fmt(sum.visitors), inline: true },
-          { name: "Page views", value: fmt(sum.pageviews), inline: true },
+          { name: "Page views", value: fmt(pageviews), inline: true },
           {
             name: "Views per visitor",
-            value: sum.visitors ? (sum.pageviews / sum.visitors).toFixed(1) : "—",
+            value: sum.visitors ? (pageviews / sum.visitors).toFixed(1) : "—",
             inline: true,
           },
         ],
         description: bars(series, period),
-        footer: { text: "Vercel Web Analytics · production only · times in UTC" },
+        footer: {
+          text:
+            period === "24h"
+              ? "Vercel Web Analytics · production only · times in UTC · visitors counted over yesterday and today (UTC)"
+              : "Vercel Web Analytics · production only · times in UTC",
+        },
       },
     ],
   };
