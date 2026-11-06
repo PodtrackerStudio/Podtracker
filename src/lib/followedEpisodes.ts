@@ -51,7 +51,9 @@ const latestForShow = unstable_cache(
     // `isLive` false means the lookup failed and this is the built-in
     // placeholder. Its episodes are invented, and inventing uploads in
     // someone's feed is worse than a shorter feed.
-    if (!detail.isLive) return [];
+    // null is "no such show on iTunes"; `isLive` false is the legacy slug
+    // placeholder, whose episodes are invented.
+    if (!detail || !detail.isLive) return [];
 
     return detail.recentEpisodes
       .filter((ep) => ep.publishedAtIso)

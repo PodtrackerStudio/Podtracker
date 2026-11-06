@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { MicIcon } from "@/components/icons";
@@ -60,11 +61,13 @@ const lists = [
  */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const detail = await getPodcastDetail(id);
+  // Metadata must not decide the page's fate: a lookup failure here returns
+  // empty metadata and leaves the 404-or-retry call to the page body below.
+  const detail = await getPodcastDetail(id).catch(() => null);
 
-  // The placeholder show carries invented copy. Leaving it out keeps the
-  // fallback page on the site-wide title rather than indexing fiction.
-  if (!detail.isLive) return {};
+  // No such show, or the legacy placeholder, whose copy is invented. Either
+  // way there is nothing worth indexing.
+  if (!detail || !detail.isLive) return {};
 
   // Feed descriptions run to thousands of characters and often carry HTML.
   // Search results truncate around 160, and a preview card less than that.
@@ -96,7 +99,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function PodcastPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // null means iTunes answered and has no such show — a real 404, rather than
+  // the invented "Modern Wisdom" page this used to render for any id that
+  // failed to resolve. A lookup that *throws* is transient and propagates to
+  // `error.tsx`, which offers Try again.
   const podcast = await getPodcastDetail(id);
+  if (!podcast) notFound();
   const recentEpisodes = podcast.recentEpisodes;
   // Listens and Likes are this app's own numbers, so they come from the
   // database, not the API. Zero until people start using the site.

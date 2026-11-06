@@ -124,17 +124,31 @@ function placeholderDetail(id: string): PodcastDetail {
  * could be fetched, and finally to the placeholder, because a podcast page that
  * 500s is worse than one showing a stale stand-in.
  */
-export async function getPodcastDetail(id: string): Promise<PodcastDetail> {
-  // iTunes ids are numeric. Anything else is one of the legacy hardcoded slugs.
+export async function getPodcastDetail(id: string): Promise<PodcastDetail | null> {
+  // iTunes ids are numeric. Anything else is one of the legacy hardcoded slugs,
+  // which is the one and only thing the placeholder is for.
   if (!/^\d+$/.test(id)) return placeholderDetail(id);
 
-  let podcast;
-  try {
-    podcast = await lookupPodcast(id);
-  } catch {
-    return placeholderDetail(id);
-  }
-  if (!podcast) return placeholderDetail(id);
+  // **Numeric ids never get the placeholder.** They used to, and it meant any
+  // iTunes id that failed to resolve rendered a complete, real-looking page for
+  // "Modern Wisdom" by Chris Williamson — a show the visitor had not asked for,
+  // with `/placeholder-cover.svg` where its artwork should be. That is how a
+  // 2026-11-06 report of a broken episode arrived describing the show as Modern
+  // Wisdom: the show page had told them so. `generateMetadata` already refused
+  // to index it ("rather than indexing fiction") while the page still showed it.
+  //
+  // The two failures are now told apart, because they are not the same thing:
+  //
+  //   - **null** — iTunes answered, and has no such show. Definitive, so the
+  //     page 404s. Chart-sourced ids are the usual way to get one: the change
+  //     log records that ids from Apple's charts do not always resolve through
+  //     the `lookup` endpoint.
+  //   - **throw** — iTunes did not answer. Transient, so it propagates to
+  //     `error.tsx`, which says so and offers Try again. That page did not
+  //     exist when the placeholder was written, which is why swallowing the
+  //     error looked like the lesser evil at the time.
+  const podcast = await lookupPodcast(id);
+  if (!podcast) return null;
 
   let feed = null;
   if (podcast.feedUrl) {

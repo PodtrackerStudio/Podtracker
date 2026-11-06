@@ -28,6 +28,19 @@ export async function ensurePodcast(externalId: string): Promise<string> {
   // costs nothing on the common path.
   const detail = await getPodcastDetail(externalId);
 
+  // **Refusing is the only honest option.** null means iTunes answered and has
+  // no such show, so there is nothing to attach a rating, follow or list item
+  // to. Until 2026-11-06 an unresolvable id fell through to the built-in
+  // placeholder, and this wrote a `Podcast` row titled "Modern Wisdom" by
+  // Chris Williamson — permanently, under whatever externalId the caller
+  // passed, and `upsert`'s `update: {}` means it would never be corrected.
+  //
+  // Every caller is an API route with its own try/catch, so this surfaces as a
+  // failed write rather than an unhandled crash.
+  if (!detail) {
+    throw new Error(`No podcast on iTunes for externalId ${externalId} — refusing to create a row.`);
+  }
+
   const created = await db.podcast.upsert({
     where: { externalId },
     create: {

@@ -82,6 +82,13 @@ rejected. This is the part that saves the most time later.
   not specific to that episode: Podtracker crashed on **every paid or
   subscriber-only podcast on Apple**.
 
+> **CORRECTION.** The Matt-and-Shane/Patreon diagnosis below was **wrong**. It
+> was inferred from the unusually high Apple id without being able to query
+> Apple, and Sasha then said the show page reads "Modern Wisdom" and its images
+> do not load. That is the real answer, and it is in our own code — see "What
+> it actually was". The subscriber-feed fix is kept because it is a genuine
+> defect on its own, just not this one.
+
 **The actual bug**
 
 The episode is from Matt and Shane's Secret Podcast, which sells its back
@@ -178,6 +185,51 @@ Rendered in a real browser. This sandbox cannot reach Apple, which *is* the
 
 `npx tsc --noEmit` clean.
 
+**What it actually was — the placeholder was lying**
+
+Sasha said the show page reads **"Modern Wisdom"** and the images do not load.
+Both come from one function: `placeholderDetail` in `podcastDetail.ts` is
+hardcoded `title: "Modern Wisdom"`, `author: "Chris Williamson"`, and
+`/placeholder-cover.svg` for every image. He was never looking at Modern
+Wisdom. He was looking at the fallback.
+
+`getPodcastDetail` returned that placeholder for **any** numeric id whose
+lookup failed — whether iTunes said "no such show" or did not answer at all.
+So an unresolvable id produced a complete, real-looking page for a show the
+visitor never asked for, while the same failed lookup crashed the episode
+page. `generateMetadata` already refused to index it, with the comment
+"rather than indexing fiction", while the page went on showing that fiction to
+people.
+
+The placeholder exists for the legacy hardcoded slugs (`jre`, `huberman`) still
+linked from Similar podcasts. Catching failed numeric lookups was never its
+job. Now:
+
+- **non-numeric id** → placeholder, exactly as designed
+- **null** (iTunes answered, no such show) → `getPodcastDetail` returns null and
+  the page calls `notFound()`
+- **throw** (iTunes did not answer) → propagates to `error.tsx`, which says it
+  is probably temporary and offers Try again. That page did not exist when the
+  placeholder was written, which is why swallowing the error looked like the
+  lesser evil then.
+
+**`ensurePodcast` was writing the fiction to the database.** It builds a
+`Podcast` row from `getPodcastDetail`, so rating, following or listing an
+unresolvable show created a permanent row titled "Modern Wisdom" by Chris
+Williamson under that externalId — and `upsert`'s `update: {}` meant it would
+never be corrected. It now refuses. All seven callers are API routes with
+their own try/catch, so it surfaces as a failed write.
+
+**Verified — the placeholder fix**
+
+| Check | Result |
+| --- | --- |
+| Unknown id → `getPodcastDetail` | `null`, not a Modern Wisdom object |
+| Unknown id → episode page | `not-found`, no crash |
+| Legacy slug `modern-wisdom` | still the placeholder, `isLive: false` |
+| A real show | resolves normally, `isLive: true` |
+| iTunes returning 503 | throws, so Try again is offered — does **not** return fiction |
+
 **Verified — the subscriber-feed fix**
 
 A fixture server standing in for Apple: the lookup succeeds and returns a feed
@@ -212,6 +264,18 @@ reporting an outage and crashing the page.
 - A personal cloud environment named **Podtracker** was created for this repo
   allowing `itunes.apple.com`, so a future session can query Apple directly.
   This session could not move onto it while running.
+- **Still open: why `6822357740` does not resolve, and where the link came
+  from.** The crash and the fake show page are fixed, but that episode is still
+  unreachable, and nothing here explains why Apple has no such id. The change
+  log already records that **ids from Apple's charts do not always resolve
+  through the `lookup` endpoint** — if that URL came from Explore or trending,
+  that is the thread to pull. Needs a session on the `Podtracker` environment
+  to query Apple directly.
+- **Audit the other placeholder.** `episodeDetail.ts` dropped its fabricated
+  episode years ago and `podcastDetail.ts` has now stopped using its one for
+  numeric ids, but `placeholderDetail` is still reachable for legacy slugs and
+  still returns four invented episodes with invented guids. If those slugs are
+  no longer linked anywhere, the whole function can go.
 
 ### 2026-11-04 — Terms page restored with its placeholders answered
 
