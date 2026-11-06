@@ -71,6 +71,53 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-06 — Vercel Web Analytics
+
+- **Branch:** `main`
+- **Requested by:** Phillip — set up Vercel Analytics, as the first half of a
+  Discord bot that lets Sasha ask for site analytics.
+- **Status:** Code complete. **Collects nothing until Analytics is enabled on
+  the project in the Vercel dashboard.**
+
+**What changed**
+
+- Installed `@vercel/analytics` (2.0.1).
+- `src/components/SiteAnalytics.tsx` (new) renders `<Analytics />` with a
+  `beforeSend` that strips the query string from every `/auth/*` URL.
+- `src/app/layout.tsx` mounts it once, at the end of `<body>`.
+- `README.md` now carries a short change log at the top, at Phillip's request;
+  this file stays the detailed record.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `package.json`, `package-lock.json` | Modified — `@vercel/analytics` |
+| `src/components/SiteAnalytics.tsx` | Added — analytics with token stripping |
+| `src/app/layout.tsx` | Modified — renders `SiteAnalytics` |
+| `README.md` | Modified — short change log at the top |
+
+**Why**
+
+`/auth/confirm?token_hash=…` and `/auth/callback?code=…` carry one-time login
+tokens. Analytics records page URLs, so without `beforeSend` working
+credentials would sit in a third-party dashboard. It lives in a client
+component because a Server Component cannot pass a function prop.
+
+Vercel has a public Web Analytics query API (`/v1/query/web-analytics/visits/…`),
+which is what the planned Discord bot will read.
+
+**Verified:** `tsc --noEmit` and `eslint` clean; `/` and `/auth/confirm` render
+200 on the dev server. Not verified: events arriving in Vercel — that needs
+the dashboard toggle and a production deploy.
+
+**Follow-ups**
+
+- Enable Analytics in the Vercel dashboard (Project → Analytics → Enable).
+- Discord bot for analytics on request — planned, waiting on a Discord app and
+  a Vercel access token.
+
+
 ### 2026-11-06 (later) — Episodes found by search no longer die on click
 
 - **Branch:** `main`

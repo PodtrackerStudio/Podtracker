@@ -1,3 +1,19 @@
+# Podtracker
+
+## Change log
+
+Short record of every change, newest first. The full reasoning for each one is in
+[`docs/change-log.md`](docs/change-log.md).
+
+- **2026-11-06 — Vercel Web Analytics added.** Installed `@vercel/analytics` and
+  rendered it site-wide from `src/components/SiteAnalytics.tsx`, mounted in
+  `src/app/layout.tsx`. URLs under `/auth/*` are recorded without their query
+  string, so one-time login tokens from emailed links never reach the analytics
+  dashboard. **Still needed:** enable Analytics on the project in the Vercel
+  dashboard; nothing is collected until that is done.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

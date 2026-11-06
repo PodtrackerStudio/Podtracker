@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PT_Serif_Caption, Roboto, Londrina_Solid } from "next/font/google";
 import { JsonLd } from "@/components/JsonLd";
+import { SiteAnalytics } from "@/components/SiteAnalytics";
 import { staticSiteOrigin } from "@/lib/siteUrl";
 import "./globals.css";
 
@@ -134,6 +135,7 @@ export default function RootLayout({
       <body>
         <JsonLd data={siteSchema} />
         {children}
+        <SiteAnalytics />
       </body>
     </html>
   );
