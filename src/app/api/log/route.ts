@@ -6,6 +6,9 @@ import { RatingTier } from "@/generated/prisma/enums";
 
 const TIERS = new Set<string>(Object.values(RatingTier));
 
+/** Comments are capped at 2,000; a review can run longer. The longest so far is 680. */
+const MAX_REVIEW = 10_000;
+
 /**
  * Log a listen — a diary entry, optionally carrying a rating and a review.
  *
@@ -29,6 +32,14 @@ export async function POST(request: Request) {
   const { externalId, episodeKey, tier, reviewText, listenedDate } = await request.json().catch(() => ({}));
 
   if (!externalId) return NextResponse.json({ error: "Missing externalId." }, { status: 400 });
+  // A non-string used to reach Prisma and come back as a 502, and there was no
+  // length limit at all.
+  if (reviewText != null && typeof reviewText !== "string") {
+    return NextResponse.json({ error: "reviewText must be text." }, { status: 400 });
+  }
+  if (typeof reviewText === "string" && reviewText.length > MAX_REVIEW) {
+    return NextResponse.json({ error: `Reviews can be ${MAX_REVIEW.toLocaleString("en-US")} characters at most.` }, { status: 400 });
+  }
   if (tier != null && !TIERS.has(tier)) {
     return NextResponse.json({ error: `tier must be one of: ${[...TIERS].join(", ")}` }, { status: 400 });
   }

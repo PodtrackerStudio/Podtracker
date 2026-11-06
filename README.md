@@ -5,6 +5,15 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — API routes made robust against failures and races.**
+  - **Episodes that two shows share can be rated, logged and listed.** Before,
+    every action on them failed. A double-click on a new episode no longer 502s.
+  - **Creating a list is one all-or-nothing write**, capped at 100 titles.
+  - **Next listening can't split across two lists.**
+  - **Double-clicking remove no longer errors.**
+  - **Reviews are validated** (text only, at most 10,000 characters).
+  - **Follow and favourite failures return a readable error** instead of a bare 500.
+  - **Legacy show slugs can't write a fake "Modern Wisdom" row.**
 - **2026-11-06 — Account and login fixes.**
   - **Email changes in Settings now go through Supabase**, with a confirmation
     link. Before, a changed email silently broke "change password" and let

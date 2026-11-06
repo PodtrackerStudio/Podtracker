@@ -24,11 +24,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not look up that podcast." }, { status: 502 });
   }
 
-  await db.podcastFollow.upsert({
-    where: { userId_podcastId: { userId: user.id, podcastId } },
-    create: { userId: user.id, podcastId },
-    update: {},
-  });
+  try {
+    await db.podcastFollow.upsert({
+      where: { userId_podcastId: { userId: user.id, podcastId } },
+      create: { userId: user.id, podcastId },
+      update: {},
+    });
+  } catch (error) {
+    // Outside a try, a database blip became a bare 500 with no JSON body, so
+    // the button had no `error` to show.
+    console.error("[follow] write failed:", error);
+    return NextResponse.json({ error: "Could not follow that right now. Please try again." }, { status: 503 });
+  }
 
   return NextResponse.json({ ok: true, following: true });
 }
@@ -42,12 +49,17 @@ export async function DELETE(request: Request) {
 
   // No ensurePodcast here: you cannot be following a show that was never
   // created, so a missing row simply means there is nothing to remove.
-  const podcast = await db.podcast.findUnique({
-    where: { externalId: String(externalId) },
-    select: { id: true },
-  });
-  if (podcast) {
-    await db.podcastFollow.deleteMany({ where: { userId: user.id, podcastId: podcast.id } });
+  try {
+    const podcast = await db.podcast.findUnique({
+      where: { externalId: String(externalId) },
+      select: { id: true },
+    });
+    if (podcast) {
+      await db.podcastFollow.deleteMany({ where: { userId: user.id, podcastId: podcast.id } });
+    }
+  } catch (error) {
+    console.error("[follow] remove failed:", error);
+    return NextResponse.json({ error: "Could not unfollow that right now. Please try again." }, { status: 503 });
   }
 
   return NextResponse.json({ ok: true, following: false });

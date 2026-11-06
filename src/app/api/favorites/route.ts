@@ -33,18 +33,24 @@ export async function POST(request: Request) {
 
   // One transaction: a favourite that failed to follow would sit in the table
   // invisible to the only page that reads either of them.
-  await db.$transaction([
-    db.favorite.upsert({
-      where: { userId_podcastId: { userId: user.id, podcastId } },
-      create: { userId: user.id, podcastId },
-      update: {},
-    }),
-    db.podcastFollow.upsert({
-      where: { userId_podcastId: { userId: user.id, podcastId } },
-      create: { userId: user.id, podcastId },
-      update: {},
-    }),
-  ]);
+  try {
+    await db.$transaction([
+      db.favorite.upsert({
+        where: { userId_podcastId: { userId: user.id, podcastId } },
+        create: { userId: user.id, podcastId },
+        update: {},
+      }),
+      db.podcastFollow.upsert({
+        where: { userId_podcastId: { userId: user.id, podcastId } },
+        create: { userId: user.id, podcastId },
+        update: {},
+      }),
+    ]);
+  } catch (error) {
+    // Outside a try, a database blip became a bare 500 with no JSON body.
+    console.error("[favorites] write failed:", error);
+    return NextResponse.json({ error: "Could not add that favourite right now. Please try again." }, { status: 503 });
+  }
 
   return NextResponse.json({ ok: true, favorited: true });
 }
@@ -58,14 +64,19 @@ export async function DELETE(request: Request) {
 
   // No ensurePodcast here: you cannot have favourited a show whose row was
   // never created, so a missing row means there is nothing to remove.
-  const podcast = await db.podcast.findUnique({ where: { externalId: String(externalId) }, select: { id: true } });
-  if (podcast) {
-    // Symmetric with POST — un-favouriting takes it off the page it was added
-    // to, rather than leaving a followed show behind with no favourite.
-    await db.$transaction([
-      db.favorite.deleteMany({ where: { userId: user.id, podcastId: podcast.id } }),
-      db.podcastFollow.deleteMany({ where: { userId: user.id, podcastId: podcast.id } }),
-    ]);
+  try {
+    const podcast = await db.podcast.findUnique({ where: { externalId: String(externalId) }, select: { id: true } });
+    if (podcast) {
+      // Symmetric with POST — un-favouriting takes it off the page it was added
+      // to, rather than leaving a followed show behind with no favourite.
+      await db.$transaction([
+        db.favorite.deleteMany({ where: { userId: user.id, podcastId: podcast.id } }),
+        db.podcastFollow.deleteMany({ where: { userId: user.id, podcastId: podcast.id } }),
+      ]);
+    }
+  } catch (error) {
+    console.error("[favorites] remove failed:", error);
+    return NextResponse.json({ error: "Could not remove that favourite right now. Please try again." }, { status: 503 });
   }
 
   return NextResponse.json({ ok: true, favorited: false });

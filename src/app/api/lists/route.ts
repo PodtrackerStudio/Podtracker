@@ -7,6 +7,16 @@ import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
 const COVERS_PER_ROW = 4;
 
 /**
+ * Caps on what one request may ask for. Each item can cost an iTunes lookup and
+ * a feed fetch, resolved one after another, so an uncapped request could hold a
+ * function for minutes. The longest title in use on 2026-11-06 was 30
+ * characters and the longest description 47.
+ */
+const MAX_ITEMS = 100;
+const MAX_TITLE = 200;
+const MAX_DESCRIPTION = 2000;
+
+/**
  * The signed-in user's lists, for the "Add to list" picker.
  *
  * Shaped for the row the Figma draws — avatar, title, author, a stack of the
@@ -76,6 +86,15 @@ export async function POST(request: Request) {
 
   if (!title) return NextResponse.json({ error: "A list needs a title." }, { status: 400 });
   if (incoming.length === 0) return NextResponse.json({ error: "Add at least one title." }, { status: 400 });
+  if (title.length > MAX_TITLE) {
+    return NextResponse.json({ error: `List titles can be ${MAX_TITLE} characters at most.` }, { status: 400 });
+  }
+  if (description.length > MAX_DESCRIPTION) {
+    return NextResponse.json({ error: `Descriptions can be ${MAX_DESCRIPTION} characters at most.` }, { status: 400 });
+  }
+  if (incoming.length > MAX_ITEMS) {
+    return NextResponse.json({ error: `A list can hold ${MAX_ITEMS} titles at most.` }, { status: 400 });
+  }
 
   try {
     // Everything is resolved BEFORE the list is created, so a lookup that
@@ -106,16 +125,22 @@ export async function POST(request: Request) {
 
     if (targets.length === 0) return NextResponse.json({ error: "Add at least one title." }, { status: 400 });
 
-    const list = await db.list.create({
-      data: { userId: user.id, title, description: description || null, isRanked },
-      select: { id: true },
-    });
-
+    // One nested write, so the list and its items land together or not at all.
+    // As two separate writes, a failure in between left an empty list behind,
+    // and the retry the error invited made a second one.
+    //
     // Positions are the order the user arranged them in, which is what a
     // ranked list numbers and what "List order" sorts by. Duplicates were
-    // already prevented client-side, so this can be a straight createMany.
-    await db.listItem.createMany({
-      data: targets.map((target, i) => ({ listId: list.id, position: i + 1, ...target })),
+    // already prevented client-side.
+    const list = await db.list.create({
+      data: {
+        userId: user.id,
+        title,
+        description: description || null,
+        isRanked,
+        items: { create: targets.map((target, i) => ({ position: i + 1, ...target })) },
+      },
+      select: { id: true },
     });
 
     return NextResponse.json({ ok: true, id: list.id });

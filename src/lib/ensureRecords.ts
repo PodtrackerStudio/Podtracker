@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { lookupPodcast, fetchPodcastFeed } from "./podcastApi";
 import { getPodcastDetail } from "./podcastDetail";
-import { episodeKeyFromGuid } from "./episodeKey";
+import { episodeKeyFromGuid, showScopedGuid } from "./episodeKey";
 
 /**
  * Materialises the `Podcast` / `Episode` rows a write needs.
@@ -39,6 +39,15 @@ export async function ensurePodcast(externalId: string): Promise<string> {
   // failed write rather than an unhandled crash.
   if (!detail) {
     throw new Error(`No podcast on iTunes for externalId ${externalId} — refusing to create a row.`);
+  }
+
+  // The same refusal for the other way to get stand-in data. Non-numeric ids,
+  // the legacy slugs, still get the built-in placeholder (`isLive: false`), and
+  // `/podcast/jre` renders working Follow, Rate, Log and List buttons. Using any
+  // of them, or calling the API with any made-up string, permanently wrote a
+  // "Modern Wisdom" row under that id. None existed on 2026-11-06.
+  if (!detail.isLive) {
+    throw new Error(`externalId ${externalId} only has placeholder data — refusing to create a row.`);
   }
 
   const created = await db.podcast.upsert({
@@ -87,26 +96,51 @@ export async function ensureEpisode(podcastExternalId: string, episodeKey: strin
 
   const podcastId = await ensurePodcast(podcastExternalId);
 
+  const scoped = showScopedGuid(podcastExternalId, match.guid);
+
   const existing = await db.episode.findFirst({
-    where: { podcastId, externalId: match.guid },
+    where: { podcastId, externalId: { in: [match.guid, scoped] } },
     select: { id: true },
   });
   if (existing) return existing.id;
 
-  const created = await db.episode.create({
-    data: {
-      podcastId,
-      externalId: match.guid,
-      title: match.title,
-      description: match.description,
-      coverUrl: match.coverUrl ?? podcast.artworkUrl,
-      audioUrl: match.audioUrl,
-      durationSeconds: match.durationSeconds,
-      publishedAt: new Date(match.publishedAt),
-    },
-    select: { id: true },
-  });
-  return created.id;
+  const data = {
+    podcastId,
+    title: match.title,
+    description: match.description,
+    coverUrl: match.coverUrl ?? podcast.artworkUrl,
+    audioUrl: match.audioUrl,
+    durationSeconds: match.durationSeconds,
+    publishedAt: new Date(match.publishedAt),
+  };
+
+  try {
+    const created = await db.episode.create({ data: { ...data, externalId: match.guid }, select: { id: true } });
+    return created.id;
+  } catch (error) {
+    if ((error as { code?: string })?.code !== "P2002") throw error;
+
+    // Two cases reach here, and both used to fail the request with a 502.
+    //
+    //   1. A race: two first actions on the same new episode, such as a double
+    //      click on Rate. The other request's row is there now.
+    //   2. Another show already holds this guid (`Episode.externalId` is unique
+    //      across the table). The episode is stored under this show's scope
+    //      instead; see `showScopedGuid`.
+    const raced = await db.episode.findFirst({
+      where: { podcastId, externalId: match.guid },
+      select: { id: true },
+    });
+    if (raced) return raced.id;
+
+    const stored = await db.episode.upsert({
+      where: { externalId: scoped },
+      create: { ...data, externalId: scoped },
+      update: {},
+      select: { id: true },
+    });
+    return stored.id;
+  }
 }
 
 export { episodeKeyFromGuid };

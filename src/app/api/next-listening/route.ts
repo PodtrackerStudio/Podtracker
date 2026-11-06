@@ -56,19 +56,20 @@ export async function DELETE(request: Request) {
 
   // No ensure* here: you cannot have added something whose rows were never
   // created, so a missing row just means there is nothing to remove.
-  const list = await db.list.findFirst({ where: { userId: user.id, isWatchlist: true }, select: { id: true } });
-  if (!list) return NextResponse.json({ ok: true, added: false });
-
   const podcast = await db.podcast.findUnique({ where: { externalId: String(externalId) }, select: { id: true } });
   if (!podcast) return NextResponse.json({ ok: true, added: false });
+
+  // Every watchlist the user owns, not the first one found. If a race ever made
+  // two, removing from just one left the item showing, after reporting success.
+  const inWatchlist = { userId: user.id, isWatchlist: true };
 
   if (episodeKey) {
     const episodes = await db.episode.findMany({ where: { podcastId: podcast.id }, select: { id: true, externalId: true } });
     const { episodeKeyFromGuid } = await import("@/lib/episodeKey");
     const match = episodes.find((e) => e.externalId && episodeKeyFromGuid(e.externalId) === String(episodeKey));
-    if (match) await db.listItem.deleteMany({ where: { listId: list.id, episodeId: match.id } });
+    if (match) await db.listItem.deleteMany({ where: { list: inWatchlist, episodeId: match.id } });
   } else {
-    await db.listItem.deleteMany({ where: { listId: list.id, podcastId: podcast.id } });
+    await db.listItem.deleteMany({ where: { list: inWatchlist, podcastId: podcast.id } });
   }
 
   return NextResponse.json({ ok: true, added: false });

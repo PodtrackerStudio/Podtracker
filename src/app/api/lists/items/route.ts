@@ -78,6 +78,8 @@ export async function DELETE(request: Request) {
   if (!item) return NextResponse.json({ ok: true, removed: false });
   if (item.list.userId !== user.id) return NextResponse.json({ error: "That isn't your list." }, { status: 403 });
 
-  await db.listItem.delete({ where: { id: item.id } });
-  return NextResponse.json({ ok: true, removed: true });
+  // deleteMany, not delete: a second click arriving between the read above and
+  // this write would otherwise hit P2025 and 500. Same outcome either way.
+  const { count } = await db.listItem.deleteMany({ where: { id: item.id } });
+  return NextResponse.json({ ok: true, removed: count > 0 });
 }

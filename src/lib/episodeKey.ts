@@ -20,7 +20,28 @@ import { createHash } from "crypto";
  * never lost.
  */
 export function episodeKeyFromGuid(guid: string): string {
-  return createHash("sha256").update(guid).digest("hex").slice(0, 12);
+  return createHash("sha256").update(guid.replace(SHOW_SCOPE, "")).digest("hex").slice(0, 12);
+}
+
+/**
+ * The prefix on an `Episode.externalId` stored under its show's scope.
+ *
+ * `Episode.externalId` is unique across the whole table, but guids are only
+ * unique within a feed. A guid that two shows share — a crossover episode, a
+ * show re-published under a new feed, a feed numbering its guids 1, 2, 3 —
+ * could never be stored for the second show: every rate, log or list-add on it
+ * failed. `ensureEpisode` stores that second copy as
+ * `pt-show:<itunes id>::<guid>`. Making the column unique per show would be
+ * cleaner, but it needs a migration on the live database.
+ *
+ * `episodeKeyFromGuid` strips the prefix, so a scoped row hashes to the same
+ * route key as the episode in the feed and every existing lookup still matches.
+ * No real guid starts with `pt-show:`.
+ */
+const SHOW_SCOPE = /^pt-show:\d+::/;
+
+export function showScopedGuid(showExternalId: string, guid: string): string {
+  return `pt-show:${showExternalId}::${guid}`;
 }
 
 /**

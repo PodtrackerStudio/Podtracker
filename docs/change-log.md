@@ -129,6 +129,42 @@ rejected. This is the part that saves the most time later.
   use in the confirm-signup template. The POST route accepted it; the page
   said "That link didn't work".
 
+#### Part 2 — API routes (second commit)
+
+- **`ensureEpisode` failed permanently on shared guids.** `Episode.externalId`
+  is unique across the table, but the lookup filtered by show, so a guid
+  already stored for another show missed, `create` threw P2002, and every
+  rate, log, list-add and next-listening action on that episode returned 502.
+  Shared guids happen with crossovers, a show moved to a new feed, or feeds
+  numbering guids 1, 2, 3. The same failure hit two concurrent first actions
+  on a new episode.
+
+  Now, on P2002, it re-reads (the race case), and otherwise stores the episode
+  as `pt-show:<itunes id>::<guid>` (`showScopedGuid`). `episodeKeyFromGuid`
+  strips that prefix, so the stored row hashes to the same route key and all
+  five places that hash `Episode.externalId` still match. Checked: scoped and
+  plain guids give the same key. Making the column unique per show is the
+  cleaner fix, but it needs a migration on the live database.
+- **`ensurePodcast` refuses placeholder data** (`isLive: false`). Non-numeric
+  legacy slugs still render the built-in "Modern Wisdom" page with working
+  buttons, and acting on one wrote that fiction as a permanent row. None
+  existed (checked).
+- **`POST /api/lists`** creates the list and its items in one nested write.
+  Two writes could leave an empty list behind, and a retry made a duplicate.
+  It now caps items at 100, the title at 200 characters and the description
+  at 2,000. Each item can cost an iTunes lookup plus a feed fetch.
+- **Next listening:** the watchlist lookup is ordered oldest-first,
+  `getNextListening` reads items across all of a user's watchlists, and
+  DELETE removes from all of them. Find-then-create could make two
+  watchlists, and an unordered `findFirst` then split items and could
+  "remove" from the wrong one. None are duplicated today (checked).
+- **`DELETE /api/lists/items`** uses `deleteMany`, so a double click no
+  longer 500s on P2025.
+- **`POST /api/log`** rejects a non-string `reviewText` (it used to 502 at
+  Prisma) and caps reviews at 10,000 characters. The longest so far is 680.
+- **`/api/follow` and `/api/favorites`** catch database errors and return
+  JSON. A blip used to be a bare 500 with no `error` for the button to show.
+
 **Verified:** `tsc` and `eslint` clean. On the dev server, `/auth/confirm?type=email`
 shows "Confirm my email", both account routes answer 401 when signed out, and
 forgot-password answers the same as before. **Not verified with a signed-in
