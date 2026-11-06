@@ -66,7 +66,7 @@ export const getCurrentUser = cache(async () => {
   // Explicit field list, not `select: undefined` — this shape is what all 29
   // callers see, and several of them hand it to Client Components. Nothing
   // secret should be able to ride along.
-  return db.user.findUnique({
+  const profile = await db.user.findUnique({
     where: { id: authUser.id },
     select: {
       id: true,
@@ -80,6 +80,20 @@ export const getCurrentUser = cache(async () => {
       createdAt: true,
     },
   });
+
+  // Supabase owns the email. After a confirmed change, bring the profile's copy
+  // into line the first time the person is seen. See `api/account/route.ts`.
+  // A failure here only delays the copy, so it never blocks the request.
+  if (profile && authUser.email && authUser.email.toLowerCase() !== profile.email.toLowerCase()) {
+    try {
+      await db.user.update({ where: { id: profile.id }, data: { email: authUser.email } });
+      profile.email = authUser.email;
+    } catch (error) {
+      console.error("[auth] could not sync the profile email:", error);
+    }
+  }
+
+  return profile;
 });
 
 // `authErrorMessage` moved to `authErrors.ts` (2026-10-24) and is re-exported

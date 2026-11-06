@@ -4,7 +4,10 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon } from "@/components/icons";
 import { PASSWORD_HINT } from "@/lib/passwordPolicy";
+import { usernameToPath } from "@/lib/routeParams";
 import styles from "./settings.module.css";
+
+const AVATAR_MAX_SIDE = 400;
 
 type User = {
   username: string;
@@ -63,15 +66,55 @@ export function SettingsForm({ user }: { user: User }) {
     setPwStatus({ type: "success", text: "Password changed. Any other devices have been signed out." });
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  /**
+   * Shrinks the chosen picture before it is saved.
+   *
+   * Avatars are stored as data URIs and sent inside every page that shows one,
+   * so a phone photo saved as-is cost megabytes on every one of those pages:
+   * the largest on 2026-11-06 was 3.9 MB. Nothing displays an avatar wider
+   * than about 200px, so 400px on the longest side stays sharp on a retina
+   * screen at a few tens of KB. WebP keeps transparency; browsers that cannot
+   * encode it fall back to JPEG on white.
+   */
+  function shrinkImage(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, AVATAR_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("no canvas"));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        let data = canvas.toDataURL("image/webp", 0.85);
+        if (!data.startsWith("data:image/webp")) {
+          ctx.globalCompositeOperation = "destination-over";
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          data = canvas.toDataURL("image/jpeg", 0.85);
+        }
+        resolve(data);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("unreadable image"));
+      };
+      img.src = url;
+    });
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAvatarUrl(reader.result as string);
+    try {
+      setAvatarUrl(await shrinkImage(file));
       setAvatarChanged(true);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setStatus({ type: "error", text: "That picture couldn't be read. Try a PNG, JPEG or WebP." });
+    }
   }
 
   async function handleSave() {
@@ -91,17 +134,27 @@ export function SettingsForm({ user }: { user: User }) {
       }),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
     setSaving(false);
 
-    if (!res.ok) {
-      setStatus({ type: "error", text: data.error ?? "Something went wrong." });
+    if (!res.ok || !data) {
+      setStatus({ type: "error", text: data?.error ?? "Something went wrong." });
       return;
     }
 
-    setStatus({ type: "success", text: "Saved." });
+    // A new email only takes effect once its confirmation link is clicked, so
+    // put the field back to the address that still works for logging in.
+    if (data.emailPending) {
+      setEmail(user.email);
+      setStatus({
+        type: "success",
+        text: `Saved. We've sent a link to ${data.emailPending}. Your email changes once you click it, so keep logging in with ${user.email} until then.`,
+      });
+    } else {
+      setStatus({ type: "success", text: "Saved." });
+    }
     if (data.username !== user.username) {
-      router.push(`/user/${data.username}`);
+      router.push(`/user/${usernameToPath(data.username)}`);
     } else {
       router.refresh();
     }

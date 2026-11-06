@@ -71,6 +71,80 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-06 — Back-end audit: bugs, speed, security
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "go through all of the back end code, find any
+  bugs, errors, lag etc, make the website as smooth as possible and ensure that
+  vulnerabilities are to a minimal".
+- **Status:** In progress. Each part is its own commit, and this entry is
+  extended as they land. The dependency upgrade that started it is the entry
+  below.
+
+**How the audit was done**
+
+- Three read-only reviews: API routes, the `src/lib` data layer, and page-load
+  performance. Every finding acted on here was checked against the code first.
+- Read-only queries against production showed:
+  - **RLS is on for every public table with no policies**, so the public anon
+    key reads nothing through Supabase's REST API. Confirmed from outside:
+    `GET /rest/v1/User` with the anon key returns `[]`.
+  - The app's role has `BYPASSRLS`, so it is unaffected.
+  - No profile's email currently differs from its login's.
+  - 10 profiles have no login behind them, left over from before the Neon move.
+  - 3 users have avatars, stored as data URIs of up to **3.9 MB**.
+
+#### Part 1 — account and login (this commit)
+
+- **Settings could desynchronise the email** (`api/account`). A changed email
+  was written only to `User`; Supabase kept the old one. Afterwards:
+  - **Changing password always failed** with "Current password is incorrect",
+    because that route signed in with the profile's email.
+  - **Anyone could claim someone else's address.** When the real owner signed
+    up, our unique constraint refused them after Supabase had already created
+    their login.
+
+  Now a new address goes to `supabase.auth.updateUser({ email })`, which sends
+  a confirmation link (`emailRedirectTo` → `/auth/confirm?type=email_change`).
+  `getCurrentUser` copies Supabase's email onto the profile once they differ,
+  so the copy cannot depend on which template or link shape is in use. The
+  password route now signs in with Supabase's address. Settings tells the
+  person to click the link and keep logging in with the old address until they
+  do.
+- **`api/account` input is validated.** A malformed body or non-string field
+  used to 500. There are generous length caps (longest in use: 23, 23, none,
+  46). A username race now gives 409 instead of an uncaught P2002.
+- **Avatars:** the form shrinks the picture to ≤400px WebP (or JPEG on white
+  where WebP encoding is missing) before upload. The server accepts only
+  `data:image/(png|jpeg|webp|gif)` and at most 300,000 characters. The
+  existing oversized avatars are untouched; see Follow-ups.
+- **Signup with an already-confirmed email** returns a decoy user from
+  Supabase (random id, `identities: []`). We used to write a profile under
+  that id: unreachable, holding the username forever, and saying "check your
+  inbox" when nothing was sent. Now it returns 409, with the same wording the
+  existing P2002 path uses.
+- **`forgot-password` logs Supabase's error.** It still answers identically
+  either way. Before, a mail outage or rate limit was invisible.
+- **`/auth/confirm` accepts `type=email`**, the type Supabase's current docs
+  use in the confirm-signup template. The POST route accepted it; the page
+  said "That link didn't work".
+
+**Verified:** `tsc` and `eslint` clean. On the dev server, `/auth/confirm?type=email`
+shows "Confirm my email", both account routes answer 401 when signed out, and
+forgot-password answers the same as before. **Not verified with a signed-in
+session:** the email-change round trip and the avatar shrink need a real
+account and inbox. The logic was reviewed, not exercised.
+
+**Follow-ups**
+
+- The 3 existing avatars (up to 3.9 MB) need re-encoding, which means writing
+  to production data. That needs Phillip's go-ahead.
+- Supabase's **Change Email Address** template should link to
+  `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/settings`,
+  like the other two templates. With the default template the change still
+  works, through Supabase's own page, but scanners can spend the link.
+
+
 ### 2026-11-06 — Security upgrade: Next.js 16.4.3, Prisma 7.10.1
 
 - **Branch:** `main`

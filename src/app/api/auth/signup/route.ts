@@ -95,6 +95,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Could not create that account. Please try again." }, { status: 400 });
     }
 
+    // **An address that already has a confirmed account comes back as a decoy.**
+    // With confirmations on, Supabase does not error for a taken email; it
+    // returns a made-up user with a random id and no identities, so the
+    // response cannot be used to probe who is registered. Writing a profile
+    // under that id would create a row no login can ever reach, holding the
+    // chosen username forever, and tell the person to check an inbox nothing
+    // was sent to. The message matches the one the P2002 path below already
+    // gives for this case.
+    if (data.user.identities && data.user.identities.length === 0) {
+      return NextResponse.json(
+        { error: "An account with that email already exists. Try logging in, or reset your password." },
+        { status: 409 },
+      );
+    }
+
     // `session` is null when Supabase is set to confirm email addresses: the
     // credential exists but nobody is signed in until the link is clicked. The
     // profile row is still written now, so it is waiting when they return.

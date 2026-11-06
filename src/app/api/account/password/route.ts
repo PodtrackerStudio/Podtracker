@@ -44,10 +44,19 @@ export async function POST(request: Request) {
 
   const supabase = await createSupabaseServerClient();
 
+  // The address Supabase holds, not the profile's copy. They can differ while an
+  // email change waits for its confirmation link, and before 2026-11-06 Settings
+  // could make them differ permanently. Signing in with the profile's copy then
+  // failed every time, reported as "Current password is incorrect".
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+  if (!authUser?.email) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+
   // Proves they know the current password. This re-issues the session cookies
   // for the same user, which is harmless — they are already that user.
   const { error: verifyError } = await supabase.auth.signInWithPassword({
-    email: user.email,
+    email: authUser.email,
     password: currentPassword,
   });
   if (verifyError) {

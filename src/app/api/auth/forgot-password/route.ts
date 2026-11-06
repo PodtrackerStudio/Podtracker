@@ -39,11 +39,16 @@ export async function POST(request: Request) {
   // link in somebody's inbox.
   const origin = siteOrigin(request);
 
-  await supabase.auth.resetPasswordForEmail(email.trim(), {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
     redirectTo: `${origin}/auth/confirm?type=recovery`,
   });
 
-  // The result is ignored on purpose: an error here would reveal whether the
-  // address exists, which is exactly what this route refuses to disclose.
+  // Never shown to the caller: an error here would reveal whether the address
+  // exists, which is exactly what this route refuses to disclose. It is logged,
+  // though. Until 2026-11-06 it was dropped entirely, so a mail outage or
+  // Supabase's email rate limit looked from every side like a reset email that
+  // simply never came. Same pattern as `resend-confirmation`.
+  if (error) console.error("[forgot-password] supabase rejected:", error.status, error.message);
+
   return sameAnswer;
 }

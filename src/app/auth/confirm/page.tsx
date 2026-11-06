@@ -42,6 +42,15 @@ const COPY: Record<string, { heading: string; body: string; action: string }> = 
     body: "One click and your account is ready.",
     action: "Confirm my email",
   },
+  // What Supabase's current docs put in the confirm-signup template
+  // (`type=email`, which replaced `signup`). `POST /api/auth/confirm` already
+  // accepted it, but this page didn't, so a template following those docs would
+  // have shown "That link didn't work" for every new account.
+  email: {
+    heading: "Confirm your email",
+    body: "One click and your account is ready.",
+    action: "Confirm my email",
+  },
   email_change: {
     heading: "Confirm your new address",
     body: "Click below to finish changing the email on your account.",

@@ -5,6 +5,18 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Account and login fixes.**
+  - **Email changes in Settings now go through Supabase**, with a confirmation
+    link. Before, a changed email silently broke "change password" and let
+    anyone claim someone else's address.
+  - **Profile pictures are shrunk to 400px before upload and capped on the
+    server.** Some were 3.9 MB.
+  - **Settings input is validated**, so a bad request gets a clear error
+    instead of a 500.
+  - **Signup no longer creates an unreachable profile** for an email that
+    already has an account.
+  - **Password-reset email failures are now logged.**
+  - **`/auth/confirm` accepts `type=email` links.**
 - **2026-11-06 — Security: Next.js 16.2.11 → 16.4.3, Prisma 7.9 → 7.10.1.**
   `npm audit` reported 13 vulnerable packages (1 critical, 11 high). Among them
   were unauthenticated remote-code-execution flaws in Next.js, including one in
