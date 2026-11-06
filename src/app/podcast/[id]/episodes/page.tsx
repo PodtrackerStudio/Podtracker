@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { getEpisodeList } from "@/lib/episodeDetail";
-import { EpisodeListClient } from "./EpisodeListClient";
+import { getEpisodePage } from "@/lib/episodeDetail";
+import { EpisodeListClient, PAGE_SIZE } from "./EpisodeListClient";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -19,12 +19,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function FullEpisodeListPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { podcastTitle, episodes } = await getEpisodeList(id);
+  // Only the first page is rendered; the rest is fetched as it's asked for.
+  // See `getEpisodePage`.
+  const { podcastTitle, episodes, total } = await getEpisodePage(id, { sort: "newest", offset: 0, limit: PAGE_SIZE });
 
   return (
     <>
       <SiteNav />
-      <EpisodeListClient podcastId={id} podcastTitle={podcastTitle} episodes={episodes} />
+      <EpisodeListClient podcastId={id} podcastTitle={podcastTitle} initialEpisodes={episodes} total={total} />
       <SiteFooter />
     </>
   );

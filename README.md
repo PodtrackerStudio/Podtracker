@@ -5,6 +5,10 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Full episode lists load a page at a time.** The page used to
+  send every episode at once: 928 KB for Joe Rogan's 2,777. It now sends the
+  first 20 (32 KB), and "Load more" and Newest/Oldest fetch the rest from
+  `/api/podcast/[id]/episodes`.
 - **2026-11-06 — Security hardening.**
   - **Write requests to `/api/*` from other websites are refused (403).** This
     blocks cross-site request forgery, including a trick that could sign a

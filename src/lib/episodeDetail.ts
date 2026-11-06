@@ -117,41 +117,66 @@ export type EpisodeListEntry = {
   img: string;
 };
 
-export type EpisodeList = {
+export type EpisodePage = {
   podcastTitle: string;
   episodes: EpisodeListEntry[];
+  /** How many episodes the feed has in all, so the page knows when to stop. */
+  total: number;
   isLive: boolean;
 };
 
+export type EpisodeSort = "newest" | "oldest";
+
+/** The most one request may ask for. The page asks for 20 at a time. */
+export const EPISODE_PAGE_MAX = 50;
+
 /**
- * Every episode of a show, newest first, for the full episode list page.
+ * One page of a show's episodes, for the full episode list page and the
+ * `/api/podcast/[id]/episodes` route its "Load more" calls.
  *
- * The whole feed, not a slice — this page is the only route to episodes older
- * than the four in the "Recent episodes" strip. Feeds are cached for an hour,
- * so this is no more expensive than any other page on the show.
+ * **Paged since 2026-11-06.** It used to return the whole feed, which the page
+ * shipped to the browser in one piece although it shows 20 at a time:
+ * Joe Rogan's list was 928 KB of HTML for 2,700 episodes, mostly never
+ * displayed. Only the requested slice is mapped and hashed. The feed itself is
+ * cached in memory (see `fetchPodcastFeed`), so asking for page two costs no
+ * second fetch or parse.
  *
- * Never throws; an unreachable feed yields an empty list the page can render
+ * Never throws; an unreachable feed yields an empty page the client can render
  * honestly rather than a 500.
  */
-export async function getEpisodeList(podcastId: string): Promise<EpisodeList> {
-  const empty = { podcastTitle: "", episodes: [], isLive: false };
+export async function getEpisodePage(
+  podcastId: string,
+  { sort = "newest", offset = 0, limit = 20 }: { sort?: EpisodeSort; offset?: number; limit?: number } = {},
+): Promise<EpisodePage> {
+  const empty = { podcastTitle: "", episodes: [], total: 0, isLive: false };
   if (!/^\d+$/.test(podcastId)) return empty;
 
   const podcast = await lookupPodcast(podcastId).catch(() => null);
   if (!podcast?.feedUrl) return empty;
 
   const feed = await fetchPodcastFeed(podcast.feedUrl).catch(() => null);
-  if (!feed) return { podcastTitle: podcast.title, episodes: [], isLive: false };
+  if (!feed) return { podcastTitle: podcast.title, episodes: [], total: 0, isLive: false };
+
+  const all = feed.episodes;
+  const start = Math.max(0, Math.floor(offset));
+  const count = Math.min(EPISODE_PAGE_MAX, Math.max(1, Math.floor(limit)));
+  // The feed is newest-first (sorted in `fetchPodcastFeed`), so "oldest" reads
+  // it from the other end without copying all of it.
+  const slice =
+    sort === "oldest"
+      ? all.slice(Math.max(0, all.length - start - count), all.length - start).reverse()
+      : all.slice(start, start + count);
 
   return {
     podcastTitle: podcast.title,
-    episodes: feed.episodes.map((e) => ({
+    episodes: slice.map((e) => ({
       id: episodeKeyFromGuid(e.guid),
       title: e.title,
       date: formatDate(e.publishedAt),
       // Many feeds set per-episode art; the rest inherit the show cover.
       img: e.coverUrl ?? podcast.artworkUrl,
     })),
+    total: all.length,
     isLive: true,
   };
 }

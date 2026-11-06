@@ -315,6 +315,39 @@ Checked on the dev server:
   each need allowing, and a wrong policy breaks pages silently. It is listed
   as a follow-up rather than guessed at.
 
+#### Part 7 — paged episode list (seventh commit)
+
+`/podcast/[id]/episodes` shipped the whole feed as a prop and showed 20 rows
+at a time: **928 KB of HTML for JRE's 2,777 episodes**.
+
+- `getEpisodeList` became **`getEpisodePage(id, { sort, offset, limit })`**.
+  It maps and hashes only the requested slice, reading "oldest" from the end
+  of the newest-first feed without copying it, and returns `total`. Limit is
+  at most 50. The parsed feed is cached in memory, so later pages cost no
+  fetch or parse.
+- New **`GET /api/podcast/[id]/episodes`** with
+  `?sort=newest|oldest&offset=&limit=`. It returns 400 for a bad offset or
+  limit, and is cached at the edge (`s-maxage=300, swr=3600`).
+- The page renders the newest 20. `EpisodeListClient` appends pages on "Load
+  more" and refetches from 0 when the sort changes. The button reads
+  "Loading…" while waiting, and a failure shows one line asking to try again.
+  The markup is otherwise unchanged. Keys include the index, because
+  empty-guid episodes share an id (the known collision) and pages are
+  appended.
+
+Checked on the dev server:
+
+| Request | Result |
+|---|---|
+| JRE page | 200, **32,141 B** |
+| newest, offset 0 | #2577, #2576, #2575 |
+| newest, offset 20 | #2559… |
+| oldest, offset 0 | #1 Brian Redban (Dec 24, 2009), #2, #3 |
+| oldest past the end | `[]` |
+| `offset=-1`, `limit=500` | 400 |
+
+**Not checked:** clicking the buttons in a browser.
+
 **Verified:** `tsc` and `eslint` clean. On the dev server, `/auth/confirm?type=email`
 shows "Confirm my email", both account routes answer 401 when signed out, and
 forgot-password answers the same as before. **Not verified with a signed-in
