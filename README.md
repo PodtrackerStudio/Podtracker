@@ -5,6 +5,12 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Discord bot is now one command, `/analytics`, drawn like
+  Vercel's dashboard.** It replies with an image: visitors and page views with
+  change against the previous period, a visitors chart, and Pages, Referrers,
+  Countries, Devices, Browsers and OS panels, plus an "Open in Vercel" button.
+  Rendered with `next/og` in the Geist font (bundled, open font license).
+  `/traffic`, `/toppages`, `/referrers` and `/stats` are retired.
 - **2026-11-06 — Discord bot: today's visits were missing from `/traffic`.**
   Vercel rounds a query's end time down to midnight, so totals left out the
   current day and showed 0. Queries now run one unit past "now", and top pages

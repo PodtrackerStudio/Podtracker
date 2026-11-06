@@ -71,6 +71,74 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-06 — `/analytics`: one command that looks like Vercel's dashboard
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "make it just /analytics as the only command and
+  have it show everything that vercel shows but make it look very nice, very
+  vercel, sleek minimalist".
+- **Status:** Complete. Rendered against live data and verified locally. The
+  commands are re-registered after this push.
+
+**What changed**
+
+- **One command.** `/analytics [period]` replaces `/traffic`, `/toppages`,
+  `/referrers` and `/stats`. Registration replaces the whole command set, so
+  the old four disappear from Discord. `/stats` went with them: it was database
+  numbers, not Vercel's, and Phillip asked for Vercel only.
+  `src/lib/discord/siteStats.ts` is deleted, and `npm run stats` still exists.
+- **The reply is an image.** Discord embeds cannot look like a dashboard, so
+  `analyticsCard.tsx` draws one with `next/og` (Satori + Resvg, already part of
+  Next): 1600×1560, black, Geist, hairline borders, a blue area chart, and six
+  breakdown panels with proportional row bars. It is uploaded as a multipart
+  attachment, with one "Open in Vercel" link button and no text.
+- **Everything the dashboard shows that the API exposes:** visitors, page
+  views, change against the previous period, visitors over time, and Pages,
+  Referrers, Countries, Devices, Browsers and Operating Systems. **No bounce
+  rate:** the query API has no such metric.
+- `vercelAnalytics.ts` gained `report()`, which runs all nine queries in
+  parallel. Page views and their change come from a time series covering two
+  periods, which is exact. Visitors come from `count`, because unique visitors
+  cannot be summed. For 24h there is no fair previous window at day
+  granularity, so that change is left out rather than shown wrong. Country
+  codes become names through `Intl.DisplayNames`.
+- Geist Regular, Medium and SemiBold are bundled in `src/lib/discord/fonts`
+  with their licence (`OFL.txt`). `next.config.ts` adds them via
+  `outputFileTracingIncludes`, because the path is built from `process.cwd()`
+  and is not traced on its own. Confirmed in the build's `.nft.json`.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/discord/analyticsCard.tsx` | Added — the image |
+| `src/lib/discord/fonts/*` | Added — Geist ×3 and its licence |
+| `src/lib/discord/vercelAnalytics.ts` | Rewritten — `report()` and every breakdown |
+| `src/lib/discord/replies.ts` | Rewritten — image + link button |
+| `src/app/api/discord/route.ts` | Modified — multipart upload |
+| `src/lib/discord/commands.json` | Modified — `/analytics` only |
+| `src/lib/discord/siteStats.ts` | Deleted |
+| `next.config.ts` | Modified — trace the fonts into `/api/discord` |
+| `docs/discord-bot.md`, `.env.example`, `README.md` | Modified |
+
+**Verified**
+
+- Live Vercel data, with a stand-in for Discord that saved the uploaded PNG:
+  24h, 7d and 30d all render.
+- A sample with busy numbers, via a temporary route deleted before commit:
+  change badges, long paths truncating with "…", and "Others" sorted last.
+- Two fixes from looking at the output: the y-axis labels drifted from their
+  gridlines, and the x-axis left out today. Both are now positioned absolutely
+  at their point.
+- `tsc`, `eslint` and `next build` clean.
+
+**Follow-ups**
+
+- The image is 1600 px wide, so in Discord's inline preview the panel text is
+  small. Clicking it opens the full size. If Sasha reads it mostly on a phone,
+  a narrower two-column layout would be easier to read.
+
+
 ### 2026-11-06 — Discord bot that answers with site analytics
 
 - **Branch:** `main`

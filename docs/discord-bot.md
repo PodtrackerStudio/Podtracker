@@ -1,16 +1,20 @@
 # Discord analytics bot
 
-Slash commands in Discord that answer with how the site is doing:
+One slash command, `/analytics`, that answers with an image of Podtracker's
+Vercel Web Analytics dashboard, plus an **Open in Vercel** button:
 
-| Command | Answers with | Source |
-| --- | --- | --- |
-| `/traffic [period]` | Visitors, page views, and a day-by-day (or hour-by-hour) chart | Vercel Web Analytics |
-| `/toppages [period]` | The 10 most-visited pages | Vercel Web Analytics |
-| `/referrers [period]` | The sites sending visitors here | Vercel Web Analytics |
-| `/stats` | Accounts, active accounts, logs, reviews, ratings, follows, lists | Podtracker's database |
+- Visitors and page views, with the change against the previous period
+- Visitors over time, as an area chart
+- Pages, Referrers, Countries, Devices, Browsers and Operating Systems
 
-`period` is 24 hours, 7 days (the default) or 30 days. Analytics numbers are
-production traffic only.
+`period` is the last 24 hours, 7 days (the default) or 30 days. The numbers are
+production traffic only. Bounce rate is not shown, because Vercel's API does
+not provide it.
+
+The image is drawn by `src/lib/discord/analyticsCard.tsx` with `next/og`
+(Satori), in Geist, which is bundled in `src/lib/discord/fonts` under the SIL
+Open Font License. Satori lays out with flexbox only: every element with more
+than one child needs `display: flex`.
 
 ## How it works
 
@@ -21,10 +25,13 @@ There is no bot process to host. Discord sends each command to
 2. checks the user is on `DISCORD_ALLOWED_USER_IDS`, and otherwise replies
    privately with their id so they can be added;
 3. answers "thinking…" at once, because Discord allows only 3 seconds;
-4. fetches the numbers and edits that message with them.
+4. fetches the numbers, draws the image, and edits that message with it,
+   uploaded as a multipart attachment.
 
 The code lives in `src/lib/discord/`. To add a command, add it to
 `commands.json`, handle it in `replies.ts`, and run `npm run discord:register`.
+The script replaces the whole command set, so removing a command from the JSON
+removes it from Discord.
 
 ## Setup (one time, about 10 minutes)
 

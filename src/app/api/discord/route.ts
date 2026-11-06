@@ -96,13 +96,25 @@ export async function POST(request: Request) {
 
   after(async () => {
     const reply = await replyFor(command, options);
+
+    // An image goes up as multipart: the JSON as `payload_json`, the file as
+    // `files[0]`, matched by the `attachments` entry with id 0 in the payload.
+    const payload = { ...reply.payload, allowed_mentions: { parse: [] } };
+    let body: BodyInit;
+    const headers: Record<string, string> = {};
+    if (reply.file) {
+      const form = new FormData();
+      form.append("payload_json", JSON.stringify(payload));
+      form.append("files[0]", new Blob([new Uint8Array(reply.file.data)], { type: "image/png" }), reply.file.name);
+      body = form;
+    } else {
+      body = JSON.stringify(payload);
+      headers["Content-Type"] = "application/json";
+    }
+
     const res = await fetch(
       `${DISCORD_API}/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...reply, allowed_mentions: { parse: [] } }),
-      },
+      { method: "PATCH", headers, body },
     ).catch((error: unknown) => {
       console.error("[discord] could not reach Discord to deliver the reply:", error);
       return null;
