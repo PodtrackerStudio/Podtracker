@@ -3,7 +3,6 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import styles from "../signup/auth.module.css";
 
 export function LoginForm({
@@ -131,9 +130,6 @@ export function LoginForm({
             {submitting ? "Logging in…" : "Login"}
           </button>
         </form>
-        {/* Outside the <form>: it navigates to Google rather than submitting,
-            so nesting it would risk being treated as a submit button. */}
-        <GoogleSignInButton styles={styles} />
         <div className={styles.authSwitch}>
           Don&apos;t have an account? <Link href="/signup">Create one</Link>
         </div>

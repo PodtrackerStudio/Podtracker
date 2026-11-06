@@ -77,8 +77,29 @@ rejected. This is the part that saves the most time later.
 - **Requested by:** sashaknyshjr@gmail.com — "let's just start on google". Apple
   rejected over the $99/yr developer membership, Facebook over its missing-email
   case, Discord declined.
-- **Status:** **Code complete, NOT live.** It cannot work until the Google and
-  Supabase dashboards are configured — see Handover.
+- **Status:** **Reverted the same day — see the update below.** The code was
+  complete but never went live: it needed Google Cloud and Supabase dashboard
+  configuration that was never done.
+
+> **UPDATE 2026-11-06 (later) — taken back out, not abandoned.** Sasha:
+> *"nevermind just remove the sign in with google for now, this is gonna take a
+> bit and I don't think it's crucial for now."* Reverted in the commit directly
+> after this one.
+>
+> **Nothing was wrong with it.** It was blocked on the three dashboard steps in
+> Handover below, which are account work nobody had done — so the button was on
+> the live site doing nothing but failing. Removing it was the right call while
+> it sat unconfigured.
+>
+> **Restoring is one command:** `git revert <the revert commit>` brings back the
+> button, `/welcome`, `/api/auth/complete-profile` and the `/auth/callback`
+> change exactly as written. Do the three dashboard steps **first** — restoring
+> the code without them puts a broken button back on the site.
+>
+> **Deliberately kept, because they are not Google's:** the age and terms
+> checkbox on `/signup`, its `.consentRow` styling and the server-side
+> `agreedToTerms !== true` check all predate this work and are untouched. Only
+> the duplicate of that checkbox on `/welcome` went with the revert.
 
 **Why it was worth doing**
 

@@ -1,43 +1,6 @@
 import { NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-/**
- * Where to send someone once their session exists.
- *
- * **A Supabase session is only half an account here.** The profile row — and
- * with it the username, and every rating, review and list hanging off it —
- * lives in our own `User` table. Signing up with a password creates both in one
- * request. Signing in with Google creates only the Supabase half, because
- * Google has no username to give.
- *
- * Without this check that person lands on the site logged in as far as Supabase
- * is concerned and logged out as far as every page is concerned, since
- * `getCurrentUser` resolves them by looking for exactly this row. `/welcome`
- * asks for the username and finishes the job.
- *
- * Email-confirmation links are unaffected: `/api/auth/signup` writes the
- * profile row before the email is ever sent, so those always find one.
- */
-async function destinationAfterAuth(
-  supabase: SupabaseClient,
-  origin: string,
-  next: string,
-): Promise<string> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return `${origin}${next}`;
-
-  const profile = await db.user.findUnique({ where: { id: user.id }, select: { id: true } });
-  if (profile) return `${origin}${next}`;
-
-  // Carry `next` through so finishing setup lands where they were going.
-  const onward = next && next !== "/" ? `?next=${encodeURIComponent(next)}` : "";
-  return `${origin}/welcome${onward}`;
-}
 
 /**
  * Where Supabase's emailed links land — password resets and email confirmation.
@@ -99,8 +62,7 @@ export async function GET(request: Request) {
     // A recovery link proves control of the inbox, not knowledge of the
     // password, so it lands on the form that sets a new one rather than on the
     // signed-in site.
-    if (type === "recovery") return NextResponse.redirect(`${origin}/reset-password`);
-    return NextResponse.redirect(await destinationAfterAuth(supabase, origin, next));
+    return NextResponse.redirect(`${origin}${type === "recovery" ? "/reset-password" : next}`);
   }
 
   if (code) {
@@ -111,7 +73,7 @@ export async function GET(request: Request) {
       console.error("[auth/callback] exchangeCodeForSession failed:", error.message);
       return NextResponse.redirect(`${origin}/login?error=link-expired`);
     }
-    return NextResponse.redirect(await destinationAfterAuth(supabase, origin, next));
+    return NextResponse.redirect(`${origin}${next}`);
   }
 
   console.error("[auth/callback] link carried neither code nor token_hash:", request.url);
