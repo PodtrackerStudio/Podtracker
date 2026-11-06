@@ -3,6 +3,37 @@ import { feedTextToPlain } from "./feedText";
 
 const rssParser = new Parser();
 
+/**
+ * A feed host answered, and refused.
+ *
+ * **Why the status matters.** This used to be a plain `Error` carrying the
+ * status in its message, so every caller treated "this feed is private" and
+ * "this feed host is having a bad minute" identically — as a transient failure
+ * worth retrying, and then as an outage. For a **paid or subscriber-only
+ * podcast** that is permanently wrong: Apple lists the show and hands back a
+ * feed URL that answers 401 or 403 to anyone without a token, forever.
+ *
+ * That is how `/podcast/6822357740/episode/…` came to serve a crash page
+ * (2026-11-06). Apple knew the show, the feed refused us, and the episode page
+ * reported an outage and threw. Subscriber feeds get their own Apple listing,
+ * so this is a whole class of show, not one episode.
+ *
+ * `permanent` is the distinction worth acting on: a 4xx is the host's final
+ * answer and retrying cannot change it; a 5xx or a network error might.
+ */
+export class FeedFetchError extends Error {
+  readonly status: number;
+  readonly permanent: boolean;
+
+  constructor(status: number, feedUrl: string) {
+    super(`Feed fetch failed: ${status} for ${feedUrl}`);
+    this.name = "FeedFetchError";
+    this.status = status;
+    // 429 is a 4xx but explicitly means "later", so it stays retryable.
+    this.permanent = status >= 400 && status < 500 && status !== 429;
+  }
+}
+
 export type ItunesPodcastResult = {
   itunesId: number;
   title: string;
@@ -161,7 +192,7 @@ export async function fetchPodcastFeed(feedUrl: string): Promise<PodcastFeed> {
   if (cached && cached.expiresAt > Date.now()) return cached.feed;
 
   const res = await fetch(feedUrl, { next: { revalidate: REVALIDATE_SECONDS } });
-  if (!res.ok) throw new Error(`Feed fetch failed: ${res.status}`);
+  if (!res.ok) throw new FeedFetchError(res.status, feedUrl);
   const feed = await rssParser.parseString(await res.text());
 
   const episodes = feed.items.map(toFeedEpisode);

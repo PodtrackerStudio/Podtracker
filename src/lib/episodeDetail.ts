@@ -1,4 +1,4 @@
-import { lookupPodcast, fetchPodcastFeed } from "./podcastApi";
+import { lookupPodcast, fetchPodcastFeed, FeedFetchError } from "./podcastApi";
 import { episodeKeyFromGuid } from "./episodeKey";
 import { feedTextToPlain } from "./feedText";
 
@@ -231,8 +231,26 @@ export async function getEpisodeDetail(podcastId: string, episodeKey: string): P
   // is an answer, not an outage.
   if (!podcast.feedUrl) return { status: "not-found" };
 
-  const feed = await withRetry(() => fetchPodcastFeed(podcast.feedUrl!));
-  if (!feed) return { status: "unavailable" };
+  // Same shape as the lookup above, for the same reason: the feed host refusing
+  // us and the feed host being down are different answers.
+  //
+  // A **4xx is final** — overwhelmingly a paid or subscriber-only show, whose
+  // Apple listing is public while its feed answers 401/403 to anyone without a
+  // token. Retrying it twice and then reporting an outage is what made those
+  // shows serve a crash page. There is no episode list to show and there never
+  // will be without credentials, so it is `not-found`: an answer, like a show
+  // with no feed URL at all.
+  const feedResult = await withRetry(async () => {
+    try {
+      return { feed: await fetchPodcastFeed(podcast.feedUrl!) };
+    } catch (error) {
+      if (error instanceof FeedFetchError && error.permanent) return { feed: null };
+      throw error;
+    }
+  });
+  if (!feedResult) return { status: "unavailable" };
+  if (!feedResult.feed) return { status: "not-found" };
+  const feed = feedResult.feed;
 
   const index = feed.episodes.findIndex((e) => episodeKeyFromGuid(e.guid) === episodeKey);
   // The feed was read successfully and nothing in it matches, so this really is

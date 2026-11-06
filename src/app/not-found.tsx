@@ -22,9 +22,11 @@ export default function NotFound() {
     <div className={styles.wrap}>
       <h1 className={styles.title}>We couldn&apos;t find that</h1>
       <p className={styles.body}>
-        This page doesn&apos;t exist. If you were opening an episode, it may have dropped out of the
-        show&apos;s feed — some podcasts only publish their recent episodes, and once an episode
-        leaves the feed its page stops working, even though any ratings and reviews of it are kept.
+        This page doesn&apos;t exist — or it&apos;s an episode we can&apos;t read. Podtracker builds
+        episode pages from each show&apos;s public RSS feed, so two kinds of episode end up here:
+        ones from subscriber-only shows, which Apple lists but keeps behind a paid feed, and older
+        ones from shows that only publish their recent episodes. Any ratings and reviews you wrote
+        are kept either way.
       </p>
       <div className={styles.actions}>
         <Link href="/explore" className={styles.btn}>

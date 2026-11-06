@@ -78,9 +78,37 @@ rejected. This is the part that saves the most time later.
   `/podcast/6822357740/episode/7e71ceebd139`, which "said server crashed".
   Later: "the rest of the site works, just this specific episode doesn't even
   though it should be available."
-- **Status:** Partial. **The reported episode's root cause is NOT found** — see
-  Follow-ups. What shipped makes the failure survivable and fixes a different
-  500 found while looking.
+- **Status:** **Root cause found and fixed** (second commit, same day). It was
+  not specific to that episode: Podtracker crashed on **every paid or
+  subscriber-only podcast on Apple**.
+
+**The actual bug**
+
+The episode is from Matt and Shane's Secret Podcast, which sells its back
+catalogue through Patreon and publishes a **separate subscriber-only feed for
+Apple** — their own Patreon post tells members that Apple needs "a different
+feed". A subscriber feed gets its own Apple Podcasts listing, which is why the
+id in the URL (`6822357740`) is so much higher than a show registered years
+ago.
+
+So Apple answers the lookup perfectly well and hands back a feed URL that
+replies **401/403 to anyone without a token, permanently**. `fetchPodcastFeed`
+threw a plain `Error` carrying the status in its message, so every caller
+treated that identically to a feed host having a bad minute:
+`withRetry` tried twice more, gave up, and `getEpisodeDetail` reported
+`unavailable` — which makes the page **throw**. Hence "server crashed" on one
+show while the rest of the site was fine.
+
+The show page survived the same failure the whole time, because it falls back
+to `placeholderDetail`. Only the episode page crashed — the same asymmetry as
+the unknown-id bug below.
+
+**The fix:** `FeedFetchError` carries `status` and `permanent`. A 4xx is the
+host's final answer (`permanent`, except 429, which means "later"); a 5xx or a
+network error is not. `getEpisodeDetail` now reports a permanent feed refusal
+as `not-found` — there is no episode list and never will be without
+credentials — and keeps `unavailable` for genuine outages. `not-found.tsx`
+explains the subscriber-only case, since it is now a real way to land there.
 
 **What changed**
 
@@ -150,21 +178,40 @@ Rendered in a real browser. This sandbox cannot reach Apple, which *is* the
 
 `npx tsc --noEmit` clean.
 
+**Verified — the subscriber-feed fix**
+
+A fixture server standing in for Apple: the lookup succeeds and returns a feed
+URL, and that feed answers a chosen status. The real `getEpisodeDetail` runs
+against it, so this is the whole path, not a unit test of a branch.
+
+| Feed answers | Meaning | Result | Time |
+| --- | --- | --- | --- |
+| 403 | subscriber-only — the reported bug | `not-found` | 77ms |
+| 401 | needs auth | `not-found` | 3ms |
+| 404 | feed URL gone | `not-found` | 3ms |
+| 429 | rate limited | `unavailable` | 860ms |
+| 503 | host down | `unavailable` | 857ms |
+
+The timings are the second half of the proof: permanent failures return
+immediately, while 429 and 503 take ~860ms — the two backoffs (250 + 600ms)
+still running. That 860ms path is exactly what a 403 used to do before
+reporting an outage and crashing the page.
+
 **Follow-ups**
 
-- **The reported episode still needs a root cause.** Nothing reproducible
-  offline crashes for one episode of a working show. The next step is the
-  **Vercel error code and request id** from the live page —
-  `FUNCTION_INVOCATION_TIMEOUT` and `FUNCTION_INVOCATION_FAILED` mean very
-  different things. A timeout is plausible: `CLAUDE.md` already records that
-  large feeds take ~3.5s to parse single-threaded, and a cold instance with an
-  empty `parsedFeedCache` has to parse the whole feed inside the function's
-  time limit.
+- **Subscriber-only shows now 404 instead of crashing, which is correct but
+  not kind.** A paid show is a legitimate thing to want to log, and the page
+  could say "this show's episodes are subscriber-only on Apple" and still offer
+  rating at the show level. Needs a design decision from Sasha; the data to do
+  it is already in `FeedFetchError.status`.
 - **Design.** `status.module.css` is plain by necessity — there is no Figma
   frame for either state. Replace it when there is one.
 - Decide on the empty-guid collision above.
 - These pages are styled but carry **no nav and no footer**: `error.tsx` must be
   a Client Component and `SiteNav` is a Server Component that reads auth.
+- A personal cloud environment named **Podtracker** was created for this repo
+  allowing `itunes.apple.com`, so a future session can query Apple directly.
+  This session could not move onto it while running.
 
 ### 2026-11-04 — Terms page restored with its placeholders answered
 
