@@ -71,6 +71,110 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-06 (later) — Episodes found by search no longer die on click
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — "how can I get episodes like that
+  presidents on the site", after establishing the episode "popped up in the
+  search engine, and only then when I click it nothing shows up". He chose the
+  recovery-hint approach from four options.
+- **Status:** Complete and verified end to end.
+
+**The structural problem**
+
+Podtracker had **two sources of truth for an episode and they disagree**:
+
+| | Source |
+| --- | --- |
+| Search | Apple's episode index, `/search?entity=podcastEpisode` |
+| Episode page | The show's RSS feed, rebuilt from scratch |
+
+Search receives the title, artwork, date, duration and guid from Apple, builds
+a link out of two of them and **throws the rest away**. The page then ignores
+all of it and tries to rebuild the episode from the show's feed, which needs
+the show's iTunes id to resolve.
+
+Two things break that, neither transient:
+
+1. **Apple's search returns shows its lookup will not serve.** Confirmed with
+   Sasha on 2026-11-06: `lookup?id=6822357740` answers `resultCount: 0`, with
+   and without `&entity=podcast`, for a show whose episode Podtracker's own
+   search had just listed. Apple's search index and lookup endpoint disagree —
+   a second instance of the mismatch already recorded for chart ids.
+2. **Feeds that publish only recent episodes.** Anything older is simply not
+   there to find.
+
+Either way search shows the episode and clicking it is a dead end. This was
+never one episode.
+
+**The fix**
+
+`hrefForSearchItem` adds `?t=<title>` to episode links. When the feed path
+returns `not-found`, the page calls `recoverEpisodeFromSearch`, which searches
+Apple for that title and accepts a result **only if
+`episodeKeyFromGuid(result.guid)` equals the key already in the URL**.
+
+That check is what makes the hint safe. The title only decides what to search
+for; it can never decide which episode is shown. A wrong, stale or hand-edited
+`t` finds nothing and the page 404s exactly as before. URLs without `t` —
+pasted, bookmarked, crawled — are completely unaffected.
+
+Recovered episodes are thinner by necessity: Apple's search carries no
+description and knows nothing of neighbours, so there is no summary and no
+Previous/Next. Everything needed to **rate, review and list** the episode is
+there, which is the point of the page.
+
+`generateMetadata` runs the same recovery through a shared helper, so the page
+and its metadata can never disagree about whether a URL renders — and episode
+pages are this site's largest search surface, so a page that renders with no
+title would waste the reason it exists.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/searchItem.ts` | Modified — episode links carry `?t=` |
+| `src/lib/episodeDetail.ts` | Added `recoverEpisodeFromSearch` |
+| `src/app/podcast/[id]/episode/[epId]/page.tsx` | Modified — `recoverFromHint`, used by the page and its metadata |
+
+**Verified**
+
+13 checks against a fixture iTunes reproducing the reported state — lookup
+returns `resultCount: 0` for a show the episode search happily returns
+episodes of:
+
+| Check | Result |
+| --- | --- |
+| No hint | `not-found`, unchanged |
+| Unresolvable show + correct hint | recovered, with show name, date, duration |
+| Truncated feed + correct hint | recovered |
+| Hint matching nothing | `null` |
+| Hint finding a **different** episode | `null` — guid hash is the only gate |
+| Blank hint | `null` |
+| Recovered episode's description / neighbours | empty and null, never invented |
+
+Then the real page against a dev server pointed at that fixture:
+
+| URL | Result |
+| --- | --- |
+| Without `?t=` | **HTTP 404**, "We couldn't find that" |
+| With `?t=` | **HTTP 200** — title, show, "September 14, 2026", "2h 0m", and a working **Rate** button |
+| `<title>` tag | "The Presidents Part 1 feat. Louis C.K. — Matt and Shane's Secret Podcast · Podtracker" |
+
+`npx tsc --noEmit` clean.
+
+**Follow-ups**
+
+- **Recovery is per-request and nothing is stored.** Every visit to such an
+  episode costs an Apple search. Once somebody rates one, `ensureEpisode` still
+  takes the feed path and will fail for exactly these episodes — **so rating a
+  recovered episode probably does not work yet.** That is the next thing to
+  check; the page offers the control.
+- The hint is only on links search produces. An episode reached from Explore,
+  trending or a stored review has no `t` and still 404s if its feed path fails.
+- `?t=` on a shared URL is ugly. It is a hint, not an identifier, so it can be
+  dropped once a better recovery key exists.
+
 ### 2026-11-06 — Error and not-found pages; a 500 on unknown podcast ids
 
 - **Branch:** `main`

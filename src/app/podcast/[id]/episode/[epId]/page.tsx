@@ -14,7 +14,7 @@ import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import { getEpisodeRatingSummaryByKey } from "@/lib/ratingSummary";
 import { getViewerEpisodeState } from "@/lib/viewerState";
 import { tierFromScore } from "@/lib/ratingTier";
-import { getEpisodeDetail } from "@/lib/episodeDetail";
+import { getEpisodeDetail, recoverEpisodeFromSearch, type EpisodeDetail } from "@/lib/episodeDetail";
 import styles from "./episode.module.css";
 
 // The mock `community` block that used to sit here — a 3.8 average over 591
@@ -49,16 +49,44 @@ const lists = [
  * decides whether that is a 404 or a retry, and metadata generation should not
  * pre-empt that decision.
  */
+/**
+ * Reads the `?t=` hint and tries to rebuild the episode from Apple's search.
+ *
+ * Shared by the page and `generateMetadata` so the two can never disagree
+ * about whether a given URL renders — a page that 404s while its metadata
+ * describes an episode, or the reverse, is worse than either on its own.
+ */
+async function recoverFromHint(
+  id: string,
+  epId: string,
+  searchParams: Promise<{ t?: string }>,
+): Promise<EpisodeDetail | null> {
+  const params = await searchParams.catch(() => null);
+  const hint = params?.t;
+  if (!hint) return null;
+  return recoverEpisodeFromSearch(id, epId, hint);
+}
+
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; epId: string }>;
+  searchParams: Promise<{ t?: string }>;
 }): Promise<Metadata> {
   const { id, epId } = await params;
 
   const result = await getEpisodeDetail(id, epId).catch(() => null);
-  if (!result || result.status !== "ok") return {};
-  const episode = result.episode;
+  // Recovered episodes get metadata too. Episode pages are this site's largest
+  // search surface, so letting a page that renders perfectly well go out with
+  // no title would throw away the reason it exists.
+  const episode =
+    result?.status === "ok"
+      ? result.episode
+      : result?.status === "not-found"
+        ? await recoverFromHint(id, epId, searchParams)
+        : null;
+  if (!episode) return {};
 
   const plain = episode.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   const description = plain.length > 200 ? `${plain.slice(0, 197).trimEnd()}…` : plain;
@@ -86,19 +114,30 @@ export async function generateMetadata({
   };
 }
 
-export default async function EpisodePage({ params }: { params: Promise<{ id: string; epId: string }> }) {
+export default async function EpisodePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string; epId: string }>;
+  searchParams: Promise<{ t?: string }>;
+}) {
   const { id, epId } = await params;
   const result = await getEpisodeDetail(id, epId);
 
-  // 404 only when the feed was read and genuinely has no such episode. An
-  // upstream hiccup throws instead, so a working episode is never reported as
-  // nonexistent — that bug made every trending episode on Explore 404 on
-  // 2026-08-27 while the same URLs worked minutes later.
-  if (result.status === "not-found") notFound();
+  // An upstream hiccup throws rather than 404ing, so a working episode is
+  // never reported as nonexistent — that bug made every trending episode on
+  // Explore 404 on 2026-08-27 while the same URLs worked minutes later.
   if (result.status === "unavailable") {
     throw new Error(`Could not reach the feed for podcast ${id} — the episode may still exist.`);
   }
-  const episode = result.episode;
+
+  // The feed genuinely has no such episode. Before giving up, try the title
+  // hint search put on the link: the feed path cannot reach episodes of shows
+  // Apple's lookup refuses, nor ones older than a truncated feed's window, and
+  // both were showing up in search and then dying on click.
+  const episode =
+    result.status === "ok" ? result.episode : await recoverFromHint(id, epId, searchParams);
+  if (!episode) notFound();
 
   // Real ratings as of 2026-10-03, replacing the mock block that sat behind
   // HAS_COMMUNITY_DATA. Gated on having any, not on the global switch.

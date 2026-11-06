@@ -1,4 +1,4 @@
-import { lookupPodcast, fetchPodcastFeed, FeedFetchError } from "./podcastApi";
+import { lookupPodcast, fetchPodcastFeed, searchEpisodes, FeedFetchError } from "./podcastApi";
 import { episodeKeyFromGuid } from "./episodeKey";
 import { feedTextToPlain } from "./feedText";
 
@@ -278,4 +278,68 @@ export async function getEpisodeDetail(podcastId: string, episodeKey: string): P
       nextId: newer ? episodeKeyFromGuid(newer.guid) : null,
     },
   };
+}
+
+/**
+ * Last resort when the feed cannot produce the episode: rebuild it from
+ * Apple's episode search, using the title the search result carried in `?t=`.
+ *
+ * **Why this exists.** The feed path has two failure modes that are not the
+ * user's fault and not transient. Apple's episode search returns shows its
+ * lookup endpoint will not serve, so the show cannot be resolved at all
+ * (`lookup?id=6822357740` → `resultCount: 0`, 2026-11-06, for an episode
+ * Podtracker's own search had just listed). And plenty of feeds publish only
+ * recent episodes, so anything older than the window is simply not in them.
+ * In both cases search had already shown the episode, with its title, artwork
+ * and date, and clicking it led to a dead page.
+ *
+ * **It cannot be spoofed into showing the wrong episode.** The title only
+ * decides *what to search for*; a candidate is accepted solely because
+ * `episodeKeyFromGuid(candidate.guid)` equals the key already in the URL. A
+ * wrong, stale or hand-edited `t` finds nothing and the page 404s as before.
+ * Where several results share that hash, the one whose show id also matches
+ * the route wins.
+ *
+ * What comes back is thinner than the feed version by necessity: Apple's
+ * search carries no episode description and knows nothing of neighbours, so
+ * there is no summary and no Previous/Next. Everything needed to rate, review
+ * and list the episode is there, which is the point of the page.
+ *
+ * Never throws — this is already the fallback, and a failure here must leave
+ * the 404 the caller was about to render.
+ */
+export async function recoverEpisodeFromSearch(
+  podcastId: string,
+  episodeKey: string,
+  titleHint: string,
+): Promise<EpisodeDetail | null> {
+  if (!podcastId || !episodeKey || !titleHint.trim()) return null;
+
+  try {
+    const results = await searchEpisodes(titleHint, 25);
+    const matches = results.filter((r) => episodeKeyFromGuid(r.guid) === episodeKey);
+    if (matches.length === 0) return null;
+
+    // The guid hash is the real check; the show id only breaks a tie.
+    const episode = matches.find((r) => String(r.showItunesId) === podcastId) ?? matches[0];
+
+    return {
+      id: episodeKey,
+      guid: episode.guid,
+      podcastId,
+      podcastTitle: episode.showTitle,
+      title: episode.title,
+      date: formatDate(episode.releaseDate),
+      duration: formatDuration(episode.durationSeconds),
+      coverUrl: episode.artworkUrl,
+      // Apple's search carries no description, and an invented one would be
+      // worse than none. The page renders an empty paragraph.
+      description: "",
+      // Neighbours come from feed order, which is exactly what is missing.
+      previousId: null,
+      nextId: null,
+    };
+  } catch {
+    return null;
+  }
 }

@@ -57,11 +57,30 @@ export type SearchItem = PodcastSearchItem | EpisodeSearchItem | UserSearchItem;
  */
 export type SearchScope = "all" | "shows" | "episodes" | "users";
 
+/**
+ * `?t=` on an episode link is a **recovery hint, never the source of truth.**
+ *
+ * The episode page rebuilds an episode from the show's RSS feed, which needs
+ * the show's iTunes id to resolve. Apple's episode *search* returns shows its
+ * *lookup* endpoint will not serve — confirmed on 2026-11-06, when
+ * `lookup?id=6822357740` answered `resultCount: 0` for a show that search had
+ * just returned an episode of. Feeds that carry only recent episodes cause the
+ * same thing from the other direction.
+ *
+ * Either way search knew the title, artwork and date and the link threw all of
+ * it away, so a result that was right there became a dead page. The title is
+ * enough for the page to find the episode again through Apple's search.
+ *
+ * The page works without it — a pasted or bookmarked link has no `t` and takes
+ * the normal feed path. It is only read after the feed path has already failed,
+ * and a wrong or stale value changes nothing, because the recovered episode
+ * still has to match the guid hash already in the URL.
+ */
 export function hrefForSearchItem(item: SearchItem): string {
   if (item.type === "user") return `/user/${item.username}`;
-  return item.type === "episode"
-    ? `/podcast/${item.showExternalId}/episode/${item.episodeKey}`
-    : `/podcast/${item.id}`;
+  if (item.type !== "episode") return `/podcast/${item.id}`;
+  const hint = item.title ? `?t=${encodeURIComponent(item.title)}` : "";
+  return `/podcast/${item.showExternalId}/episode/${item.episodeKey}${hint}`;
 }
 
 export function subtitleForSearchItem(item: SearchItem): string {
