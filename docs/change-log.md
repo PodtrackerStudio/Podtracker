@@ -77,9 +77,9 @@ rejected. This is the part that saves the most time later.
 - **Requested by:** Phillip — "go through all of the back end code, find any
   bugs, errors, lag etc, make the website as smooth as possible and ensure that
   vulnerabilities are to a minimal".
-- **Status:** In progress. Each part is its own commit, and this entry is
-  extended as they land. The dependency upgrade that started it is the entry
-  below.
+- **Status:** Complete: seven commits, all deployed and checked live. The
+  dependency upgrade that started it is the entry below. Leftovers are under
+  Follow-ups at the end.
 
 **How the audit was done**
 
@@ -354,16 +354,60 @@ forgot-password answers the same as before. **Not verified with a signed-in
 session:** the email-change round trip and the avatar shrink need a real
 account and inbox. The logic was reviewed, not exercised.
 
+#### Measured live after deploying
+
+Median TTFB over five requests, from the same machine:
+
+| Page | Before | After |
+|---|---|---|
+| `/podcast/1200361736` | 396 ms | 309 ms |
+| episode page | 367 ms | 277 ms |
+| `/user/Snezhana` | 366 ms | 288 ms |
+| `/user/foongous` | 347 ms | 282 ms |
+| `/explore`, `/search` | ~280 ms | ~275 ms (little database work) |
+
+Responses now carry `x-vercel-id: iad1::cle1`. Other checks on production:
+
+- JRE's `/episodes` is 24 KB (was 928 KB).
+- `/api/avatar/<id>` serves `image/jpeg`.
+- A cross-site POST gets 403.
+- The new headers are present.
+- `npm audit` reports 0 vulnerabilities.
+
 **Follow-ups**
 
-- The 3 existing avatars (up to 3.9 MB) need re-encoding, which means writing
-  to production data. That needs Phillip's go-ahead. They are no longer
-  embedded in pages, but the 3.9 MB one is still a 2.9 MB download the first
-  time it is shown.
-- Supabase's **Change Email Address** template should link to
+- **The 3 existing avatars need re-encoding**, which means writing to
+  production data, so it needs Phillip's go-ahead. They are no longer embedded
+  in pages, but the 3.9 MB one is still a 2.9 MB download the first time it is
+  shown. Better still would be Supabase Storage, which needs the service-role
+  key this app deliberately does not hold.
+- **The Change Email Address template.** In the Supabase dashboard it should
+  link to
   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/settings`,
   like the other two templates. With the default template the change still
   works, through Supabase's own page, but scanners can spend the link.
+- **Rating an episode recovered from search still fails.** `ensureEpisode`
+  only knows the feed path (the open follow-up from the 2026-11-06 recovery
+  entry, confirmed by tracing). Fixing it needs the client to send the title
+  so the server can repeat the search. Not done here: it is a feature change.
+- **Needs a migration, so it was not done on the live database:**
+  - a unique constraint on `ListItem (listId, podcastId/episodeId)` (two
+    simultaneous adds can duplicate a tile);
+  - one watchlist per user;
+  - `Episode.externalId` unique per show instead of `showScopedGuid`.
+- **Oversized selects remain** (`include: { podcast: true, … }` pulls show
+  notes for list tiles), and `/user/*/diary` loads every entry unbounded.
+  These matter less now that the database is in the same region. Paging the
+  diary is a design question.
+- **Every page with the nav is dynamic**, because `SiteNav` reads cookies, so
+  Explore, About and Donate cannot be cached. Next 16's `cacheComponents`,
+  with the signed-in part of the nav behind `<Suspense>`, would fix that. It
+  is a larger change.
+- **No full Content-Security-Policy yet**; see Part 6.
+- **Data to decide on, not code:** 10 `User` rows have no login behind them
+  (left over from before the Neon move), and 6 accounts never confirmed their
+  email.
+- **The rate limiter is per instance** (already documented in `rateLimit.ts`).
 
 
 ### 2026-11-06 — Security upgrade: Next.js 16.4.3, Prisma 7.10.1
