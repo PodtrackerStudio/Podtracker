@@ -603,6 +603,14 @@ Live results after the fix: 24h → 1 visitor, 4 page views, 25 hourly buckets
 ending at the current hour; top pages `/home` (2), `/following`, a profile;
 referrers all direct. That matches the test visits made after enabling.
 
+**Allow-list (later the same day):** `DISCORD_ALLOWED_USER_IDS` in Vercel
+production is `712458108953427968` (Phillip) and `779831401369042948` (Sasha),
+followed by a redeploy, since environment variables only reach new
+deployments. To add someone, append their id, which the bot's refusal shows
+them, and redeploy. The bot was invited with the `applications.commands`
+scope only, so it is not a guild member and cannot list members ("Unknown
+Guild"). That doesn't matter for slash commands.
+
 Setup progress: the Discord app is created (application id 1568277062425383023),
 the Interactions Endpoint URL has been accepted by Discord, and `DISCORD_*` and
 `VERCEL_*` are set in Vercel production. `DISCORD_ALLOWED_USER_IDS` is still

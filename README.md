@@ -5,6 +5,10 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Sasha added to the Discord bot.** `DISCORD_ALLOWED_USER_IDS`
+  in Vercel is now Phillip (`712458108953427968`) and Sasha
+  (`779831401369042948`), and production was redeployed. A setting, not code;
+  to add someone else, append their id with a comma and redeploy.
 - **2026-11-06 — Full episode lists load a page at a time.** The page used to
   send every episode at once: 928 KB for Joe Rogan's 2,777. It now sends the
   first 20 (32 KB), and "Load more" and Newest/Oldest fetch the rest from
