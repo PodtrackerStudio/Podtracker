@@ -5,6 +5,12 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Fix: full episode lists showed "No episodes found".**
+  Introduced by the paging change an hour earlier, and live until this fix.
+  The server page read the page size from a client component, which hands the
+  server a reference instead of the number. It now lives in
+  `src/lib/episodePaging.ts`. Load more and Newest/Oldest were checked by
+  clicking them in Chrome.
 - **2026-11-06 — Sasha added to the Discord bot.** `DISCORD_ALLOWED_USER_IDS`
   in Vercel is now Phillip (`712458108953427968`) and Sasha
   (`779831401369042948`), and production was redeployed. A setting, not code;

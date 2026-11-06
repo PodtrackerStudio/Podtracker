@@ -127,8 +127,10 @@ export type EpisodePage = {
 
 export type EpisodeSort = "newest" | "oldest";
 
-/** The most one request may ask for. The page asks for 20 at a time. */
+/** The most one request may ask for. */
 export const EPISODE_PAGE_MAX = 50;
+
+export { EPISODE_PAGE_SIZE } from "./episodePaging";
 
 /**
  * One page of a show's episodes, for the full episode list page and the

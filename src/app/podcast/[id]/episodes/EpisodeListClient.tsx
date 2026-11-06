@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { EpisodeListEntry, EpisodeSort } from "@/lib/episodeDetail";
+import { EPISODE_PAGE_SIZE as PAGE_SIZE } from "@/lib/episodePaging";
 import styles from "../episodeListing.module.css";
 
-export const PAGE_SIZE = 20;
 
 /**
  * The full episode list, from the show's RSS feed.

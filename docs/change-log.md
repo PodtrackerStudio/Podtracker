@@ -346,13 +346,45 @@ Checked on the dev server:
 | oldest past the end | `[]` |
 | `offset=-1`, `limit=500` | 400 |
 
-**Not checked:** clicking the buttons in a browser.
+**Not checked:** clicking the buttons in a browser. That gap is how the
+regression below shipped.
 
 **Verified:** `tsc` and `eslint` clean. On the dev server, `/auth/confirm?type=email`
 shows "Confirm my email", both account routes answer 401 when signed out, and
 forgot-password answers the same as before. **Not verified with a signed-in
 session:** the email-change round trip and the avatar shrink need a real
 account and inbox. The logic was reviewed, not exercised.
+
+#### Regression in Part 7, fixed
+
+**Part 7 broke `/podcast/[id]/episodes` in production for about an hour.**
+The page rendered "No episodes found for this show" above a "Load more"
+button.
+
+The cause: `page.tsx` imported `PAGE_SIZE` from `EpisodeListClient.tsx`, a
+`"use client"` module. On the server that import is a client reference, not
+`20`, so `getEpisodePage` got `limit: NaN` and sliced nothing.
+
+Part 7's checks missed it. They hit the API route directly, which never
+touched the constant, and measured the page's *size*, which looked plausible,
+without looking at its rows. It was found by screenshotting production during
+the polish pass.
+
+The fix is `src/lib/episodePaging.ts`, which imports nothing, so both sides can
+use it. `episodeDetail.ts` can't hold it, because the client would then bundle
+the feed parser. Verified by clicking in headless Chrome against the dev
+server:
+
+| Action | Result |
+|---|---|
+| Initial load | 20 rows, starting #2577 |
+| Load more | 40 rows |
+| Oldest | 20 rows, starting #1 Brian Redban, button active |
+| Load more again | 40 rows |
+| JS errors | none |
+
+**Lesson:** never export a value from a `"use client"` file for a server file
+to import. Types are fine.
 
 #### Measured live after deploying
 
