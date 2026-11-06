@@ -15,7 +15,8 @@ Short record of every change, newest first. The full reasoning for each one is i
   live site briefly reported its database unreachable. Paused Vercel
   instances were holding idle connections. `src/lib/db.ts` now registers its
   pool with Vercel's `attachDatabasePool`, so idle connections close before an
-  instance pauses.
+  instance pauses. A `zod` override in `package.json` keeps `npm audit` at 0
+  for the package that provides it.
 - **2026-11-06 — `/analytics` image tightened for Discord.**
   - **Shorter:** 1600×1180 instead of 1600×1560, so Discord shows it larger.
     The panels hold five rows.

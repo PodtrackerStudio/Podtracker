@@ -38,5 +38,10 @@
     "eslint-config-next": "16.4.3",
     "tsx": "^4.23.5",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@vercel/cli-config": {
+      "zod": "4.6.7"
+    }
   }
 }

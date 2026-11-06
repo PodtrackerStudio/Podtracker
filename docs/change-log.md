@@ -134,6 +134,16 @@ Checked locally (unchanged behaviour off Vercel):
 - `/api/health/db` reports reachable;
 - `tsc`, `eslint` and `next build` are clean.
 
+**Audit after adding `@vercel/functions`:** 4 high, all one chain:
+`@vercel/functions` → `@vercel/oidc` → `@vercel/cli-config` → `zod` < 4.6.6
+(memory exhaustion validating oversized collections). None of it runs in this
+app, which only calls `attachDatabasePool`. The fix npm suggested,
+`@vercel/functions` 3.11.0, was a day old. Instead, `package.json` has an
+`overrides` entry pinning `zod` to **4.6.7** (3+ weeks old) for
+`@vercel/cli-config` only. `npm audit --omit=dev` → **0**. `tsc` and
+`next build` are clean. Drop the override once `@vercel/functions` is upgraded
+past it.
+
 **Follow-ups**
 
 - Watch `/api/health/db` and the Vercel logs for `EMAXCONNSESSION` over the
