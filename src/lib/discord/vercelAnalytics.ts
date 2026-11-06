@@ -147,7 +147,8 @@ async function breakdown(dimension: DimensionKey, fromMs: number, toMs: number):
   const rows = await query<Array<Record<string, unknown>>>("aggregate", {
     ...window(fromMs, toMs, HOUR_MS),
     by: dimension,
-    limit: "6",
+    // Five, the rows the card has room for.
+    limit: "5",
   });
   // Vercel does not return these in order. Sorted like the dashboard: by
   // visitors, with "Others" last because it is a remainder, not a value.

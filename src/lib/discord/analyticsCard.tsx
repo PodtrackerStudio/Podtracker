@@ -19,8 +19,15 @@ import { DIMENSIONS, PERIOD_LABEL, type DimensionRow, type Report, type TimeRow 
  * a path built from `process.cwd()` is not picked up automatically.
  */
 
+/**
+ * Wide rather than square. Discord fits an attachment inside a wide preview,
+ * so height is what limits how large the image displays. The first version was
+ * 1600×1560 and showed smaller than it needed to. The panels hold five rows
+ * and the chart is shorter to get here.
+ */
 const WIDTH = 1600;
-const HEIGHT = 1560;
+const HEIGHT = 1180;
+const ROWS = 5;
 
 const C = {
   page: "#000000",
@@ -105,7 +112,7 @@ function Metric({ label, value, delta, active }: { label: string; value: number;
       style={{
         display: "flex",
         flexDirection: "column",
-        padding: "22px 28px",
+        padding: "18px 26px",
         marginRight: 12,
         borderRadius: 10,
         background: active ? "#141414" : "transparent",
@@ -115,7 +122,7 @@ function Metric({ label, value, delta, active }: { label: string; value: number;
     >
       <div style={{ display: "flex", fontSize: 20, color: C.muted, fontWeight: 500 }}>{label}</div>
       <div style={{ display: "flex", alignItems: "center", marginTop: 10 }}>
-        <div style={{ display: "flex", fontSize: 60, fontWeight: 600, color: C.text, letterSpacing: -2, lineHeight: 1 }}>
+        <div style={{ display: "flex", fontSize: 56, fontWeight: 600, color: C.text, letterSpacing: -2, lineHeight: 1 }}>
           {num(value)}
         </div>
         <Change value={delta} />
@@ -131,8 +138,11 @@ function tickLabel(row: TimeRow, period: Report["period"]): string {
 }
 
 function Chart({ series, period }: { series: TimeRow[]; period: Report["period"] }) {
-  const width = 1420;
-  const height = 250;
+  // The card's inner width (1600 − 2×44 page padding − 2×24 card padding − 2px
+  // border) less the 44px axis column. The first version used 1420 against a
+  // 1410 space, so the line ran into the card's right border.
+  const width = 1418;
+  const height = 170;
   const values = series.map((r) => r.visitors);
   const top = niceMax(Math.max(0, ...values));
   const n = Math.max(values.length, 2);
@@ -151,7 +161,7 @@ function Chart({ series, period }: { series: TimeRow[]; period: Report["period"]
     count <= 1 ? [0] : [...new Set(Array.from({ length: count }, (_, k) => Math.round((k * last) / (count - 1))))];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", marginTop: 28 }}>
+    <div style={{ display: "flex", flexDirection: "column", marginTop: 22 }}>
       <div style={{ display: "flex" }}>
         <div style={{ display: "flex", position: "relative", width: 44, height, fontSize: 16, color: C.faint }}>
           {[0, 1, 2, 3, 4].map((i) => (
@@ -207,22 +217,24 @@ function Chart({ series, period }: { series: TimeRow[]; period: Report["period"]
 }
 
 function Panel({ title, rows }: { title: string; rows: DimensionRow[] }) {
-  const shown = rows.slice(0, 6);
+  const shown = rows.slice(0, ROWS);
   const max = Math.max(1, ...shown.map((r) => r.visitors));
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
-        width: 485,
-        height: 376,
-        padding: "24px 24px",
+        // (1600 − 2×44 padding − 2×21 gaps) ÷ 3: three panels and two equal gaps
+        // exactly fill the row, matching the 20px gap between the rows.
+        width: 490,
+        height: 268,
+        padding: "18px 22px",
         background: C.card,
         border: `1px solid ${C.border}`,
         borderRadius: 12,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div style={{ display: "flex", fontSize: 22, fontWeight: 500, color: C.text }}>{title}</div>
         <div style={{ display: "flex", fontSize: 14, fontWeight: 500, color: C.faint, letterSpacing: 1.5 }}>VISITORS</div>
       </div>
@@ -234,7 +246,7 @@ function Panel({ title, rows }: { title: string; rows: DimensionRow[] }) {
         shown.map((row) => (
           <div
             key={row.key}
-            style={{ display: "flex", position: "relative", alignItems: "center", height: 40, marginBottom: 6 }}
+            style={{ display: "flex", position: "relative", alignItems: "center", height: 36, marginBottom: 5 }}
           >
             <div
               style={{
@@ -242,7 +254,7 @@ function Panel({ title, rows }: { title: string; rows: DimensionRow[] }) {
                 position: "absolute",
                 left: 0,
                 top: 0,
-                height: 40,
+                height: 36,
                 width: `${Math.max(2, (row.visitors / max) * 100)}%`,
                 background: C.bar,
                 borderRadius: 6,
@@ -280,7 +292,7 @@ export async function renderAnalyticsCard(report: Report, siteName: string): Pro
           flexDirection: "column",
           width: WIDTH,
           height: HEIGHT,
-          padding: 48,
+          padding: 44,
           background: C.page,
           color: C.text,
           fontFamily: "Geist",
@@ -323,8 +335,8 @@ export async function renderAnalyticsCard(report: Report, siteName: string): Pro
           style={{
             display: "flex",
             flexDirection: "column",
-            marginTop: 32,
-            padding: 28,
+            marginTop: 24,
+            padding: 24,
             background: C.card,
             border: `1px solid ${C.border}`,
             borderRadius: 12,
@@ -338,9 +350,9 @@ export async function renderAnalyticsCard(report: Report, siteName: string): Pro
         </div>
 
         {/* Breakdowns, in the dashboard's order */}
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", marginTop: 24 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", marginTop: 20 }}>
           {DIMENSIONS.map((d, i) => (
-            <div key={d.key} style={{ display: "flex", marginTop: i < 3 ? 0 : 24 }}>
+            <div key={d.key} style={{ display: "flex", marginTop: i < 3 ? 0 : 20 }}>
               <Panel title={d.title} rows={report.breakdowns[d.key]} />
             </div>
           ))}

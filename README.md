@@ -5,6 +5,14 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — `/analytics` image tightened for Discord.**
+  - **Shorter:** 1600×1180 instead of 1600×1560, so Discord shows it larger.
+    The panels hold five rows.
+  - **Aligned:** the panels share equal gaps, and the chart no longer runs
+    into its card's border.
+  - **Summary line:** the message opens with the headline numbers ("**Last 7
+    days** · 1,284 visitors (+34%) · …"), readable on a phone without opening
+    the image.
 - **2026-11-06 — Alignment and polish pass across the site.** Every public
   page was screenshotted in Chrome at desktop (1440px) and phone (390px)
   width and checked for overflow, broken images and console errors. Fixed:

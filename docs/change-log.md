@@ -155,6 +155,29 @@ production. That was Part 7's regression, logged in the audit entry below.
 review and list pages at both widths, with no overflow, broken images or
 errors. `tsc`, `eslint` and `next build` are clean.
 
+**The `/analytics` Discord image, same pass**
+
+- **Shape.** It was 1600×1560. Discord fits an attachment inside a wide
+  preview, so height is the binding constraint. It is now **1600×1180**: the
+  chart is 170px tall (was 250), panels hold 5 rows (Vercel is asked for 5),
+  and the spacing is tighter.
+- **Alignment.**
+  - The chart was 1420px wide in a 1410px space, so its line ran into the
+    card's right border. It is now computed from the padding: 1418px.
+  - Panels are 490px, so three panels and two 21px gaps exactly fill the
+    row, matching the 20px between rows.
+- **Summary line.** The message's `content` is now one line:
+  `**Last 7 days** · N visitors (±x%) · N page views (±x%)`. It's readable
+  on a phone and in notifications without opening the image. The change is
+  omitted when there is no fair comparison (see `report()`).
+
+Rendered and inspected:
+
+- with a busy sample, through a temporary route that was deleted before the
+  commit;
+- with live data, through the stand-in Discord. Content:
+  `**Last 7 days** · 2 visitors · 7 page views`.
+
 **Deliberately not changed**
 
 - The Figma-defined desktop layouts.
