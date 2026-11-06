@@ -71,6 +71,80 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-06 — Discord bot that answers with site analytics
+
+- **Branch:** `main`
+- **Requested by:** Phillip — a Discord bot so Sasha can ask for the analytics.
+- **Status:** Code complete and tested locally. **Not live** until the Discord
+  app exists, the environment variables are set in Vercel, and the commands
+  are registered. All of that is in `docs/discord-bot.md`.
+
+**What changed**
+
+- `POST /api/discord` is the whole bot. Discord's HTTP interactions mean
+  there is no gateway process and nothing to host beyond the site itself.
+- Four commands: `/traffic`, `/toppages`, `/referrers` (Vercel Web Analytics
+  query API, production only) and `/stats` (the database, same queries as
+  `npm run stats`).
+- Ed25519 signature check with Node's own crypto, so no new dependency.
+- Allow-list by Discord user id (`DISCORD_ALLOWED_USER_IDS`). Refusals are
+  private and show the caller's id, so adding someone is a copy-paste.
+- Deferred reply (type 5), then the answer is PATCHed in from `after()`,
+  because Discord allows 3 seconds and an analytics query plus a cold start
+  can exceed that. `maxDuration = 30`.
+- `/api/discord` is excluded from the proxy matcher, so there is no Supabase
+  session refresh on a route only Discord calls.
+- `npm run discord:register` replaces the command set from
+  `src/lib/discord/commands.json`. It is guild-scoped when `DISCORD_GUILD_ID`
+  is set, so commands appear at once.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/api/discord/route.ts` | Added — the interactions endpoint |
+| `src/lib/discord/verify.ts` | Added — signature check |
+| `src/lib/discord/vercelAnalytics.ts` | Added — Vercel query API client, errors that read well in Discord |
+| `src/lib/discord/siteStats.ts` | Added — database counts |
+| `src/lib/discord/replies.ts` | Added — embeds per command |
+| `src/lib/discord/commands.json` | Added — command definitions |
+| `scripts/discord-register.mjs` | Added — registers the commands |
+| `src/proxy.ts` | Modified — matcher skips `/api/discord` |
+| `package.json` | Modified — `discord:register` script |
+| `.env.example` | Modified — the new variables, documented |
+| `docs/discord-bot.md` | Added — setup and how it works |
+| `README.md` | Modified — change log line |
+
+**Why**
+
+Hosting a gateway bot would mean a second always-on service. Slash commands
+over HTTP need only a route, and the site already runs on Vercel. The bot
+token is only for registering commands, so it never goes into Vercel.
+
+**Verified** against the local dev server with a generated Ed25519 key and a
+stand-in for Discord's webhook API (`DISCORD_API_BASE`):
+
+| Check | Result |
+| --- | --- |
+| Bad signature / no signature | 401 |
+| PING | `{"type":1}` |
+| User not on allow-list | private refusal naming their id |
+| `/stats` | deferred, then an embed with real numbers (56 accounts, 18 active) |
+| `/traffic` with no Vercel token | deferred, then a plain explanation of what to set |
+
+`tsc --noEmit` and `eslint` clean.
+
+**Not verified:** real Vercel Analytics responses. There is no token yet, and
+the field names come from Vercel's API reference, not from a live call. Real
+Discord delivery is also unverified, pending the app's creation.
+
+**Follow-ups**
+
+- Do the setup in `docs/discord-bot.md`, then run each command once and check
+  `/traffic` renders the chart properly.
+- Analytics only holds data from when it was enabled.
+
+
 ### 2026-11-06 — Vercel Web Analytics
 
 - **Branch:** `main`

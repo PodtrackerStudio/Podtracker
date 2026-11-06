@@ -12,7 +12,8 @@
     "check:db": "node scripts/check-db.mjs",
     "stats": "node scripts/stats.mjs",
     "setup:supabase": "node scripts/setup-supabase.mjs",
-    "env:from-clipboard": "node scripts/env-from-clipboard.mjs"
+    "env:from-clipboard": "node scripts/env-from-clipboard.mjs",
+    "discord:register": "node --env-file=.env scripts/discord-register.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",

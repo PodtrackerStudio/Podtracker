@@ -5,6 +5,13 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Discord analytics bot.** Slash commands `/traffic`,
+  `/toppages`, `/referrers` (Vercel Web Analytics) and `/stats` (accounts and
+  activity from the database), answered by `src/app/api/discord/route.ts`, so
+  there is no separate bot to host. Only allow-listed Discord users can use it.
+  New `npm run discord:register`. **Still needed:** create the Discord app, set
+  the environment variables, and register the commands. Setup steps are in
+  [`docs/discord-bot.md`](docs/discord-bot.md).
 - **2026-11-06 — Vercel Web Analytics added.** Installed `@vercel/analytics` and
   rendered it site-wide from `src/components/SiteAnalytics.tsx`, mounted in
   `src/app/layout.tsx`. URLs under `/auth/*` are recorded without their query

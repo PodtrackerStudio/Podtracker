@@ -63,6 +63,9 @@ export const config = {
   /**
    * Everything except static assets and image files. Auth cookies are
    * irrelevant to those, and running this on every icon costs latency.
+   *
+   * `/api/discord` is excluded too: Discord, not a signed-in browser, calls it,
+   * and it has 3 seconds to answer, so a Supabase round trip there is pure cost.
    */
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/discord|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

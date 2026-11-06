@@ -1,0 +1,57 @@
+[
+  {
+    "name": "traffic",
+    "description": "Visitors and page views from Vercel Analytics",
+    "options": [
+      {
+        "type": 3,
+        "name": "period",
+        "description": "How far back to look (default: 7 days)",
+        "required": false,
+        "choices": [
+          { "name": "Last 24 hours", "value": "24h" },
+          { "name": "Last 7 days", "value": "7d" },
+          { "name": "Last 30 days", "value": "30d" }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "toppages",
+    "description": "The most-visited pages, from Vercel Analytics",
+    "options": [
+      {
+        "type": 3,
+        "name": "period",
+        "description": "How far back to look (default: 7 days)",
+        "required": false,
+        "choices": [
+          { "name": "Last 24 hours", "value": "24h" },
+          { "name": "Last 7 days", "value": "7d" },
+          { "name": "Last 30 days", "value": "30d" }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "referrers",
+    "description": "Which sites are sending people to Podtracker",
+    "options": [
+      {
+        "type": 3,
+        "name": "period",
+        "description": "How far back to look (default: 7 days)",
+        "required": false,
+        "choices": [
+          { "name": "Last 24 hours", "value": "24h" },
+          { "name": "Last 7 days", "value": "7d" },
+          { "name": "Last 30 days", "value": "30d" }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "stats",
+    "description": "Accounts and activity from Podtracker's own database"
+  }
+]
