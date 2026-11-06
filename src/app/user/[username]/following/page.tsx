@@ -10,6 +10,8 @@ import { FollowingGrid, type FollowedShow } from "@/app/following/FollowingGrid"
 import { ProfileSubHeader } from "../ProfileSubHeader";
 import styles from "../profileSub.module.css";
 import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
+import { avatarSrc } from "@/lib/avatar";
+import { PUBLIC_PROFILE_SELECT } from "@/lib/profileUser";
 
 /**
  * The shows a given member follows.
@@ -45,10 +47,13 @@ export default async function ProfileFollowingPage({ params }: { params: Promise
 
   // Retried: the page's first touch of the database, so a moment without a
   // connection would otherwise kill the render outright. See lib/dbRetry.ts.
-  const profileUser = await withDbRetry(
-    () => db.user.findUnique({ where: { username } }),
-    "profile:following:lookup",
-  );
+  const [profileUser, viewer] = await Promise.all([
+    withDbRetry(
+      () => db.user.findUnique({ where: { username }, select: PUBLIC_PROFILE_SELECT }),
+      "profile:following:lookup",
+    ),
+    getCurrentUser(),
+  ]);
 
   if (!profileUser) {
     return (
@@ -64,7 +69,6 @@ export default async function ProfileFollowingPage({ params }: { params: Promise
     );
   }
 
-  const viewer = await getCurrentUser();
   const isOwnProfile = viewer?.id === profileUser.id;
 
   const follows = await withDbRetry(
@@ -103,7 +107,7 @@ export default async function ProfileFollowingPage({ params }: { params: Promise
       <main className={styles.main}>
         <ProfileSubHeader
           username={username}
-          avatarUrl={profileUser.avatarUrl}
+          avatarUrl={avatarSrc(profileUser.id)}
           active="favorites"
           isOwnProfile={isOwnProfile}
         />

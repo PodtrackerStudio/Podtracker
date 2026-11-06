@@ -5,6 +5,15 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Speed: profile pictures and login checks.** Profile
+  pictures (stored as text, up to 3.9 MB) were embedded inside every page that
+  showed them, twice. They're now served as cached images from
+  `/api/avatar/<id>`, and pages no longer load them from the database.
+  - **Snezhana's profile: 7.8 MB → 45 KB.** Each review on `/home` was
+    carrying its author's whole picture, and so was every keystroke in the nav
+    search.
+  - **Login checks are now verified locally** instead of with two round trips
+    to Supabase on every page and API call.
 - **2026-11-06 — Podcast data fixes.**
   - **Feeds are parsed once even when two requests ask at the same moment**,
     and the in-memory feed cache is capped at 40 feeds. It used to grow

@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { getCurrentUser } from "@/lib/auth";
 import { SettingsForm } from "./SettingsForm";
 import styles from "./settings.module.css";
+import { db } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -14,6 +15,14 @@ export const metadata: Metadata = {
 export default async function SettingsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+
+  // The editable profile fields, which `getCurrentUser` no longer carries (see
+  // there). This is the one page that needs the avatar's actual data, as the
+  // preview in the form.
+  const profile = await db.user.findUnique({
+    where: { id: user.id },
+    select: { avatarUrl: true, bio: true, externalLink: true },
+  });
 
   return (
     <>
@@ -25,9 +34,9 @@ export default async function SettingsPage() {
             username: user.username,
             email: user.email,
             displayName: user.displayName,
-            externalLink: user.externalLink,
-            bio: user.bio,
-            avatarUrl: user.avatarUrl,
+            externalLink: profile?.externalLink ?? null,
+            bio: profile?.bio ?? null,
+            avatarUrl: profile?.avatarUrl ?? null,
           }}
         />
       </main>

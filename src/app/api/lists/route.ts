@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
+import { avatarSrc } from "@/lib/avatar";
 
 /** How many covers the picker stacks on a row before it shows a "+N". */
 const COVERS_PER_ROW = 4;
@@ -49,7 +50,7 @@ export async function GET() {
     // The owner is the same on every row — these are the viewer’s own lists —
     // and avatarUrl is often a base64 data URI running to ~90KB, so repeating
     // it per row would multiply the payload for nothing.
-    owner: { name: user.displayName, avatarUrl: user.avatarUrl },
+    owner: { name: user.displayName, avatarUrl: avatarSrc(user.id) },
     lists: lists.map((list) => ({
       id: list.id,
       title: list.title,

@@ -34,9 +34,22 @@ function warnOnceAboutMissingKeys() {
  * review and list hanging off it) lives in our own `User` table, keyed by the
  * same id Supabase issues.
  *
- * **`getUser`, never `getSession`.** `getSession` reads the cookie and trusts
- * it; `getUser` verifies the token with Supabase. Using the former here would
- * mean a forged cookie authenticates.
+ * **`getClaims`, never `getSession`.** `getSession` reads the cookie and trusts
+ * it, so a forged cookie would authenticate. `getClaims` verifies the token's
+ * signature. This project signs with an asymmetric key (ES256), so that
+ * check runs here against Supabase's public key, which is fetched once and
+ * cached per process. No network call per request.
+ *
+ * Until 2026-11-06 this used `getUser`, which asks Supabase's server on every
+ * call. Together with the proxy doing the same, every page and API request made
+ * two round trips to Supabase before running any code of its own.
+ *
+ * **The trade-off:** a valid token is trusted until it expires (an hour by
+ * default) even if the session was revoked in the meantime, for example by
+ * "sign out other devices". That is what Supabase recommends for page renders.
+ * The routes where it matters check with Supabase's server themselves:
+ * password change and reset call `getUser`, and `updateUser` validates
+ * server-side.
  *
  * Wrapped in React's `cache` so the several components that ask "who is signed
  * in?" during one render share a single verification instead of each making
@@ -57,11 +70,11 @@ export const getCurrentUser = cache(async () => {
   }
 
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getClaims();
+  const claims = error ? null : data?.claims;
+  if (!claims?.sub) return null;
 
-  if (!authUser) return null;
+  const authUser = { id: claims.sub, email: typeof claims.email === "string" ? claims.email : null };
 
   // Explicit field list, not `select: undefined` — this shape is what all 29
   // callers see, and several of them hand it to Client Components. Nothing
@@ -73,11 +86,12 @@ export const getCurrentUser = cache(async () => {
       username: true,
       email: true,
       displayName: true,
-      avatarUrl: true,
-      bio: true,
-      longBio: true,
-      externalLink: true,
       createdAt: true,
+      // Not `avatarUrl`, `bio`, `longBio` or `externalLink`. This runs on every
+      // page and API call, and the avatar alone was a data URI of up to 3.9 MB
+      // pulled from the database each time, for pages that never used it. The
+      // two that need them (Settings, list owner) ask for them, or use
+      // `avatarSrc`.
     },
   });
 

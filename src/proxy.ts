@@ -54,7 +54,12 @@ export async function proxy(request: NextRequest) {
   // Do not remove: this call is what performs the refresh. It looks like a
   // pointless read, and deleting it produces sessions that expire early and
   // logouts nobody can reproduce.
-  await supabase.auth.getUser();
+  //
+  // `getClaims` rather than `getUser`, as Supabase's SSR guide now does. It
+  // refreshes an expired token the same way, through `getSession`, then
+  // verifies the signature locally against the project's cached public key.
+  // `getUser` made a round trip to Supabase on every matched request.
+  await supabase.auth.getClaims();
 
   return response;
 }
@@ -66,6 +71,7 @@ export const config = {
    *
    * `/api/discord` is excluded too: Discord, not a signed-in browser, calls it,
    * and it has 3 seconds to answer, so a Supabase round trip there is pure cost.
+   * So is `/api/avatar`: a public image, fetched once per picture on a page.
    */
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/discord|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/discord|api/avatar|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

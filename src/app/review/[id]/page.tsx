@@ -10,6 +10,7 @@ import { Comments } from "@/components/Comments";
 import { LikeButton } from "@/components/LikeButton";
 import { DeleteReviewButton } from "@/components/DeleteReviewButton";
 import styles from "./review.module.css";
+import { avatarSrc } from "@/lib/avatar";
 
 /** RatingTier enum → the label and colour class the design uses. */
 const TIER_DISPLAY: Record<string, { label: string; className: string }> = {
@@ -91,7 +92,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
       // row, password hash and email included, into a Server Component that
       // hands data to Client Components — nothing leaked, but the shape made a
       // leak one careless prop away.
-      user: { select: { username: true, displayName: true, avatarUrl: true } },
+      user: { select: { username: true, displayName: true } },
       episode: { include: { podcast: true } },
       podcast: true,
     },
@@ -119,7 +120,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     db.comment.findMany({
       where: { logEntryId: entry.id },
       // Same reasoning as above — these three fields are what a comment shows.
-      include: { user: { select: { username: true, displayName: true, avatarUrl: true } } },
+      include: { user: { select: { id: true, username: true, displayName: true } } },
       orderBy: { createdAt: "asc" },
     }),
     db.like.count({ where: { logEntryId: entry.id } }),
@@ -201,7 +202,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             text: c.text,
             authorName: c.user.displayName,
             authorUsername: c.user.username,
-            authorAvatarUrl: c.user.avatarUrl,
+            authorAvatarUrl: avatarSrc(c.user.id),
           }))}
         />
       </main>

@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { episodeHref } from "./episodeKey";
 import { TIER_LABEL, TIER_CLASS, type Tier } from "./ratingScale";
+import { avatarSrc } from "./avatar";
 
 /**
  * Reviews to show on the home page.
@@ -54,7 +55,9 @@ export async function getTrendingReviews(limit = 3): Promise<TrendingReview[]> {
     const entries = await db.logEntry.findMany({
       where: { reviewText: { not: null } },
       include: {
-        user: { select: { username: true, displayName: true, avatarUrl: true } },
+        // `id`, not `avatarUrl`: the picture comes from `avatarSrc`. Selecting the
+        // data URI put up to 3.9 MB per card into `/home`, twice.
+        user: { select: { id: true, username: true, displayName: true } },
         podcast: { select: { externalId: true, title: true, coverUrl: true } },
         episode: {
           select: {
@@ -110,7 +113,7 @@ export async function getTrendingReviews(limit = 3): Promise<TrendingReview[]> {
         text: entry.reviewText ?? "",
         authorName: entry.user.displayName || entry.user.username,
         authorUsername: entry.user.username,
-        authorAvatarUrl: entry.user.avatarUrl,
+        authorAvatarUrl: avatarSrc(entry.user.id),
         coverUrl: entry.episode?.coverUrl ?? show?.coverUrl ?? "/placeholder-cover.svg",
         subjectTitle: entry.episode?.title ?? show?.title ?? "Untitled",
         // episodeHref, not the database id — a route built from a cuid matches

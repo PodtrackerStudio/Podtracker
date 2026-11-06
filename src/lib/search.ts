@@ -1,6 +1,7 @@
 import { searchPodcasts, searchEpisodes } from "./podcastApi";
 import { episodeKeyFromGuid } from "./episodeKey";
 import { db } from "./db";
+import { avatarSrc } from "./avatar";
 import type {
   PodcastSearchItem,
   EpisodeSearchItem,
@@ -166,7 +167,9 @@ async function searchUsers(query: string, limit: number): Promise<UserSearchItem
         { displayName: { contains: q, mode: "insensitive" } },
       ],
     },
-    select: { id: true, username: true, displayName: true, avatarUrl: true },
+    // No `avatarUrl`: the nav search calls this on every keystroke, and the data
+    // URI rode along in each response. `avatarSrc` serves it as a cached image.
+    select: { id: true, username: true, displayName: true },
     take: limit,
   });
 
@@ -183,7 +186,7 @@ async function searchUsers(query: string, limit: number): Promise<UserSearchItem
     id: `user:${u.id}`,
     type: "user" as const,
     title: u.displayName || u.username,
-    cover: u.avatarUrl ?? "/default-avatar.webp",
+    cover: avatarSrc(u.id),
     username: u.username,
   }));
 }

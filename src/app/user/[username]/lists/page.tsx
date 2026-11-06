@@ -8,6 +8,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { ProfileSubHeader } from "../ProfileSubHeader";
 import styles from "../profileSub.module.css";
 import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
+import { avatarSrc } from "@/lib/avatar";
+import { PUBLIC_PROFILE_SELECT } from "@/lib/profileUser";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username: usernameParam } = await params;
@@ -24,7 +26,10 @@ export default async function ListsPage({ params }: { params: Promise<{ username
   const { username: usernameParam } = await params;
   // Decoded, because Next hands this over still percent-escaped — see lib/routeParams.ts.
   const username = usernameFromParam(usernameParam);
-  const profileUser = await db.user.findUnique({ where: { username } });
+  const [profileUser, viewer] = await Promise.all([
+    db.user.findUnique({ where: { username }, select: PUBLIC_PROFILE_SELECT }),
+    getCurrentUser(),
+  ]);
 
   if (!profileUser) {
     return (
@@ -38,7 +43,6 @@ export default async function ListsPage({ params }: { params: Promise<{ username
     );
   }
 
-  const viewer = await getCurrentUser();
   const isOwnProfile = viewer?.id === profileUser.id;
 
   // isWatchlist excluded: Next listening is stored as a List and would
@@ -53,7 +57,7 @@ export default async function ListsPage({ params }: { params: Promise<{ username
     <>
       <SiteNav active="profile" />
       <main className={styles.main}>
-        <ProfileSubHeader username={username} avatarUrl={profileUser.avatarUrl} active="lists" isOwnProfile={isOwnProfile} />
+        <ProfileSubHeader username={username} avatarUrl={avatarSrc(profileUser.id)} active="lists" isOwnProfile={isOwnProfile} />
 
         {lists.length === 0 ? (
           <div className={styles.emptyWrap}>

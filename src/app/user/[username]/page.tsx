@@ -11,6 +11,8 @@ import { ProfileCalendar, type ListenedEntry } from "./ProfileCalendar";
 import { getNextListening } from "@/lib/nextListening";
 import styles from "./profile.module.css";
 import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
+import { avatarSrc } from "@/lib/avatar";
+import { PUBLIC_PROFILE_SELECT } from "@/lib/profileUser";
 
 // A seeded demo account kept around to show what a populated profile looks
 // like — real signups won't have activity until rating/review persistence
@@ -300,10 +302,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   // unprotected, and the page still failed on the first refused connection.
   // A missing account returns null rather than throwing, so a genuine 404 is
   // unaffected by the retry.
-  const profileUser = await withDbRetry(
-    () => db.user.findUnique({ where: { username } }),
-    "profile:lookup",
-  );
+  // The viewer is looked up at the same time rather than after, which takes a
+  // round trip off every profile view.
+  const [profileUser, viewer] = await Promise.all([
+    withDbRetry(
+      () => db.user.findUnique({ where: { username }, select: PUBLIC_PROFILE_SELECT }),
+      "profile:lookup",
+    ),
+    getCurrentUser(),
+  ]);
 
   if (!profileUser) {
     return (
@@ -317,7 +324,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     );
   }
 
-  const viewer = await getCurrentUser();
   const isOwnProfile = viewer?.id === profileUser.id;
 
   // Retried as one unit: these seven run together, so if the pool had no
@@ -401,7 +407,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
           <div className={styles.profileCenter}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={styles.profileAvatar} src={profileUser.avatarUrl ?? "/default-avatar.webp"} alt="Profile picture" />
+            <img className={styles.profileAvatar} src={avatarSrc(profileUser.id)} alt="Profile picture" />
             {isOwnProfile && (
               <Link href="/settings" className={styles.btnEdit}>
                 Edit profile

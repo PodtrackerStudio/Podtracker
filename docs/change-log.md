@@ -203,6 +203,60 @@ Checked on the dev server:
 - `/podcast/…/episodes`, `/search`, `/explore` and
   `/explore/trending-episodes` all return 200.
 
+#### Part 4 — speed: avatars and auth (fourth commit)
+
+**Avatars.** `User.avatarUrl` holds data URIs: 3 users, 47 KB, 128 KB and
+**3.9 MB**. Every `<img src={avatarUrl}>` put the whole image in the HTML *and*
+the RSC payload. The places it happened:
+
+| Where | Cost |
+|---|---|
+| `/home` | One per review card |
+| `/review/[id]` | One per comment, plus an unused author select |
+| `/user/[username]` and every tab | Loaded the **whole** `User` row, email included, via `findUnique` with no select |
+| `/api/search?users=1` | On every debounced keystroke in the nav search |
+| `getCurrentUser` | Selected the avatar on every request, though only Settings used it |
+
+- New **`GET /api/avatar/[userId]`** serves the bytes:
+  - with `Cache-Control: public, max-age=60, s-maxage=60, swr=3600` and an
+    ETag (304 on repeat views);
+  - only PNG, JPEG, WebP and GIF, with `nosniff`, because an SVG could carry
+    script;
+  - redirecting to `/default-avatar.webp` when there is no picture.
+
+  `avatarSrc(id)` (`src/lib/avatar.ts`, no imports, so it is client-safe)
+  builds the URL. The route is excluded from the proxy matcher.
+- `PUBLIC_PROFILE_SELECT` (`src/lib/profileUser.ts`) is what profile pages now
+  select. Trending reviews, review comments, user search and the list picker's
+  owner use `avatarSrc`. `getCurrentUser` dropped `avatarUrl`, `bio`,
+  `longBio` and `externalLink`; Settings reads those itself.
+- Profile pages run the profile lookup and `getCurrentUser` together
+  (`Promise.all`) instead of one after the other. That applies to the main
+  page, lists, diary, reviews and following.
+
+Measured, live against local with the same data:
+
+| Page | Live | Fixed |
+|---|---|---|
+| `/user/Snezhana` | 7,809,774 B | 45,488 B |
+| `/user/Snezhana/reviews` | 7,801,981 B | 33,275 B |
+| `/user/Sasha(Co-founder)` | 144,265 B | 65,026 B |
+| a review page with comments | — | 35,604 B, 0 data URIs |
+
+The avatar route returns `image/jpeg` with an ETag and gives 304 on
+revalidation. Unknown ids redirect to the default picture.
+
+**Auth: `getClaims` instead of `getUser`,** in both `proxy.ts` and
+`getCurrentUser`. Every request made two Supabase round trips (the proxy, then
+the page). The project signs with ES256 (checked: `/.well-known/jwks.json` has
+one EC key), so `getClaims` verifies locally against a JWKS that `auth-js`
+caches per process (`GLOBAL_JWKS`), and the proxy still refreshes expired
+tokens through it.
+
+The trade-off: a revoked session stays valid until its access token expires
+(an hour by default). Password change and reset still call `getUser`
+themselves. The reasoning is recorded in `auth.ts`.
+
 **Verified:** `tsc` and `eslint` clean. On the dev server, `/auth/confirm?type=email`
 shows "Confirm my email", both account routes answer 401 when signed out, and
 forgot-password answers the same as before. **Not verified with a signed-in
@@ -212,7 +266,9 @@ account and inbox. The logic was reviewed, not exercised.
 **Follow-ups**
 
 - The 3 existing avatars (up to 3.9 MB) need re-encoding, which means writing
-  to production data. That needs Phillip's go-ahead.
+  to production data. That needs Phillip's go-ahead. They are no longer
+  embedded in pages, but the 3.9 MB one is still a 2.9 MB download the first
+  time it is shown.
 - Supabase's **Change Email Address** template should link to
   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/settings`,
   like the other two templates. With the default template the change still
