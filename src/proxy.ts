@@ -20,7 +20,39 @@ import { createServerClient } from "@supabase/ssr";
  * because the Proxy docs warn against relying on shared modules here: proxy is
  * invoked separately from render code and may be deployed to a CDN.
  */
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * True when a state-changing request to our API was sent by another website.
+ *
+ * Defence in depth against cross-site request forgery. Supabase's session
+ * cookies are SameSite=Lax, which already keeps them off most cross-site
+ * POSTs, and the JSON routes need a CORS preflight that nothing grants. The
+ * gap is plain form posts. `/api/auth/confirm` takes one, so another site
+ * could post its own emailed token there and sign a visitor into the
+ * attacker's account. Every browser sends `Origin` on a POST, so a mismatch is
+ * refused. A missing header (curl, server-to-server) is allowed, because that
+ * is not a browser carrying someone's cookies.
+ */
+function isCrossSiteWrite(request: NextRequest): boolean {
+  if (SAFE_METHODS.has(request.method) || !request.nextUrl.pathname.startsWith("/api/")) return false;
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+  let originHost: string;
+  try {
+    originHost = new URL(origin).host;
+  } catch {
+    return true; // "null" and other unparseable values
+  }
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? request.nextUrl.host;
+  return originHost !== host.split(",")[0].trim();
+}
+
 export async function proxy(request: NextRequest) {
+  if (isCrossSiteWrite(request)) {
+    return NextResponse.json({ error: "Cross-site request refused." }, { status: 403 });
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 

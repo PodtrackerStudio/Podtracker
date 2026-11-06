@@ -5,6 +5,12 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Security hardening.**
+  - **Write requests to `/api/*` from other websites are refused (403).** This
+    blocks cross-site request forgery, including a trick that could sign a
+    visitor into an attacker's account.
+  - **New security headers on every page:** no framing (clickjacking),
+    `nosniff`, a referrer policy, and camera/mic/location switched off.
 - **2026-11-06 — Speed: server region and page loading.**
   - **The site's code now runs in Cleveland (`cle1`), next to the database in
     Ohio**, instead of Washington. Every database and login call used to cross

@@ -283,6 +283,38 @@ Checked on the dev server:
 
 `tsc`, `eslint` and `next build` are clean.
 
+#### Part 6 — security hardening (sixth commit)
+
+- **Cross-site write check in `proxy.ts`.** A POST, PUT, PATCH or DELETE to
+  `/api/*` whose `Origin` host differs from the request's host gets a 403.
+  Supabase cookies are SameSite=Lax and the JSON routes need a CORS preflight
+  nothing grants, but **plain form posts were open**. `/api/auth/confirm`
+  takes one, so another site could post its own emailed token and sign a
+  visitor into the attacker's account (login CSRF). `Origin: null` is refused.
+  A missing `Origin` is allowed, because that is not a browser carrying
+  cookies. `/api/discord` and `/api/avatar` are outside the matcher anyway.
+
+  Checked:
+
+  | Request | Result |
+  |---|---|
+  | Cross-site form post to confirm | 403 |
+  | Same-site form post | 303 to `link-expired` |
+  | `Origin: null` | 403 |
+  | No `Origin` | reaches the route (401) |
+  | Cross-site GET | 200 |
+
+- **Headers** (`next.config.ts` `headers()`): `X-Frame-Options: DENY`,
+  `Content-Security-Policy: frame-ancestors 'none'`,
+  `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, and a
+  `Permissions-Policy` turning off camera, microphone and geolocation. Before,
+  only Vercel's HSTS was sent. The site never iframes itself (checked).
+
+  **No full CSP.** Next's inline scripts, Vercel Analytics and Stripe would
+  each need allowing, and a wrong policy breaks pages silently. It is listed
+  as a follow-up rather than guessed at.
+
 **Verified:** `tsc` and `eslint` clean. On the dev server, `/auth/confirm?type=email`
 shows "Confirm my email", both account routes answer 401 when signed out, and
 forgot-password answers the same as before. **Not verified with a signed-in
