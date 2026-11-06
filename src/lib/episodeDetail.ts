@@ -209,8 +209,24 @@ export async function getEpisodeDetail(podcastId: string, episodeKey: string): P
   // feed behind them. Genuinely nothing to find, so not a retry case.
   if (!/^\d+$/.test(podcastId)) return { status: "not-found" };
 
-  const podcast = await withRetry(() => lookupPodcast(podcastId));
-  if (!podcast) return { status: "unavailable" };
+  // `lookupPodcast` signals its two outcomes differently: it **throws** when
+  // iTunes itself fails, and returns **null** when iTunes answers perfectly
+  // well and has no such show — a wrong, deleted or delisted id. `withRetry`
+  // only retries a throw, so a null reaching here was answered definitively.
+  //
+  // Collapsing both into `unavailable` made the page throw, so a podcast id
+  // that does not exist served a **500 crash page** instead of a 404. The show
+  // page already gets this right for the same case (it falls back to
+  // `placeholderDetail`), so `/podcast/<bad-id>` rendered while
+  // `/podcast/<bad-id>/episode/<key>` crashed.
+  //
+  // The object wrapper is what keeps the two apart: `withRetry` returns null
+  // only when every attempt threw, so `{ podcast: null }` can only mean "asked
+  // and answered, no such show".
+  const lookup = await withRetry(async () => ({ podcast: await lookupPodcast(podcastId) }));
+  if (!lookup) return { status: "unavailable" };
+  if (!lookup.podcast) return { status: "not-found" };
+  const podcast = lookup.podcast;
   // A show that resolves but publishes no feed has no episodes to show. That
   // is an answer, not an outage.
   if (!podcast.feedUrl) return { status: "not-found" };

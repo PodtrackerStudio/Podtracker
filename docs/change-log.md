@@ -71,6 +71,101 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-06 — Error and not-found pages; a 500 on unknown podcast ids
+
+- **Branch:** `main`
+- **Reported by:** sashaknyshjr@gmail.com — "wtf is this" on
+  `/podcast/6822357740/episode/7e71ceebd139`, which "said server crashed".
+  Later: "the rest of the site works, just this specific episode doesn't even
+  though it should be available."
+- **Status:** Partial. **The reported episode's root cause is NOT found** — see
+  Follow-ups. What shipped makes the failure survivable and fixes a different
+  500 found while looking.
+
+**What changed**
+
+- **`src/app/error.tsx` and `src/app/not-found.tsx` — the app had neither.**
+  Every throw rendered Next's bare "Application error: a server-side exception
+  has occurred", which is exactly what "it said server crashed" looks like, and
+  all five `notFound()` call sites served the unstyled default. The error page
+  offers **Try again** (`reset()`), which matters because the one throw this app
+  makes on purpose — `getEpisodeDetail` returning `unavailable` — is transient
+  by definition.
+- **`getEpisodeDetail` returned a 500 for a podcast id that does not exist.**
+  `lookupPodcast` *throws* when iTunes fails and returns *null* when iTunes
+  answers fine with no such show; both collapsed into `unavailable`, which makes
+  the page throw. So `/podcast/<bad-id>` rendered a placeholder while
+  `/podcast/<bad-id>/episode/<key>` crashed. Null now means `not-found`.
+
+**Not the reported bug.** Sasha says the rest of the site works, so Apple and
+that feed are both reachable and the id resolves. The fix above only helps when
+the show genuinely does not exist.
+
+**Investigated and ruled out**
+
+Driving real `rss-parser` over synthetic feeds, since this sandbox cannot reach
+Apple or any feed host:
+
+| Theory | Result |
+| --- | --- |
+| Neighbour `previousId`/`nextId` hashing a non-string guid | Ruled out — rss-parser returns a string for every guid shape tested |
+| Object-shaped `<guid isPermaLink="false">` | Ruled out — parses to a plain string |
+| The old "Inside Modern Politics" stand-in resurfacing | Ruled out — removed long ago; unmatched keys now 404 |
+
+**Found while looking — a real bug, NOT fixed**
+
+`toFeedEpisode` resolves `guid: item.guid ?? item.link ?? item.title ?? …`.
+`??` falls through on null/undefined but **not on `""`**, and `<guid></guid>`
+and `<guid/>` both parse to an empty string. Every such episode therefore
+hashes to the same route key, `e3b0c44298fc`, so they collide and `findIndex`
+hands them each other's pages. `Episode.externalId` is `@unique`, so only one
+of them can ever get a database row either.
+
+Left alone deliberately: fixing it changes the route key of affected episodes,
+which breaks any stored link to them, and doing that under a live site while a
+separate crash is unexplained is two changes tangled together. Needs Sasha's
+call.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/error.tsx` | Added — error boundary with Try again |
+| `src/app/not-found.tsx` | Added — styled 404 |
+| `src/app/status.module.css` | Added — shared, deliberately plain |
+| `src/lib/episodeDetail.ts` | Modified — unknown podcast id is `not-found`, not `unavailable` |
+
+**Verified**
+
+Rendered in a real browser. This sandbox cannot reach Apple, which *is* the
+`unavailable` condition, so the reported URL exercises the throw path exactly:
+
+| Check | Result |
+| --- | --- |
+| Reported URL now renders | "This page didn't load", not a bare Next error |
+| Try again button present | yes |
+| Next's "server-side exception" text gone | yes |
+| Error digest shown for log lookup | yes |
+| Unknown route | "We couldn't find that" |
+
+`npx tsc --noEmit` clean.
+
+**Follow-ups**
+
+- **The reported episode still needs a root cause.** Nothing reproducible
+  offline crashes for one episode of a working show. The next step is the
+  **Vercel error code and request id** from the live page —
+  `FUNCTION_INVOCATION_TIMEOUT` and `FUNCTION_INVOCATION_FAILED` mean very
+  different things. A timeout is plausible: `CLAUDE.md` already records that
+  large feeds take ~3.5s to parse single-threaded, and a cold instance with an
+  empty `parsedFeedCache` has to parse the whole feed inside the function's
+  time limit.
+- **Design.** `status.module.css` is plain by necessity — there is no Figma
+  frame for either state. Replace it when there is one.
+- Decide on the empty-guid collision above.
+- These pages are styled but carry **no nav and no footer**: `error.tsx` must be
+  a Client Component and `SiteNav` is a Server Component that reads auth.
+
 ### 2026-11-04 — Terms page restored with its placeholders answered
 
 - **Branch:** `main`
