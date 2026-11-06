@@ -165,6 +165,44 @@ rejected. This is the part that saves the most time later.
 - **`/api/follow` and `/api/favorites`** catch database errors and return
   JSON. A blip used to be a bare 500 with no `error` for the button to show.
 
+#### Part 3 — the data layer (third commit)
+
+- **`fetchPodcastFeed`** keeps its parsed cache, which is load-bearing (see
+  CLAUDE.md), and changes in three ways:
+  1. **Concurrent requests share one parse** (`feedsInFlight`). Every podcast
+     and episode page asks twice, from `generateMetadata` and the page, so on
+     a cache miss JRE's ~3.5s single-threaded parse ran twice in a row.
+     Failures are not kept.
+  2. **The cache is bounded** at 40 feeds, evicting the oldest. Before, an
+     expired entry was only replaced if the same feed was fetched again, so
+     memory grew with every show a crawler visited.
+  3. **Episodes are sorted newest-first by date.** Everything downstream
+     assumed XML order was newest-first. Serial shows publishing oldest-first
+     got the four oldest episodes as "Recent", backwards years, swapped
+     Previous/Next, and no new uploads in the home feed. The sort is stable
+     with undated episodes last, and `firstPublishedAt` is now the oldest
+     *dated* episode.
+- **`latestForShow`** (home feed) throws instead of caching an empty result
+  when the feed failed: no episodes returned while iTunes reports some.
+  `unstable_cache` was storing that for 30 minutes. The caller already skips
+  a show that throws.
+- **`formatDuration`** rounds to minutes before splitting, so it no longer
+  shows "1h 60m".
+- **The episode page's `?t=` hint** must be a string. `?t=a&t=b` arrived as an
+  array, and `.trim()` on it turned a 404 into a 500. Checked: that URL now
+  404s.
+- **`trimSummary`** has no space to cut at in CJK text or a long URL, so
+  `slice(0, -1)` kept nearly everything. It now hard-cuts at the limit.
+- **`hrefForSearchItem`** encodes usernames with `usernameToPath`, like every
+  other profile link.
+
+Checked on the dev server:
+
+- A podcast page lists episodes Nov 6, 5, 4, 1.
+- Its first episode page renders with a duration and Previous/Next.
+- `/podcast/…/episodes`, `/search`, `/explore` and
+  `/explore/trending-episodes` all return 200.
+
 **Verified:** `tsc` and `eslint` clean. On the dev server, `/auth/confirm?type=email`
 shows "Confirm my email", both account routes answer 401 when signed out, and
 forgot-password answers the same as before. **Not verified with a signed-in

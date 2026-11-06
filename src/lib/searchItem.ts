@@ -10,6 +10,9 @@
  * Nothing in here may import anything that touches the database or the network.
  */
 
+// Safe under the rule above: `routeParams` imports nothing.
+import { usernameToPath } from "./routeParams";
+
 type SearchItemBase = {
   /** Unique across both kinds — used as a React key and a dedupe key. */
   id: string;
@@ -77,7 +80,9 @@ export type SearchScope = "all" | "shows" | "episodes" | "users";
  * still has to match the guid hash already in the URL.
  */
 export function hrefForSearchItem(item: SearchItem): string {
-  if (item.type === "user") return `/user/${item.username}`;
+  // Encoded like every other profile link: usernames are unrestricted, and a
+  // space, `#`, `?` or `/` in one broke the link from search results.
+  if (item.type === "user") return `/user/${usernameToPath(item.username)}`;
   if (item.type !== "episode") return `/podcast/${item.id}`;
   const hint = item.title ? `?t=${encodeURIComponent(item.title)}` : "";
   return `/podcast/${item.showExternalId}/episode/${item.episodeKey}${hint}`;

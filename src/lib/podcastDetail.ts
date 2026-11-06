@@ -55,7 +55,10 @@ function year(iso: string | null): string | null {
 function trimSummary(text: string, maxLength = 90): string {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= maxLength) return clean;
-  return `${clean.slice(0, clean.lastIndexOf(" ", maxLength))}…`;
+  // No space to break at, as in Chinese or Japanese text or a long URL, used to
+  // give lastIndexOf -1, and slice(0, -1) kept almost the whole description.
+  const cut = clean.lastIndexOf(" ", maxLength);
+  return `${clean.slice(0, cut > 0 ? cut : maxLength)}…`;
 }
 
 /**

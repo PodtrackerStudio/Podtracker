@@ -34,8 +34,11 @@ function formatDate(iso: string | null): string {
 
 function formatDuration(seconds: number | null): string {
   if (!seconds || seconds <= 0) return "";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.round((seconds % 3600) / 60);
+  // Rounded to whole minutes first, then split. Rounding the remainder instead
+  // turned 1:59:45 into "1h 60m".
+  const total = Math.max(1, Math.round(seconds / 60));
+  const h = Math.floor(total / 60);
+  const m = total % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
@@ -313,7 +316,7 @@ export async function recoverEpisodeFromSearch(
   episodeKey: string,
   titleHint: string,
 ): Promise<EpisodeDetail | null> {
-  if (!podcastId || !episodeKey || !titleHint.trim()) return null;
+  if (!podcastId || !episodeKey || typeof titleHint !== "string" || !titleHint.trim()) return null;
 
   try {
     const results = await searchEpisodes(titleHint, 25);

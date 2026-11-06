@@ -5,6 +5,20 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Podcast data fixes.**
+  - **Feeds are parsed once even when two requests ask at the same moment**,
+    and the in-memory feed cache is capped at 40 feeds. It used to grow
+    forever.
+  - **Episodes are ordered newest-first by date**, so shows that publish
+    oldest-first no longer show their oldest episodes as "recent", and their
+    Previous/Next links aren't swapped.
+  - **The home feed no longer hides a show's new episodes for 30 minutes**
+    after one failed feed load.
+  - **Fixed display bugs:** durations like "1h 60m", and descriptions with no
+    spaces (Chinese, Japanese, long links) not being shortened.
+  - **Fixed crashes:** a repeated `?t=` crashed the episode page.
+  - **Fixed links:** usernames with spaces or symbols broke links from search
+    results.
 - **2026-11-06 — API routes made robust against failures and races.**
   - **Episodes that two shows share can be rated, logged and listed.** Before,
     every action on them failed. A double-click on a new episode no longer 502s.

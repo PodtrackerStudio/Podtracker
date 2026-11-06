@@ -187,26 +187,77 @@ export type PodcastFeed = {
  */
 const parsedFeedCache = new Map<string, { feed: PodcastFeed; expiresAt: number }>();
 
-export async function fetchPodcastFeed(feedUrl: string): Promise<PodcastFeed> {
-  const cached = parsedFeedCache.get(feedUrl);
-  if (cached && cached.expiresAt > Date.now()) return cached.feed;
+/**
+ * **Bounded, oldest out.** It never evicted: an expired entry was only replaced
+ * if the same feed was asked for again, so every feed a crawler walked through
+ * stayed in memory for the life of the process. Some carry thousands of
+ * episodes with full show notes. Maps keep insertion order, so the first key is
+ * the least recently stored. Comfortably above the 12 feeds `trendingEpisodes`
+ * resolves at once.
+ */
+const MAX_CACHED_FEEDS = 40;
 
+/**
+ * Parses already under way, by feed url. Without this, two callers asking for
+ * the same uncached feed at once both parsed it, and that is the expensive part
+ * (~3.5s for JRE, single-threaded, so they queue). It happens on every podcast
+ * and episode page, where `generateMetadata` and the page each ask. Failures
+ * are not kept, so the next request tries again.
+ */
+const feedsInFlight = new Map<string, Promise<PodcastFeed>>();
+
+export function fetchPodcastFeed(feedUrl: string): Promise<PodcastFeed> {
+  const cached = parsedFeedCache.get(feedUrl);
+  if (cached) {
+    if (cached.expiresAt > Date.now()) return Promise.resolve(cached.feed);
+    parsedFeedCache.delete(feedUrl);
+  }
+
+  const pending = feedsInFlight.get(feedUrl);
+  if (pending) return pending;
+
+  const work = loadPodcastFeed(feedUrl).finally(() => feedsInFlight.delete(feedUrl));
+  feedsInFlight.set(feedUrl, work);
+  return work;
+}
+
+async function loadPodcastFeed(feedUrl: string): Promise<PodcastFeed> {
   const res = await fetch(feedUrl, { next: { revalidate: REVALIDATE_SECONDS } });
   if (!res.ok) throw new FeedFetchError(res.status, feedUrl);
   const feed = await rssParser.parseString(await res.text());
 
-  const episodes = feed.items.map(toFeedEpisode);
-  const oldest = episodes[episodes.length - 1];
+  // **Newest first, by date, not by position in the XML.** Everything
+  // downstream assumed feeds list the newest episode first, and most do, but
+  // serial shows often publish oldest-first. For those, "Recent episodes"
+  // showed the four oldest, the years read backwards ("2026–2018"),
+  // Previous/Next were swapped, and the home feed never showed a new upload.
+  // The sort is stable, so feeds already in order keep it, and undated
+  // episodes go last.
+  const time = (e: FeedEpisode) => {
+    const t = e.publishedAt ? Date.parse(e.publishedAt) : NaN;
+    return Number.isNaN(t) ? -Infinity : t;
+  };
+  const episodes = feed.items.map(toFeedEpisode).sort((a, b) => {
+    const ta = time(a);
+    const tb = time(b);
+    return ta === tb ? 0 : tb > ta ? 1 : -1;
+  });
+  const oldestDated = [...episodes].reverse().find((e) => time(e) !== -Infinity);
 
   const parsed: PodcastFeed = {
     // Stripped here, at the boundary, so every consumer downstream gets text.
     // This one went straight to the podcast page and was the `<p>` Sasha saw.
     description: feedTextToPlain(feed.description ?? ""),
     episodes,
-    firstPublishedAt: oldest?.publishedAt ?? null,
+    firstPublishedAt: oldestDated?.publishedAt ?? null,
   };
 
   parsedFeedCache.set(feedUrl, { feed: parsed, expiresAt: Date.now() + REVALIDATE_SECONDS * 1000 });
+  while (parsedFeedCache.size > MAX_CACHED_FEEDS) {
+    const oldestKey = parsedFeedCache.keys().next().value;
+    if (oldestKey === undefined) break;
+    parsedFeedCache.delete(oldestKey);
+  }
   return parsed;
 }
 

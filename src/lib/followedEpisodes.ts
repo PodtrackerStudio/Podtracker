@@ -55,6 +55,16 @@ const latestForShow = unstable_cache(
     // placeholder, whose episodes are invented.
     if (!detail || !detail.isLive) return [];
 
+    // **Don't cache a feed that failed to load.** `getPodcastDetail` swallows
+    // feed errors and still answers, with no episodes, and `unstable_cache`
+    // stored that empty answer for 30 minutes, so one slow feed host hid a
+    // show's new uploads for half an hour. iTunes listing episodes that the
+    // feed didn't return means the feed failed. Throwing skips the cache, and
+    // the caller already treats one show's failure as "leave it out this time".
+    if (detail.recentEpisodes.length === 0 && detail.episodesCount !== "—") {
+      throw new Error(`feed for ${externalId} returned no episodes`);
+    }
+
     return detail.recentEpisodes
       .filter((ep) => ep.publishedAtIso)
       .map((ep) => ({

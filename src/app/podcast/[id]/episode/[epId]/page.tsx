@@ -62,7 +62,9 @@ async function recoverFromHint(
   searchParams: Promise<{ t?: string }>,
 ): Promise<EpisodeDetail | null> {
   const params = await searchParams.catch(() => null);
-  const hint = params?.t;
+  // `?t=a&t=b` arrives as an array. Calling `.trim()` on that threw, so a
+  // repeated parameter turned a would-be 404 into a 500.
+  const hint = typeof params?.t === "string" ? params.t : null;
   if (!hint) return null;
   return recoverEpisodeFromSearch(id, epId, hint);
 }
