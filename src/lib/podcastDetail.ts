@@ -1,5 +1,6 @@
 import { episodeKeyFromGuid } from "./episodeKey";
 import { lookupPodcast, fetchPodcastFeed, type FeedEpisode } from "./podcastApi";
+import { cache } from "react";
 
 // How many episodes the "Recent episodes" strip on the podcast page shows.
 const RECENT_EPISODE_COUNT = 4;
@@ -127,7 +128,16 @@ function placeholderDetail(id: string): PodcastDetail {
  * could be fetched, and finally to the placeholder, because a podcast page that
  * 500s is worse than one showing a stale stand-in.
  */
-export async function getPodcastDetail(id: string): Promise<PodcastDetail | null> {
+/**
+ * Wrapped in React's `cache`, so `generateMetadata` and the page body share one
+ * call per request. The comment above the podcast page's `generateMetadata`
+ * said the second call was "served from cache", but only the `fetch`es were:
+ * this function's own work ran twice. Outside a render, `cache` simply calls
+ * through.
+ */
+export const getPodcastDetail = cache(loadPodcastDetail);
+
+async function loadPodcastDetail(id: string): Promise<PodcastDetail | null> {
   // iTunes ids are numeric. Anything else is one of the legacy hardcoded slugs,
   // which is the one and only thing the placeholder is for.
   if (!/^\d+$/.test(id)) return placeholderDetail(id);

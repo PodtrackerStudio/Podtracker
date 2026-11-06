@@ -103,24 +103,31 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
   // the invented "Modern Wisdom" page this used to render for any id that
   // failed to resolve. A lookup that *throws* is transient and propagates to
   // `error.tsx`, which offers Try again.
-  const podcast = await getPodcastDetail(id);
+  //
+  // All four run at once. None of the three database reads depends on the
+  // iTunes and feed lookup, but they used to wait for it and then for each
+  // other: about seven round trips in a row behind the slowest call on the
+  // page.
+  //
+  // - Listens and Likes are this app's own numbers, so they come from the
+  //   database, not the API. Zero until people start using the site.
+  // - Real ratings as of 2026-10-03, gated on having any rather than on the
+  //   global switch: one person's rating is a real average, and a show nobody
+  //   has rated shows nothing rather than an empty frame.
+  // - What THIS viewer has already done, so the controls show their real state
+  //   instead of resetting to Follow / unrated on every refresh.
+  const [podcast, stats, ratings, viewerState] = await Promise.all([
+    getPodcastDetail(id),
+    getPodcastCommunityStats(id),
+    getPodcastRatingSummary(id),
+    getViewerPodcastState(id),
+  ]);
   if (!podcast) notFound();
   const recentEpisodes = podcast.recentEpisodes;
-  // Listens and Likes are this app's own numbers, so they come from the
-  // database, not the API. Zero until people start using the site.
-  const stats = await getPodcastCommunityStats(id);
-  // Real ratings as of 2026-10-03, replacing the mock block that used to sit
-  // behind HAS_COMMUNITY_DATA. Gated on having any rather than on the global
-  // switch: one person's rating is a real average, and a show nobody has rated
-  // shows nothing at all rather than an empty frame.
-  const ratings = await getPodcastRatingSummary(id);
   // Resolved once, because the mic, the label and their colour all need it.
   // Null when nothing scoreable is rated — everyone so far pressed "Didn't
   // finish", which counts in the bars but carries no score.
   const averageTier = ratings.average !== null ? tierFromScore(ratings.average) : null;
-  // What THIS viewer has already done, so the controls show their real state
-  // instead of resetting to Follow / unrated on every refresh.
-  const viewerState = await getViewerPodcastState(id);
 
   // Structured data, so this reads as a podcast rather than an unlabelled page
   // of text. `PodcastSeries` is what makes artwork and episode information

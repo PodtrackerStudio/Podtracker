@@ -5,6 +5,14 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Speed: server region and page loading.**
+  - **The site's code now runs in Cleveland (`cle1`), next to the database in
+    Ohio**, instead of Washington. Every database and login call used to cross
+    between the two.
+  - **Podcast and episode pages run their database queries alongside the
+    Apple/feed lookup** instead of after it.
+  - **Each page and its title/metadata share one data load** instead of doing
+    the work twice.
 - **2026-11-06 — Speed: profile pictures and login checks.** Profile
   pictures (stored as text, up to 3.9 MB) were embedded inside every page that
   showed them, twice. They're now served as cached images from

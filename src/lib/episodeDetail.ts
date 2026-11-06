@@ -1,6 +1,7 @@
 import { lookupPodcast, fetchPodcastFeed, searchEpisodes, FeedFetchError } from "./podcastApi";
 import { episodeKeyFromGuid } from "./episodeKey";
 import { feedTextToPlain } from "./feedText";
+import { cache } from "react";
 
 export type EpisodeDetail = {
   /** Hashed guid — the route key. */
@@ -207,7 +208,10 @@ async function withRetry<T>(attempt: () => Promise<T>): Promise<T | null> {
  * link was indistinguishable from a working one — four separate pages shipped
  * links built from database cuids and nothing ever visibly failed.
  */
-export async function getEpisodeDetail(podcastId: string, episodeKey: string): Promise<EpisodeLookup> {
+/** Shared by `generateMetadata` and the page within one request; see `getPodcastDetail`. */
+export const getEpisodeDetail = cache(loadEpisodeDetail);
+
+async function loadEpisodeDetail(podcastId: string, episodeKey: string): Promise<EpisodeLookup> {
   // Legacy slug ids ("jre", "modern-wisdom") are not iTunes ids and have no
   // feed behind them. Genuinely nothing to find, so not a retry case.
   if (!/^\d+$/.test(podcastId)) return { status: "not-found" };

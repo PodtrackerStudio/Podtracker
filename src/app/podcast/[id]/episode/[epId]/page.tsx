@@ -124,6 +124,18 @@ export default async function EpisodePage({
   searchParams: Promise<{ t?: string }>;
 }) {
   const { id, epId } = await params;
+
+  // Started before the feed lookup rather than after it: neither needs the
+  // feed, and the feed is the slow part. The catch only stops an unhandled
+  // rejection if the page 404s or throws first; the real await is below.
+  const side = Promise.all([
+    getEpisodeRatingSummaryByKey(id, epId),
+    // What THIS viewer has already done, so the Rate mic and Next listening
+    // show their real state instead of resetting to blank on every load.
+    getViewerEpisodeState(id, epId),
+  ]);
+  side.catch(() => {});
+
   const result = await getEpisodeDetail(id, epId);
 
   // An upstream hiccup throws rather than 404ing, so a working episode is
@@ -143,12 +155,7 @@ export default async function EpisodePage({
 
   // Real ratings as of 2026-10-03, replacing the mock block that sat behind
   // HAS_COMMUNITY_DATA. Gated on having any, not on the global switch.
-  const [ratings, viewerState] = await Promise.all([
-    getEpisodeRatingSummaryByKey(id, epId),
-    // What THIS viewer has already done, so the Rate mic and Next listening
-    // show their real state instead of resetting to blank on every load.
-    getViewerEpisodeState(id, epId),
-  ]);
+  const [ratings, viewerState] = await side;
   // Resolved once — the mic, the label and their colour all need it.
   const averageTier = ratings.average !== null ? tierFromScore(ratings.average) : null;
 

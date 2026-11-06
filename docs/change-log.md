@@ -257,6 +257,32 @@ The trade-off: a revoked session stays valid until its access token expires
 (an hour by default). Password change and reset still call `getUser`
 themselves. The reasoning is recorded in `auth.ts`.
 
+#### Part 5 — speed: region and waterfalls (fifth commit)
+
+- **`vercel.json` sets `regions: ["cle1"]`.** Production responses carried
+  `x-vercel-id: iad1::iad1`, so functions ran in Washington while Postgres and
+  Supabase Auth are in `us-east-2` (the pooler host is
+  `aws-0-us-east-2.pooler.supabase.com`). Every query crossed regions, and
+  pages make several in a row. Recorded in CLAUDE.md's gotchas so it moves if
+  the database does.
+- **`getPodcastDetail` and `getEpisodeDetail` are wrapped in React `cache()`.**
+  `generateMetadata` and the page each called them, and only the `fetch`es
+  were deduplicated, not the function's own work.
+- **`/podcast/[id]`** runs detail, community stats, rating summary and
+  viewer state in one `Promise.all`. They used to run one after another:
+  about seven round trips behind the iTunes and feed lookup.
+- **`/podcast/[id]/episode/[epId]`** starts the rating summary and viewer state
+  before the feed lookup and awaits them after it. A no-op `.catch` keeps a
+  404 from leaving an unhandled rejection.
+
+Checked on the dev server:
+
+- The show and episode pages render, with their `<title>` intact.
+- An unknown episode key 404s, and so does an unknown show id.
+- The legacy `/podcast/jre` slug still renders.
+
+`tsc`, `eslint` and `next build` are clean.
+
 **Verified:** `tsc` and `eslint` clean. On the dev server, `/auth/confirm?type=email`
 shows "Confirm my email", both account routes answer 401 when signed out, and
 forgot-password answers the same as before. **Not verified with a signed-in

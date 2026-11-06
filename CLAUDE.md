@@ -146,6 +146,11 @@ Three things to know before touching what is left:
   breaks the `$transaction` calls in `/api/log` and `/api/favorites`.
   **`npm run check:db` diagnoses all of this** and names the fix — run it before
   investigating a database problem by hand.
+- **Functions run in `cle1` (Cleveland), set in `vercel.json`,** to sit next to
+  the Supabase database in `us-east-2` (Ohio). They used to run in `iad1`
+  (Washington), so every database query and Supabase auth call crossed between
+  the two, and pages make several in a row. If the database ever moves region,
+  move this with it.
 - **`fetchPodcastFeed`'s in-memory parsed cache is load-bearing — do not remove
   it.** Podcast feeds exceed Next's 2MB fetch-cache limit, so Next caches *none*
   of them, and the XML re-parses on every render. Feeds are huge (JRE's carries
