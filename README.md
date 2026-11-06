@@ -5,6 +5,17 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — The 3 existing profile pictures shrunk** (a data change, not
+  code). Re-encoded to at most 400px WebP, the same as new uploads:
+  Snezhana 3.9 MB → 35 KB, NicoNTK 128 KB → 40 KB, Sasha 47 KB → 16 KB. They
+  look the same; the comparison was checked first. The originals are backed up
+  on Phillip's Mac in `~/Podtracker-avatar-backup-2026-11-06/`.
+- **2026-11-06 — Fix: database connections leaking between deploys.** While
+  checking the pictures, Supabase's connection pooler was full (15/15) and the
+  live site briefly reported its database unreachable. Paused Vercel
+  instances were holding idle connections. `src/lib/db.ts` now registers its
+  pool with Vercel's `attachDatabasePool`, so idle connections close before an
+  instance pauses.
 - **2026-11-06 — `/analytics` image tightened for Discord.**
   - **Shorter:** 1600×1180 instead of 1600×1560, so Discord shows it larger.
     The panels hold five rows.

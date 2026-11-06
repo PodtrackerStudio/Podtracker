@@ -71,6 +71,80 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-06 — Existing avatars shrunk; database connections leaking between deploys
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "go ahead and shrink the 3 existing profile
+  pictures". The connection fix came out of verifying it.
+- **Status:** Complete.
+
+**The avatars (production data, not code)**
+
+- Backed up first, outside the repo, to `~/Podtracker-avatar-backup-2026-11-06/`
+  on Phillip's Mac (mode 700): for each user, the original image bytes and the
+  exact column value (`<id>.datauri.txt`), which is what to write back to
+  restore.
+- Re-encoded the same way the Settings form now does: at most 400px, WebP
+  q85. EXIF orientation was applied first, because Snezhana's 4032×3024 photo
+  is rotated by its EXIF tag and browsers showed it portrait. The WebP is
+  300×400 to match.
+- Checked by eye side by side before writing. Each `UPDATE` was conditional
+  on the value still being the backed-up one.
+
+| User | Before | After |
+|---|---|---|
+| Snezhana | 4032×3024 JPEG, 3,888,587 chars | 300×400 WebP, 35,163 chars |
+| NicoNTK | 728×728 JPEG, 127,707 chars | 400×400 WebP, 39,775 chars |
+| Sasha(Co-founder) | 736×460 JPEG, 47,471 chars | 400×250 WebP, 15,587 chars |
+
+Live, `/api/avatar/<id>` now serves `image/webp` at 26 KB, 30 KB and 12 KB.
+
+**The connection leak, found while verifying**
+
+A read-only check after the update was refused with
+`EMAXCONNSESSION … max clients are limited to pool_size: 15`, and production's
+`/api/health/db` reported **"Database unreachable from this deployment"** on
+three requests in a row. That was about 17:45 UTC. A minute later it reported
+reachable again. Nothing local held a connection (checked with `lsof`).
+
+The cause: `db.ts` sets `idleTimeoutMillis`, but Vercel's Fluid compute pauses
+instances between requests, and a paused instance runs no timers. Its idle
+connections therefore stay open on Supavisor's side until Vercel reclaims the
+instance. Every deployment leaves such instances, and this day had more than a
+dozen deploys plus the region move to `cle1`. At `max: 3` per instance, five
+lingering instances fill the 15 session slots. The direct database host could
+not be used to inspect `pg_stat_activity`: it is IPv6-only and did not resolve
+here.
+
+**Fix (`src/lib/db.ts`):**
+
+- The app builds its own `pg.Pool` and passes it to `new PrismaPg(pool)`.
+  Prisma 7.10 accepts a Pool; the old comment saying it "type-errors" predated
+  that.
+- It registers the pool with **`attachDatabasePool`** from `@vercel/functions`
+  (3.10.3, pinned; the two-week-old release), which keeps each invocation alive
+  until its idle connections have closed. It does nothing off Vercel.
+- `idleTimeoutMillis` is now 5s, down from 10s, since that is how long each
+  invocation is held open.
+
+Checked locally (unchanged behaviour off Vercel):
+
+- profile, reviews, podcast, review and list pages, `/api/avatar` and user
+  search all return 200;
+- `/api/health/db` reports reachable;
+- `tsc`, `eslint` and `next build` are clean.
+
+**Follow-ups**
+
+- Watch `/api/health/db` and the Vercel logs for `EMAXCONNSESSION` over the
+  next few days.
+- If it recurs, the options are:
+  - raise the pooler's pool size in Supabase (Database → Settings →
+    Connection pooling);
+  - or move to transaction mode (6543), which first needs the two
+    interactive `$transaction` calls rewritten. See `db.ts`.
+
+
 ### 2026-11-06 — Alignment and polish pass
 
 - **Branch:** `main`

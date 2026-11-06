@@ -1,3 +1,5 @@
+import { Pool } from "pg";
+import { attachDatabasePool } from "@vercel/functions";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
@@ -83,9 +85,7 @@ function sslConfig(connectionString: string | undefined) {
 }
 
 function createClient() {
-  // PrismaPg takes the pool *config* and owns the pool itself — passing an
-  // already-constructed Pool type-errors.
-  const adapter = new PrismaPg({
+  const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: sslConfig(process.env.DATABASE_URL),
     // Bounds *connecting*, not query time, so a slow query is unaffected.
@@ -111,8 +111,25 @@ function createClient() {
     max: 3,
     // Hand connections back quickly instead of holding them for the life of an
     // instance that may serve nothing else for minutes.
-    idleTimeoutMillis: 10_000,
+    idleTimeoutMillis: 5_000,
   });
+
+  // **Without this the idle timeout above never fires on Vercel.** Fluid
+  // compute pauses an instance between requests, and a paused instance runs no
+  // timers, so its idle connections stay open on Supabase's side for as long as
+  // the instance exists. Every deployment leaves instances like that behind.
+  // On 2026-11-06, after a day of a dozen deploys and a region move, they
+  // held all 15 of the pooler's session slots, and `/api/health/db` reported
+  // the database unreachable (`EMAXCONNSESSION`) until Vercel reclaimed them.
+  // `attachDatabasePool` keeps each invocation alive just past the idle timeout,
+  // so connections close before the pause. That is why the timeout dropped from
+  // 10s to 5s. It does nothing off Vercel.
+  attachDatabasePool(pool);
+
+  // Prisma 7.10's adapter accepts a ready-made pool. An older version took only
+  // a config and type-errored on a Pool, which is why this used to pass the
+  // config straight in. The pool has to be ours to give to attachDatabasePool.
+  const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 
