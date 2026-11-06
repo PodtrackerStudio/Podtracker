@@ -92,6 +92,16 @@
   .reviewHeader {
     grid-template-columns: 1fr;
   }
+  /* Name and date each broke over two lines side by side ("Review by
+     Sasha(Co-" / "founder)" beside "Date:" / "9/24/26"). Each stays whole, and
+     the date drops below when there's no room. */
+  .byline {
+    flex-wrap: wrap;
+    gap: 4px 24px;
+  }
+  .byline > * {
+    white-space: nowrap;
+  }
   .cover {
     max-width: 200px;
   }

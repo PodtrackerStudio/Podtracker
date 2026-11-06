@@ -71,6 +71,100 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-06 — Alignment and polish pass
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "make sure that everything is aligned and
+  looking professional". Scope agreed: fix what is broken or misaligned
+  within the existing design, and change nothing that is Sasha's Figma's to
+  decide.
+- **Status:** Complete.
+
+**How it was checked**
+
+Headless Chrome (`puppeteer-core` in the scratchpad, not a project
+dependency) loaded 22 public routes on production at 1440px and 390px. For
+each page it took a full-page screenshot and reported:
+
+- horizontal overflow,
+- elements past the viewport that no ancestor clips,
+- broken images,
+- page errors.
+
+**No page overflowed and no image was broken.** The screenshots showed the
+rest. Logged-in pages (`/home`, `/following`, `/settings`, `/log`) were not
+covered, because there is no test account.
+
+**Found, and fixed first:** the full episode list was rendering empty in
+production. That was Part 7's regression, logged in the audit entry below.
+
+**Fixed**
+
+- **Footer on phones, every page** (`globals.css`). There were no phone
+  rules: the 48px desktop padding squeezed "About Us" and "Contact us" onto
+  two lines each, and "Donate" ran into the Facebook mark. At ≤560px the
+  footer now stacks links over icons, centred, with nowrap links.
+- **Landing and About** (`landing.module.css`):
+  - The heading broke over two lines on a phone. TypedText has to keep its
+    text left-aligned (centred text would shift with every letter typed), so
+    the wrapped heading sat flush left under a centred page. It is now
+    `clamp(22px, 6.6vw, 32px)`: one line, caret included, measured at 360,
+    390 and 430px.
+  - The intro box was 16px wider on each side than the four cards under it,
+    because the mobile padding padded the box's inside but the grid's
+    outside. Both now share the section's 16px edge.
+- **Show and episode pages on phones:** the header column was centred, but
+  the author/years row, stats row, back link and date row are flex
+  containers, which ignore `text-align`, so they sat flush left. They are
+  now centred. Long descriptions are left-aligned, the way podcast apps lay
+  out a phone show page: a centred paragraph is hard to read.
+- **Profile on phones** (`profile.module.css`):
+  - The Next listening strip (376px of fixed covers) widened the `1fr`
+    column past the page margin, dragging the rating bars and calendar to the
+    screen edge. The column is now `minmax(0, 1fr)`, and the covers are 52px
+    with 10px overlap (304px).
+  - "Highly Recommend" beside "Read review" didn't fit a two-column caption,
+    so the label broke and captions misaligned. They now stack.
+- **Review page:** `Comments` added its own 24px padding inside a `main`
+  that already had it, so comments sat 24px right of the review. Removed; it
+  is only used there. On phones the byline wraps whole items instead of
+  breaking "Sasha(Co-" / "founder)" beside "Date:" / "9/24/26". The author
+  link now uses `usernameToPath`.
+- **List page:** `.cell` centres its children for the rank badge, which
+  shrank a card to its image's natural width, so a 60px feed cover showed as
+  a small square. The card now stretches.
+- **Hydration (React #418) on every profile and list page** for visitors
+  outside UTC. Reproduced by emulating Asia/Tokyo against the dev server:
+  - `ListDetailClient.formatDate` had no `timeZone`, so server (UTC) and
+    browser (local) disagreed. It is now UTC, like every server-side date.
+  - `ProfileCalendar` deliberately groups days in the browser's time zone.
+    It now renders in UTC on the server and the first client pass, then
+    switches to local time (`useSyncExternalStore` hydration flag).
+
+  Re-run under Tokyo: no errors.
+- **Copy:**
+  - Other people's profiles said "Here's what *you've* been listening to…";
+    they now use the person's name.
+  - `/user/*/ratings` said "Your Ratings"; it is now "<name>'s Ratings" for
+    other people. This adds a `getCurrentUser`, run in parallel.
+  - Search said "1 episodes".
+  - A list of episodes said "8 podcasts". The label now reads episodes,
+    podcasts, or titles when mixed.
+
+**Re-checked on the dev server:** the profile, show, episode, landing,
+review and list pages at both widths, with no overflow, broken images or
+errors. `tsc`, `eslint` and `next build` are clean.
+
+**Deliberately not changed**
+
+- The Figma-defined desktop layouts.
+- The divergences CLAUDE.md lists: "See more" pills, wordmark size, logo
+  tile.
+- `/podcast/[id]/top-rated` still generates **random mock episodes**.
+  Nothing links to it while `HAS_COMMUNITY_DATA` is off, but it needs
+  replacing before that flag is turned on.
+
+
 ### 2026-11-06 — Back-end audit: bugs, speed, security
 
 - **Branch:** `main`

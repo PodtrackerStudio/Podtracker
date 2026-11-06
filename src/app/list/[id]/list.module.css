@@ -66,6 +66,12 @@
   flex-direction: column;
   align-items: center;
 }
+/* Centring is for the rank badge. Applied to the card too, it shrank the card to
+   its image's own width, so a show with small artwork (60px from the feed)
+   showed as a small square adrift in its tile. */
+.cell > :global(.media-thumb) {
+  align-self: stretch;
+}
 .rank {
   width: 32px;
   height: 32px;

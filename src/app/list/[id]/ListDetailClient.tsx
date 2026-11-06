@@ -22,8 +22,23 @@ const SORT_LABELS: Record<SortMode, string> = {
 // aggregated score. It comes back when averages are computed, alongside
 // HAS_COMMUNITY_DATA being flipped on.
 
+/**
+ * "8 episodes", "3 podcasts", or "5 titles" when a list mixes both. It always
+ * said "podcasts", so a list of eight Joe Rogan episodes read "8 podcasts".
+ */
+function countLabel(items: { kind: "show" | "episode" }[]): string {
+  const n = items.length;
+  const episodes = items.filter((i) => i.kind === "episode").length;
+  const noun = episodes === n ? "episode" : episodes === 0 ? "podcast" : "title";
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+}
+
+// UTC, like every date the server formats. Without a time zone, this ran in
+// UTC on the server and in local time in the browser. React then saw "Nov 6"
+// against "Nov 5", threw away the server's HTML and rebuilt the list (React
+// error #418 on every list page, for anyone outside UTC).
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 /**
@@ -86,7 +101,7 @@ export function ListDetailClient({
     <>
       <div className={styles.metaRow}>
         <div className={styles.episodeCount}>
-          {items.length} {items.length === 1 ? "podcast" : "podcasts"}
+          {countLabel(items)}
         </div>
         {/* Description with the heart beneath it, centred — the frame puts the
             likes between the item count and the sort menu. */}

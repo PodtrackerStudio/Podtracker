@@ -431,7 +431,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
         <section>
           <div className={styles.listeningHeader}>
-            <h2 className={styles.listeningTitle}>Here&apos;s what you&apos;ve been listening to…</h2>
+            {/* "you" only on your own profile. Everyone else visiting was told
+                what *they* had been listening to. */}
+            <h2 className={styles.listeningTitle}>
+              {isOwnProfile
+                ? <>Here&apos;s what you&apos;ve been listening to…</>
+                : <>Here&apos;s what {profileUser.displayName || profileUser.username} has been listening to…</>}
+            </h2>
           </div>
 
           {hasActivity ? (

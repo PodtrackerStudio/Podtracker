@@ -11,6 +11,7 @@ import { LikeButton } from "@/components/LikeButton";
 import { DeleteReviewButton } from "@/components/DeleteReviewButton";
 import styles from "./review.module.css";
 import { avatarSrc } from "@/lib/avatar";
+import { usernameToPath } from "@/lib/routeParams";
 
 /** RatingTier enum → the label and colour class the design uses. */
 const TIER_DISPLAY: Record<string, { label: string; className: string }> = {
@@ -165,7 +166,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             <div className={styles.byline}>
               <span>
                 Review by{" "}
-                <Link href={`/user/${entry.user.username}`} className={styles.author}>
+                <Link href={`/user/${usernameToPath(entry.user.username)}`} className={styles.author}>
                   {entry.user.displayName}
                 </Link>
               </span>

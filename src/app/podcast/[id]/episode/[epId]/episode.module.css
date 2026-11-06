@@ -551,6 +551,17 @@
   .episodeTitle {
     font-size: 25px;
   }
+  /* Flex rows ignore text-align: the back link and the date sat flush left
+     under a centred title. */
+  .episodePodcastLink,
+  .episodeMeta {
+    justify-content: center;
+  }
+  /* Short lines centre, the paragraph reads left to right. See the same rule
+     on the show page. */
+  .episodeDesc {
+    text-align: left;
+  }
   .actionRow {
     justify-content: center;
     gap: 12px;

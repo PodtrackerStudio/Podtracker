@@ -1,7 +1,8 @@
 .wrap {
-  max-width: 960px;
-  margin: 56px auto 0;
-  padding: 0 24px;
+  /* No padding or width of its own. The only page that renders comments is
+     /review/[id], whose main already pads 24px, so this section sat 24px further
+     in than the review it belongs to. */
+  margin: 56px 0 0;
 }
 
 .heading {

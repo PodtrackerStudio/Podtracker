@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { FilterMenu, type FilterOption } from "@/components/FilterMenu";
 import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import {
   getUserRatings,
   TIER_ORDER,
@@ -72,7 +73,13 @@ export default async function RatingsPage({
   const username = usernameFromParam(usernameParam);
   const sp = await searchParams;
 
-  const profileUser = await db.user.findUnique({ where: { username }, select: { id: true, displayName: true } });
+  const [profileUser, viewer] = await Promise.all([
+    db.user.findUnique({ where: { username }, select: { id: true, displayName: true } }),
+    getCurrentUser(),
+  ]);
+  // "Your Ratings" only on your own page; anyone else's is theirs by name.
+  const heading =
+    profileUser && viewer?.id !== profileUser.id ? `${profileUser.displayName || username}'s Ratings` : "Your Ratings";
 
   const tier = isTier(sp.tier) ? sp.tier : null;
   const media = (["shows", "episodes"].includes(sp.media ?? "") ? sp.media : "all") as MediaFilter;
@@ -97,7 +104,7 @@ export default async function RatingsPage({
     <>
       <SiteNav active="profile" />
       <main className={styles.main}>
-        <h1 className={styles.title}>Your Ratings</h1>
+        <h1 className={styles.title}>{heading}</h1>
 
         <div className={styles.filters}>
           <FilterMenu param="tier" options={TIER_OPTIONS} defaultLabel="All Ratings" />

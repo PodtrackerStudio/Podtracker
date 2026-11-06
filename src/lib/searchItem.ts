@@ -99,7 +99,8 @@ export function subtitleForSearchItem(item: SearchItem): string {
   }
   // Apple's trackCount is a reasonable episode count; fall back to the author
   // when it is missing, since "0 episodes" reads worse than no number.
-  return item.episodeCount > 0 ? `${item.episodeCount.toLocaleString("en-US")} episodes` : item.artistName;
+  if (item.episodeCount <= 0) return item.artistName;
+  return `${item.episodeCount.toLocaleString("en-US")} episode${item.episodeCount === 1 ? "" : "s"}`;
 }
 
 export function coverForSearchItem(item: SearchItem): string {

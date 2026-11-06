@@ -601,6 +601,23 @@ footer.site-footer {
   .nav-logo-tile {
     display: none;
   }
+  /* The footer had no phone layout. At 390px, the 48px desktop padding left the
+     links so little room that "About Us" and "Contact us" broke over two lines
+     and "Donate" ran into the Facebook mark. On a phone it stacks: links, then
+     the marks, both centred. */
+  footer.site-footer {
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 16px;
+  }
+  .footer-links {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+  }
+  .footer-links a {
+    white-space: nowrap;
+  }
   .nav-search {
     max-width: 160px;
   }

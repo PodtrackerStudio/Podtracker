@@ -255,8 +255,13 @@
   .hero {
     padding: 48px 20px 32px;
   }
+  /* Sized so "Welcome to Podtracker!" and its typing caret fit on one line on a
+     phone (checked at 360, 390 and 430px wide). At 32px it
+     broke over two, and because the typing effect needs its text left-aligned
+     (centred text would jump sideways as each letter is typed), the wrapped
+     heading sat flush left under a centred page. */
   .hero h1 {
-    font-size: 32px;
+    font-size: clamp(22px, 6.6vw, 32px);
   }
   /* Side by side the two buttons squeeze to about 120px each; stacked they stay
      a full-width tap target. */
@@ -272,8 +277,16 @@
     grid-template-columns: repeat(2, 1fr);
     padding: 0 16px 48px;
   }
-  .whatIsBox,
-  .featuresGrid,
+  /* The intro box and the four cards under it share one edge. The box used to
+     reach 16px further out on each side than the cards, because the 16px here
+     padded the inside of the box but the outside of the grid. */
+  .whatIsSection {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .whatIsBox {
+    padding: 20px 22px;
+  }
   .ratingTierList {
     padding-left: 16px;
     padding-right: 16px;

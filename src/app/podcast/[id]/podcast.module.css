@@ -777,6 +777,18 @@
     font-size: 30px;
     letter-spacing: -0.5px;
   }
+  /* The header column is centred, but these two rows are flex containers,
+     which ignore text-align, so they sat flush left under a centred title. */
+  .podcastMetaRow,
+  .podcastStatsRow {
+    justify-content: center;
+  }
+  /* Short lines centre; a paragraph doesn't. A centred block of description
+     has a ragged left edge on every line and is hard to read. This is the
+     arrangement podcast apps use on a phone. */
+  .podcastDesc {
+    text-align: left;
+  }
   .actionRow {
     justify-content: center;
     gap: 12px;

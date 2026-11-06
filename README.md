@@ -5,6 +5,22 @@
 Short record of every change, newest first. The full reasoning for each one is in
 [`docs/change-log.md`](docs/change-log.md).
 
+- **2026-11-06 — Alignment and polish pass across the site.** Every public
+  page was screenshotted in Chrome at desktop (1440px) and phone (390px)
+  width and checked for overflow, broken images and console errors. Fixed:
+  - **Footer on phones (every page):** links no longer break over two lines or
+    run into the icons.
+  - **Phone layout of the landing/About, show, episode, profile and review
+    pages:** headings, meta rows and descriptions line up, and nothing runs to
+    the screen edge.
+  - **List pages:** a cover with small artwork now fills its tile.
+  - **Hydration errors:** profile and list pages no longer rebuild themselves
+    in the browser (React #418) for visitors outside UTC.
+  - **Wording:** "Here's what *you've* been listening to" and "*Your* Ratings"
+    on other people's profiles, "1 episodes", and "8 podcasts" on a list of
+    episodes.
+
+  Design itself is unchanged.
 - **2026-11-06 — Fix: full episode lists showed "No episodes found".**
   Introduced by the paging change an hour earlier, and live until this fix.
   The server page read the page size from a client component, which hands the

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import styles from "./profile.module.css";
 
 export type ListenedEntry = {
@@ -38,10 +38,26 @@ function monthKey(year: number, month: number) {
  * so the arrows are instant. Fine at the scale a diary reaches; if someone ever
  * logs tens of thousands, this is the thing to paginate.
  */
+const subscribeNever = () => () => {};
+
+/**
+ * False on the server and during hydration, true once the browser has taken
+ * over. The server has no idea of the visitor's time zone, so anything it renders
+ * in "local" time is really UTC. The browser's first pass must reproduce that
+ * exactly, or React discards the server's HTML (error #418, seen on every
+ * profile for anyone outside UTC). So days are placed in UTC for that first
+ * pass, then in the browser's own time zone, as the note above requires.
+ */
+function useHydrated() {
+  return useSyncExternalStore(subscribeNever, () => true, () => false);
+}
+
 export function ProfileCalendar({ entries }: { entries: ListenedEntry[] }) {
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
+  const local = useHydrated();
+  // The starting month, in UTC so server and browser agree. They can only
+  // differ in the hours around a month boundary, and the arrows are right there.
+  const [year, setYear] = useState(() => new Date().getUTCFullYear());
+  const [month, setMonth] = useState(() => new Date().getUTCMonth());
 
   // day-of-month → titles, per month, so switching months is a lookup.
   const byMonth = useMemo(() => {
@@ -49,13 +65,16 @@ export function ProfileCalendar({ entries }: { entries: ListenedEntry[] }) {
     for (const e of entries) {
       const d = new Date(e.date);
       if (Number.isNaN(d.getTime())) continue;
-      const key = monthKey(d.getFullYear(), d.getMonth());
+      const [y, m, day] = local
+        ? [d.getFullYear(), d.getMonth(), d.getDate()]
+        : [d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()];
+      const key = monthKey(y, m);
       const days = map.get(key) ?? {};
-      (days[d.getDate()] ??= []).push(e.title);
+      (days[day] ??= []).push(e.title);
       map.set(key, days);
     }
     return map;
-  }, [entries]);
+  }, [entries, local]);
 
   const listenedDays = byMonth.get(monthKey(year, month)) ?? {};
 
