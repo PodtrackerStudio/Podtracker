@@ -71,6 +71,49 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-07 — Design refresh: softer, more relaxed, more community-feeling
+
+- **Branch:** `design-refresh`, rebased and fast-forwarded onto `main`
+- **Requested by:** Phillip: "spice up the website, keep things the same but refine it and make it look better and more community oriented and relaxed", shown locally first; a second round was asked for ("even better") and then "ship it"
+- **Status:** Complete
+
+**What changed**
+
+- **Kept unchanged:** Sasha's colours, fonts and page layouts. No new colours were added.
+- **Feel tokens** in `globals.css`: one radius scale (`--radius-sm/md/lg/pill`), three soft shadows, `--surface` and `--ease`. Nav links, search and focus ring got softer and rounder.
+- **Covers and cards:** rounded corners, a gentle lift and shadow on hover, pill buttons throughout, episode rows that highlight on hover.
+- **Landing:** a soft blue glow behind the headline; rating levels shown as pills tinted from their own colour via `color-mix`.
+- **Show and episode pages:** a blurred, saturated copy of the cover sits behind the cover (`.coverWrap` / `.coverGlow`), so the art glows in its own colours. This stays inside the cover's footprint, so it doesn't go against Sasha's "no banner" decisions of 2026-08-17/18. Rating distribution bars fill in on load.
+- **Site-wide:** `main` fades up on load (`backwards` fill, so nothing remains applied afterwards that could trap `position: fixed` children). Buttons scale to 0.97 when pressed. Both are off under `prefers-reduced-motion`, except the button press.
+- **Login and sign-up:** `.authWrap` is now a soft white card.
+- **Review page:** the reviewer's avatar is shown beside "Review by". The query now also selects `user.id`. The review text sits in a card.
+- **Comments:** the empty state now reads "No comments yet. Start the conversation!". Logged-out visitors see "**Log in** to join the conversation." with the words "Log in" linking to `/login`.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/globals.css` | Modified — feel tokens, nav/search/cover polish, page fade-in, button press |
+| `src/app/landing.module.css` | Modified — hero glow, pill buttons, rating-level pills, rounded cards |
+| `src/app/podcast/[id]/page.tsx`, `podcast.module.css` | Modified — cover glow, bar fill animation, pill buttons, row hover |
+| `src/app/podcast/[id]/episode/[epId]/page.tsx`, `episode.module.css` | Modified — same as the show page |
+| `src/app/podcast/[id]/episodeListing.module.css` | Modified — row hover, rounded thumbs |
+| `src/app/review/[id]/page.tsx`, `review.module.css` | Modified — reviewer avatar, review text card |
+| `src/components/Comments.tsx`, `comments.module.css` | Modified — friendlier copy, login link, softer inputs |
+| `src/app/signup/auth.module.css` | Modified — form card |
+| `src/app/user/[username]/profile.module.css`, `src/app/explore/explore.module.css` | Modified — avatar ring, softer calendar and cards |
+
+**Why**
+
+Phillip wanted the site to feel more relaxed and community-oriented, but without a redesign. CLAUDE.md puts colours, fonts and layout in Sasha's hands, so every change works on *how* things sit on the page (corners, depth, motion, warmth of copy) and none on *what* the design is. The cover glow was chosen over a backdrop or banner because Sasha has twice rejected banners on these pages.
+
+Before deploying, before/after screenshots were taken at 1440px and 390px for home, show, episode, episodes, Explore, profile, review and login. Every page returned 200 with no horizontal overflow.
+
+**Follow-ups**
+
+- Sasha hasn't reviewed this yet. It deliberately diverges from the Figma in feel (radii, shadows, motion) and in two lines of comment copy. Raise it with him, and revert any part he doesn't want.
+- On mostly-white artwork (e.g. Joe Rogan) the cover glow is barely visible. That's expected, not a bug.
+
 ### 2026-11-06 — Sign in with Google
 
 - **Branch:** `main`
