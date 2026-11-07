@@ -20,12 +20,15 @@ export const metadata: Metadata = {
  * — there is no company — based in **Michigan, USA**, and **Michigan law**
  * governs. If an LLC is ever formed, section 1 and section 14 both change.
  *
- * **Two things here describe the site as it should be, not as it is**, and both
- * are marked at the line:
- *   - §10 says a Privacy Policy "is being prepared". Link it when it exists.
+ * **One thing here describes the site as it should be, not as it is**, marked
+ * at the line:
  *   - §10 says you can *ask* to have your account deleted, because there is no
  *     self-serve deletion to point at. Restore the stronger wording when there
  *     is.
+ *
+ * §10's "a Privacy Policy is being prepared" was replaced on 2026-11-07 with a
+ * link to `/privacy`, which exists on this branch. Both documents are waiting
+ * on the same review — see `docs/privacy-policy-review.md`.
  *
  * Written against what the site actually does rather than a template: accounts
  * through Supabase, user-written reviews and lists, podcast metadata and
@@ -172,10 +175,10 @@ export default function TermsPage() {
         <h2>10. Your data</h2>
         <p>
           We collect what the site needs to work: your email address, your username, and what you
-          create on Podtracker. We do not sell it. A full Privacy Policy is being prepared; until
-          it is published, write to us at{" "}
-          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> with any question
-          about your data and we will answer it.
+          create on Podtracker. We do not sell it. Our{" "}
+          <Link href="/privacy">Privacy Policy</Link> sets out exactly what we collect, who it goes
+          to and how long we keep it. Anything it doesn&apos;t answer, write to us at{" "}
+          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> and we will.
         </p>
         <p>
           {/* Was "You can delete your account at any time", which the site cannot

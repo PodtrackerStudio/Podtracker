@@ -29,6 +29,7 @@ export function SiteFooter() {
         {/* Last, the way legal links conventionally sit — findable without
             competing with the links people actually came for. */}
         <Link href="/terms">Terms</Link>
+        <Link href="/privacy">Privacy</Link>
       </div>
       <div className="footer-social">
         {/* Were the letters "f", "𝕏", "▶" and "d" — a stand-in for the marks,

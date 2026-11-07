@@ -14,6 +14,7 @@ const STATIC_PATHS = [
   { path: "/explore/trending-episodes", priority: 0.7, changeFrequency: "daily" as const },
   { path: "/donate", priority: 0.3, changeFrequency: "yearly" as const },
   { path: "/terms", priority: 0.2, changeFrequency: "yearly" as const },
+  { path: "/privacy", priority: 0.2, changeFrequency: "yearly" as const },
   { path: "/login", priority: 0.3, changeFrequency: "yearly" as const },
   { path: "/signup", priority: 0.5, changeFrequency: "yearly" as const },
 ];

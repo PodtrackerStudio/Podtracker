@@ -58,6 +58,22 @@
   margin-top: 0;
 }
 
+/* The privacy policy is deep enough to need a third level — Termly's structure
+   has sub-headings inside its numbered sections. The terms page has none, so
+   this only shows up there. */
+.main h3 {
+  font-size: 18px;
+  margin: 28px 0 8px;
+  text-wrap: balance;
+}
+
+/* Every numbered section is an anchor target from the table of contents, and a
+   100px nav would otherwise sit on top of the heading you just jumped to. */
+.main h2[id],
+.main h3[id] {
+  scroll-margin-top: 120px;
+}
+
 .main p,
 .main li {
   margin: 0 0 14px;
@@ -68,6 +84,68 @@
 
 .main a {
   color: var(--text);
+}
+
+/* Table of contents. Tighter than body copy because it is a list of links to
+   scan, not prose to read. */
+.toc {
+  padding-left: 22px;
+}
+.toc li {
+  margin: 0 0 6px;
+}
+
+/* ── The CCPA category table ──
+   Twelve rows of statutory categories. On a phone it cannot be made to fit, so
+   it scrolls sideways inside its own box rather than forcing the whole page to
+   scroll. */
+.tableWrap {
+  overflow-x: auto;
+  margin: 0 0 20px;
+  /* Hairline so an unscrolled table doesn't look like it is simply cut off. */
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 560px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.table th,
+.table td {
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+.table tbody tr:last-child th,
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+.table thead th {
+  background: var(--accent-blue);
+  font-weight: 600;
+}
+/* The row headers are the category names; left-aligned and not bold, because
+   the whole first column being bold reads as emphasis rather than structure. */
+.table tbody th {
+  font-weight: 400;
+  width: 30%;
+}
+/* "YES" / "NO" — the column people actually look at. */
+.table td:last-child {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* Termly requires attribution on the free tier. Set small and muted: it is a
+   licence condition, not part of the policy. */
+.attribution {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 20px;
 }
 
 /* Fields the site owner has to fill in before this is worth anything. Marked

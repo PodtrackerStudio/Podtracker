@@ -175,12 +175,24 @@ export function SignupForm() {
               checked={agreed}
               onChange={(e) => setAgreed(e.target.checked)}
             />
-            {/* Deliberately NOT a link: `/terms` was reverted on 2026-11-04
-                until its TODO fields are filled, and pointing at a 404 is
-                worse than plain text. Make "terms and conditions" a
-                `<Link href="/terms">` the moment that page is back. */}
+            {/* Real links as of the `legal-pages` branch, which restores
+                /terms and adds /privacy. They were plain text while /terms was
+                reverted, because pointing at a 404 is worse.
+
+                NOTE: both pages open in a new tab on purpose — following a
+                link in place would throw away whatever is typed in the form
+                above, and "read the terms" is a reasonable thing to do
+                mid-signup. */}
             <label htmlFor="consent">
-              I&apos;m at least 16 years old and I have read the terms and conditions.
+              I&apos;m at least 16 years old and I have read the{" "}
+              <Link href="/terms" target="_blank" rel="noopener noreferrer">
+                terms and conditions
+              </Link>{" "}
+              and the{" "}
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer">
+                privacy policy
+              </Link>
+              .
             </label>
           </div>
           {errorMsg && <div className={styles.errorMsg}>{errorMsg}</div>}

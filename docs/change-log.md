@@ -77,7 +77,8 @@ rejected. This is the part that saves the most time later.
 - **Requested by:** sashaknyshjr@gmail.com — generated a privacy policy in
   Termly and asked for it and the terms to go up together. Chose a branch over
   `main` once told everything on `main` auto-deploys.
-- **Status:** **In progress — do not merge yet.**
+- **Status:** **Both pages built and verified — do not merge until the legal
+  review is done.**
 
 **Why a branch, when this repo's rule is to push to `main`**
 
@@ -98,18 +99,52 @@ one change. **Do not merge it until Sasha says the review is done.**
   placeholders; the single `TODO` match in the file is a code comment
   recording the history.
 
-**Still to do on this branch**
+- Built `/privacy` from Sasha's Termly output, reusing `legal.module.css` so
+  the two pages are visually one pair. The Termly HTML was not pasted in — it
+  is a nest of `<bdt>` tags and inline styles — so the text was carried across
+  into clean JSX and the substance preserved. Termly's attribution link stays:
+  it is a condition of the free tier.
+- Linked `/privacy` from terms §10, which no longer says a policy "is being
+  prepared", and from the footer and the sitemap.
+- Made the signup checkbox label real links to both `/terms` and `/privacy`,
+  opening in a new tab so following one does not discard a half-filled form.
 
-- Write `/privacy` from Sasha's generated text, reusing `legal.module.css` so
-  the two pages match.
-- **Check the generated text against the code before it ships.** Generated
-  policies routinely describe a site that does not exist — wrong processors,
-  cookies that are not set, rights mechanisms never built. §10 of the terms
-  promised self-serve account deletion this site cannot do, and that was
-  hand-written; a generator has more room to be wrong.
-- Link `/privacy` from terms §10, which currently says a policy "is being
-  prepared".
-- Make the signup checkbox label a real link to `/terms` once it is live again.
+**The generated text was checked line by line against the code, and seven
+things in it were false.** This was the point of the exercise and it paid off.
+Each correction is commented at the line in `src/app/privacy/page.tsx` and
+tabulated in `docs/privacy-policy-review.md` so any can be reverted:
+
+1. §1 claimed we collect card numbers and security codes. `/api/donate` uses
+   Stripe Checkout; card details never reach this server.
+2. §1 claimed GPS geolocation and a device Location setting you could switch
+   off. Nothing in `src/` calls a geolocation API — the only signal is the
+   country Vercel Analytics derives from the request IP.
+3. §5 said third parties place trackers "for analytics and advertising" and to
+   "tailor advertisements to your interests". There is no ad network.
+4. §5 pointed at a "Cookie Notice" that does not exist. Replaced with the
+   actual two-item inventory, inline.
+5. §4 had a "Business Partners… promotions" bullet. There are no business
+   partners.
+6. §11's table said **NO** to Internet activity and Geolocation while §1 said
+   both are collected. Set to **YES** — the only correction that *widens* what
+   the policy admits to, which is the safe direction to be wrong in.
+7. §9 implied self-serve account termination. `/api/account` has `PATCH` and
+   no `DELETE`; it now says to email, matching the same fix already made to
+   terms §10.
+
+Four things were left exactly as generated because they need a lawyer, not a
+fact-check, and are listed as open questions in the review doc: §3's legal
+bases omit performance of a contract; §2's purpose list never mentions showing
+your reviews to other people; there is **no minors section at all** and the
+three documents disagree on the age (terms say 13/16, the checkbox says 16,
+the policy is silent); and rights requests go to a Termly-hosted form, which
+makes Termly an unlisted processor and breaks if the subscription lapses.
+
+**Verified, not assumed:** `npx tsc --noEmit` clean; one dev server, `/privacy`
+`/terms` `/signup` all HTTP 200; all 16 sections present with working anchors
+and no broken internal links out of 27; no Termly markup left in the output;
+no horizontal overflow at 390px, with the CCPA table scrolling inside its own
+wrapper rather than the page.
 
 **Answers settled while filling in the generator**, recorded so they are not
 re-derived: processors are Supabase, Vercel, Resend and Stripe (Discord is
@@ -121,7 +156,21 @@ country-level location; retention is for the life of the account; EU/UK
 transfers rely on the SCCs in each processor's DPA; Vercel is on **Pro**, so
 its DPA applies and the Hobby non-commercial and AI-training clauses do not.
 
-`npx tsc --noEmit` clean.
+**Follow-ups**
+
+- **Do not merge this branch** until Sasha says his brother's review is done.
+  Merging publishes both documents.
+- **Build account deletion** — a `DELETE` on `/api/account`. Three documents
+  now promise it and the only way to honour it today is Sasha editing Supabase
+  by hand. This is the biggest gap the review surfaced.
+- **Decide the minimum age once** and make terms §2, the signup checkbox and
+  the privacy policy agree. 13 pulls COPPA in; 16 sidesteps the UK/EU
+  age-of-consent question.
+- `User.termsAcceptedAt` still does not exist, so no account can be shown to
+  have agreed to anything. The checkbox gates the form and the server rejects
+  `agreedToTerms !== true`, but nothing is recorded.
+- **Phillip has still not been told** his terms page was reverted on
+  2026-11-04, restored here, and edited since. Noted in the review doc too.
 
 ### 2026-11-07 — Design refresh: softer, more relaxed, more community-feeling
 
