@@ -71,6 +71,58 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-07 — `legal-pages` branch: terms restored, privacy policy pending
+
+- **Branch:** `legal-pages` — **deliberately not `main`**
+- **Requested by:** sashaknyshjr@gmail.com — generated a privacy policy in
+  Termly and asked for it and the terms to go up together. Chose a branch over
+  `main` once told everything on `main` auto-deploys.
+- **Status:** **In progress — do not merge yet.**
+
+**Why a branch, when this repo's rule is to push to `main`**
+
+`main` deploys to production on push. The terms were taken offline on
+2026-11-04 specifically so an unreviewed legal document would not be public
+while Sasha's brother, a law student, reads it. Restoring them on `main` — or
+adding a freshly generated privacy policy there — would publish both before
+that review and undo the reason they came down.
+
+This branch holds both documents until the review is finished, then merges as
+one change. **Do not merge it until Sasha says the review is done.**
+
+**Done**
+
+- Reverted `9f623c3`, restoring `src/app/terms/page.tsx`, its stylesheet, the
+  footer link and the sitemap entry. The 2026-11-04 answers are intact —
+  Alexander Knysh, an individual in Michigan, Michigan law. No rendered
+  placeholders; the single `TODO` match in the file is a code comment
+  recording the history.
+
+**Still to do on this branch**
+
+- Write `/privacy` from Sasha's generated text, reusing `legal.module.css` so
+  the two pages match.
+- **Check the generated text against the code before it ships.** Generated
+  policies routinely describe a site that does not exist — wrong processors,
+  cookies that are not set, rights mechanisms never built. §10 of the terms
+  promised self-serve account deletion this site cannot do, and that was
+  hand-written; a generator has more room to be wrong.
+- Link `/privacy` from terms §10, which currently says a policy "is being
+  prepared".
+- Make the signup checkbox label a real link to `/terms` once it is live again.
+
+**Answers settled while filling in the generator**, recorded so they are not
+re-derived: processors are Supabase, Vercel, Resend and Stripe (Discord is
+**not** one — the bot receives only aggregate visit counts); no sale or
+sharing; no marketing email; no social logins (Google was reverted); Google
+Fonts are self-hosted at build so nothing reaches Google; one essential auth
+cookie and no tracking cookies; derivative data is log/usage, device and
+country-level location; retention is for the life of the account; EU/UK
+transfers rely on the SCCs in each processor's DPA; Vercel is on **Pro**, so
+its DPA applies and the Hobby non-commercial and AI-training clauses do not.
+
+`npx tsc --noEmit` clean.
+
 ### 2026-11-07 — Design refresh: softer, more relaxed, more community-feeling
 
 - **Branch:** `design-refresh`, rebased and fast-forwarded onto `main`
