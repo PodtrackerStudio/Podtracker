@@ -84,7 +84,7 @@
 }
 .input:focus {
   outline: none;
-  border-color: #9cc2fb;
+  border-color: color-mix(in srgb, var(--btn-primary-blue) 75%, white);
   box-shadow: 0 0 0 4px var(--accent-blue);
 }
 
@@ -103,7 +103,7 @@
 
 .submit {
   background: var(--btn-primary-blue);
-  color: #fff;
+  color: var(--on-accent);
   border: none;
   border-radius: 20px;
   padding: 9px 30px;

@@ -87,6 +87,11 @@ export const getCurrentUser = cache(async () => {
       email: true,
       displayName: true,
       createdAt: true,
+      // Three short strings, read here because the nav, which already calls
+      // this on every page, writes the person's theme into the page.
+      themeMain: true,
+      themeAccent: true,
+      themeFont: true,
       // Not `avatarUrl`, `bio`, `longBio` or `externalLink`. This runs on every
       // page and API call, and the avatar alone was a data URI of up to 3.9 MB
       // pulled from the database each time, for pages that never used it. The

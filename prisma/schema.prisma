@@ -49,6 +49,13 @@ model User {
   externalLink String? // e.g. "Youtube.com" link on profile
   createdAt    DateTime @default(now())
 
+  // Personal theme — what the site looks like for this person only. Null means
+  // Sasha's default. Validated in src/lib/theme.ts: colours are #rrggbb, the
+  // font is one of THEME_FONTS' keys.
+  themeMain   String?
+  themeAccent String?
+  themeFont   String?
+
   podcastRatings PodcastRating[]
   episodeRatings EpisodeRating[]
   logEntries     LogEntry[]

@@ -31,7 +31,7 @@
 }
 .btn {
   background: var(--btn-primary-blue);
-  color: #fff;
+  color: var(--on-accent);
   border: none;
   border-radius: 5px;
   padding: 11px 26px;

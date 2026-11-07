@@ -54,7 +54,7 @@
 }
 .field input:focus {
   outline: none;
-  border-color: #9cc2fb;
+  border-color: color-mix(in srgb, var(--btn-primary-blue) 75%, white);
   background: #fff;
   box-shadow: 0 0 0 4px var(--accent-blue);
 }
@@ -90,7 +90,7 @@
 
 .btnPrimary {
   background: var(--btn-primary-blue);
-  color: #fff;
+  color: var(--on-accent);
   border: none;
   border-radius: var(--radius-pill);
   padding: 12px 0;

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PT_Serif_Caption, Roboto, Londrina_Solid } from "next/font/google";
+import { PT_Serif_Caption, Roboto, Londrina_Solid, DM_Sans, Nunito, Fraunces, Space_Mono } from "next/font/google";
 import { JsonLd } from "@/components/JsonLd";
 import { SiteAnalytics } from "@/components/SiteAnalytics";
 import { staticSiteOrigin } from "@/lib/siteUrl";
@@ -25,6 +25,15 @@ const londrinaSolid = Londrina_Solid({
   subsets: ["latin"],
   variable: "--font-rating",
 });
+
+// Personal-theme fonts (src/lib/theme.ts). `preload: false`: the @font-face
+// rules ship, but a browser only downloads a file when a page uses it — so
+// these cost nothing for anyone on the default theme.
+const ptSerifSample = PT_Serif_Caption({ weight: "400", subsets: ["latin"], variable: "--font-pt-serif", preload: false });
+const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans", preload: false });
+const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito", preload: false });
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", preload: false });
+const spaceMono = Space_Mono({ weight: ["400", "700"], subsets: ["latin"], variable: "--font-space-mono", preload: false });
 
 const SITE_DESCRIPTION =
   "Track the podcasts you listen to, rate episodes, write reviews, and find out which episodes of a show are worth your time.";
@@ -131,7 +140,7 @@ export default function RootLayout({
   ];
 
   return (
-    <html lang="en" className={`${ptSerifCaption.variable} ${roboto.variable} ${londrinaSolid.variable}`}>
+    <html lang="en" className={[ptSerifCaption, roboto, londrinaSolid, ptSerifSample, dmSans, nunito, fraunces, spaceMono].map((f) => f.variable).join(" ")}>
       <body>
         <JsonLd data={siteSchema} />
         {children}

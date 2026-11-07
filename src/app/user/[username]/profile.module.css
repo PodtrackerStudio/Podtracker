@@ -55,7 +55,7 @@
   font-size: 13px;
   font-family: inherit;
   cursor: pointer;
-  color: #fff;
+  color: var(--on-accent);
   text-decoration: none;
 }
 .btnEdit:hover {

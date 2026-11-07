@@ -4,6 +4,7 @@ import { SearchBox } from "./SearchBox";
 import { LogoutButton } from "./LogoutButton";
 import { NavMenu } from "./NavMenu";
 import { getCurrentUser } from "@/lib/auth";
+import { cleanTheme, themeCss } from "@/lib/theme";
 
 type SiteNavProps = {
   active?: "home" | "profile" | "explore";
@@ -11,8 +12,17 @@ type SiteNavProps = {
 
 export async function SiteNav({ active }: SiteNavProps) {
   const user = await getCurrentUser();
+  // The signed-in person's own colours and font, if they've chosen any. Here
+  // because the nav is on every page that has a signed-in person and already
+  // has them in hand. `cleanTheme` re-validates what the database holds before
+  // it goes anywhere near a <style> tag.
+  const css = user
+    ? themeCss(cleanTheme({ main: user.themeMain, accent: user.themeAccent, font: user.themeFont }))
+    : "";
 
   return (
+    <>
+    {css && <style id="personal-theme" dangerouslySetInnerHTML={{ __html: css }} />}
     <nav className="site-nav">
       {/* Logo sits directly on the blue nav — the PNG is transparent, so no
           tile behind it. See the contrast note in globals.css. */}
@@ -60,5 +70,6 @@ export async function SiteNav({ active }: SiteNavProps) {
         )}
       </NavMenu>
     </nav>
+    </>
   );
 }

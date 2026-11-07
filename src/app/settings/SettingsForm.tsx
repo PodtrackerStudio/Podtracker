@@ -6,6 +6,8 @@ import { PlusIcon } from "@/components/icons";
 import { PASSWORD_HINT } from "@/lib/passwordPolicy";
 import { usernameToPath } from "@/lib/routeParams";
 import styles from "./settings.module.css";
+import { ThemeEditor } from "./ThemeEditor";
+import type { Theme } from "@/lib/theme";
 
 const AVATAR_MAX_SIDE = 400;
 
@@ -18,9 +20,9 @@ type User = {
   avatarUrl: string | null;
 };
 
-export function SettingsForm({ user }: { user: User }) {
+export function SettingsForm({ user, theme }: { user: User; theme: Theme }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"display" | "auth">("display");
+  const [tab, setTab] = useState<"display" | "theme" | "auth">("display");
 
   const [username, setUsername] = useState(user.username);
   const [email, setEmail] = useState(user.email);
@@ -166,12 +168,17 @@ export function SettingsForm({ user }: { user: User }) {
         <button className={tab === "display" ? styles.active : undefined} onClick={() => setTab("display")}>
           Display
         </button>
+        <button className={tab === "theme" ? styles.active : undefined} onClick={() => setTab("theme")}>
+          Theme
+        </button>
         <button className={tab === "auth" ? styles.active : undefined} onClick={() => setTab("auth")}>
           Authentication
         </button>
       </div>
 
-      {tab === "display" ? (
+      {tab === "theme" ? (
+        <ThemeEditor initial={theme} />
+      ) : tab === "display" ? (
         <>
           <div className={styles.avatarWrap}>
             <button className={styles.avatarButton} onClick={() => fileInputRef.current?.click()}>
