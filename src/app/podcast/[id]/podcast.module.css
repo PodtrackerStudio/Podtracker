@@ -48,7 +48,7 @@
   width: 180px;
   height: 180px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 14px;
   border: 3px solid #fff;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   display: block;
@@ -271,8 +271,8 @@
 .btnAddList {
   background: none;
   border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  padding: 7px 16px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -280,10 +280,13 @@
   font-family: inherit;
   cursor: pointer;
   color: var(--text);
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s var(--ease), box-shadow 0.15s;
 }
 .btnAddList:hover {
-  background: #f4f4f4;
+  background: #fff;
+  border-color: #c8c8c8;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .actionRow {
@@ -301,28 +304,36 @@
   background: #16a34a;
   color: #fff;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-pill);
   padding: 8px 28px;
   font-size: 14px;
   font-family: inherit;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.28);
+  transition: transform 0.15s var(--ease), box-shadow 0.15s, background 0.15s;
 }
 .btnFollow:hover {
-  opacity: 0.88;
+  background: #15803d;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.32);
 }
 .btnFollowing {
   background: none;
   color: var(--text-muted);
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--radius-pill);
   padding: 7px 28px;
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s var(--ease), box-shadow 0.15s;
 }
 .btnFollowing:hover {
-  background: #f4f4f4;
+  background: #fff;
+  border-color: #c8c8c8;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 .micBtn {
   background: none;
@@ -362,15 +373,19 @@
 .btnLog {
   background: none;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--radius-pill);
   padding: 7px 18px;
   font-size: 13px;
   font-family: inherit;
   cursor: pointer;
   color: var(--text);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s var(--ease), box-shadow 0.15s;
 }
 .btnLog:hover {
-  background: #f4f4f4;
+  background: #fff;
+  border-color: #c8c8c8;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .episodeSectionHeader {
@@ -391,7 +406,7 @@
 .btnEpisodeNav {
   background: none;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--radius-pill);
   padding: 7px 16px;
   font-size: 13px;
   font-family: inherit;
@@ -399,10 +414,13 @@
   color: var(--text);
   text-decoration: none;
   display: inline-block;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s var(--ease), box-shadow 0.15s;
 }
 .btnEpisodeNav:hover {
-  background: #f4f4f4;
+  background: #fff;
+  border-color: #c8c8c8;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .friendsActivityGrid {
@@ -466,13 +484,14 @@
   padding: 12px 0;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
-  transition: padding-left 0.12s;
+  transition: padding-left 0.18s var(--ease), background 0.18s;
   text-decoration: none;
   color: var(--text);
+  border-radius: var(--radius-sm);
 }
 .episodeRow:hover {
-  padding-left: 6px;
-  background: #fafafa;
+  padding-left: 10px;
+  background: var(--surface);
 }
 .episodeRow:first-child {
   border-top: 1px solid var(--border);
@@ -851,4 +870,38 @@
 }
 .scoreDisplay.dont {
   color: var(--dont);
+}
+
+/* ── Design refresh, round 2 ── */
+
+/* Art glow: a blurred, saturated copy of the cover behind it. */
+.coverWrap {
+  position: relative;
+  isolation: isolate;
+}
+.coverGlow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+  filter: blur(30px) saturate(1.7);
+  opacity: 0.75;
+  transform: translateY(16px) scale(1.02);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Rating bars fill in from the left when the page loads. */
+@media (prefers-reduced-motion: no-preference) {
+  .distFill {
+    transform-origin: left center;
+    animation: dist-grow 0.7s var(--ease) 0.15s backwards;
+  }
+}
+@keyframes dist-grow {
+  from {
+    transform: scaleX(0);
+  }
 }

@@ -8,6 +8,9 @@
   margin: 0 auto;
   padding: 80px 24px 48px;
   text-align: center;
+  /* A soft wash of the nav's own blue behind the welcome, fading into the page:
+     warmer than a flat grey start, and no new colour. */
+  background: radial-gradient(60% 70% at 50% 30%, rgba(195, 219, 255, 0.7), rgba(195, 219, 255, 0) 70%);
 }
 .hero h1 {
   font-size: 46px;
@@ -131,14 +134,17 @@
   background: var(--btn-primary-blue);
   color: #fff;
   border: none;
-  border-radius: 10px;
-  padding: 12px 30px;
+  border-radius: var(--radius-pill);
+  padding: 12px 32px;
   font-size: 16px;
   font-family: var(--font-display), Georgia, "Times New Roman", serif;
   cursor: pointer;
+  box-shadow: 0 6px 18px rgba(123, 186, 255, 0.45);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
 .btnPrimary:hover {
-  opacity: 0.88;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(123, 186, 255, 0.55);
 }
 .btnSecondary {
   display: inline-block;
@@ -146,15 +152,17 @@
   background: #fff;
   color: var(--text);
   border: none;
-  border-radius: 10px;
-  padding: 12px 30px;
+  border-radius: var(--radius-pill);
+  padding: 12px 32px;
   font-size: 16px;
   font-family: var(--font-display), Georgia, "Times New Roman", serif;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
 .btnSecondary:hover {
-  opacity: 0.85;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .sectionTitle {
@@ -176,19 +184,22 @@
 .podcastCard {
   display: block;
   aspect-ratio: 1 / 1;
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: #ccc;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
 }
 .podcastCard img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.15s;
 }
-.podcastCard:hover img {
-  transform: scale(1.03);
+/* Lifts like the cover cards elsewhere on the site, rather than zooming. */
+.podcastCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
 /* ── WHAT IS ── */
@@ -202,6 +213,8 @@
   padding: 24px 28px;
   font-size: 16px;
   line-height: 1.6;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 .featuresGrid {
   max-width: 1040px;
@@ -212,10 +225,16 @@
 }
 .featureItem {
   background: var(--accent-blue);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 22px 26px;
   font-size: 16px;
   line-height: 1.5;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+.featureItem:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 /* ── RATINGS EXPLAINED ── */
@@ -237,6 +256,12 @@
 }
 .ratingTierName {
   font-size: 26px;
+  /* Each level as a soft pill, tinted from its own colour (set inline as
+     `color`), so the five read as badges people give, not a list of words. */
+  align-self: center;
+  padding: 2px 24px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, currentColor 13%, transparent);
 }
 
 /* The landing page is the first thing a link from Instagram or TikTok opens, so

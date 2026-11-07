@@ -28,7 +28,7 @@
   width: 150px;
   height: 150px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 14px;
   border: 3px solid #fff;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   display: block;
@@ -276,21 +276,25 @@
 .btnLog {
   background: none;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--radius-pill);
   padding: 7px 18px;
   font-size: 13px;
   font-family: inherit;
   cursor: pointer;
   color: var(--text);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s var(--ease), box-shadow 0.15s;
 }
 .btnLog:hover {
-  background: #f4f4f4;
+  background: #fff;
+  border-color: #c8c8c8;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 .btnAddList {
   background: none;
   border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  padding: 7px 16px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -298,10 +302,13 @@
   font-family: inherit;
   cursor: pointer;
   color: var(--text);
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s var(--ease), box-shadow 0.15s;
 }
 .btnAddList:hover {
-  background: #f4f4f4;
+  background: #fff;
+  border-color: #c8c8c8;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .prevNextRow {
@@ -608,4 +615,38 @@
 }
 .scoreDisplay.dont {
   color: var(--dont);
+}
+
+/* ── Design refresh, round 2 ── */
+
+/* Art glow: a blurred, saturated copy of the cover behind it. */
+.coverWrap {
+  position: relative;
+  isolation: isolate;
+}
+.coverGlow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+  filter: blur(30px) saturate(1.7);
+  opacity: 0.75;
+  transform: translateY(16px) scale(1.02);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Rating bars fill in from the left when the page loads. */
+@media (prefers-reduced-motion: no-preference) {
+  .distFill {
+    transform-origin: left center;
+    animation: dist-grow 0.7s var(--ease) 0.15s backwards;
+  }
+}
+@keyframes dist-grow {
+  from {
+    transform: scaleX(0);
+  }
 }

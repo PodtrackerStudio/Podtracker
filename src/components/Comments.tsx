@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./comments.module.css";
 
@@ -69,7 +70,7 @@ export function Comments({
       <h2 className={styles.heading}>Comments</h2>
 
       {comments.length === 0 ? (
-        <p className={styles.empty}>No comments yet.</p>
+        <p className={styles.empty}>No comments yet. Start the conversation!</p>
       ) : (
         <div className={styles.list}>
           {comments.map((c) => (
@@ -102,7 +103,9 @@ export function Comments({
           </div>
         </>
       ) : (
-        <p className={styles.empty}>Log in to leave a comment.</p>
+        <p className={styles.empty}>
+          <Link href="/login" className={styles.loginLink}>Log in</Link> to join the conversation.
+        </p>
       )}
     </section>
   );

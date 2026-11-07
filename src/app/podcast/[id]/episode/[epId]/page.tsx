@@ -198,8 +198,13 @@ export default async function EpisodePage({
       <main className={styles.main}>
         <section className={styles.episodeInfoRow}>
           <div className={styles.episodeLeft}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={styles.episodeCover} src={episode.coverUrl} alt="Episode cover" />
+            {/* Same art glow as the show page: a blurred copy behind the cover. */}
+            <div className={styles.coverWrap}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.coverGlow} src={episode.coverUrl} alt="" aria-hidden="true" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.episodeCover} src={episode.coverUrl} alt="Episode cover" />
+            </div>
             {/* Same rule as the show page: visible once anyone has rated this
                 episode, absent entirely when nobody has. */}
             {ratings.total > 0 && (

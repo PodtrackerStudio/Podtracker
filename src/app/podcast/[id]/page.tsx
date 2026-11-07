@@ -173,8 +173,15 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
       <main className={styles.main}>
         <section className={styles.podcastInfo}>
           <div className={styles.podcastLeft}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={styles.podcastCover} src={podcast.coverUrl} alt={`${podcast.title} cover`} />
+            {/* The glow is a blurred copy of the cover sitting behind it, so the
+                art casts its own colour onto the page. Not a banner: it stays
+                inside the cover's footprint (see the note above). */}
+            <div className={styles.coverWrap}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.coverGlow} src={podcast.coverUrl} alt="" aria-hidden="true" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.podcastCover} src={podcast.coverUrl} alt={`${podcast.title} cover`} />
+            </div>
             {/* Shown as soon as one person has rated the show, not on the
                 global switch: an average over two people is real, just small.
                 A show nobody has rated renders nothing here rather than an

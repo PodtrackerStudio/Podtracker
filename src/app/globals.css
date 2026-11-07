@@ -26,6 +26,40 @@
   --accent-blue: #c3dbff;
   --btn-primary-blue: #7bbaff;
   --btn-nav-blue: #9ccbff;
+
+  /* ── Feel tokens (design refresh, 2026-11-06) ──
+     The colours and fonts above are Sasha's and unchanged. These only settle
+     *how* things sit on the page. Corners used to range from 4px to 10px page
+     by page, with almost no depth, which read stiff. One soft scale and a
+     gentle lift on hover read relaxed and consistent. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(17, 17, 17, 0.05), 0 2px 6px rgba(17, 17, 17, 0.05);
+  --shadow-md: 0 4px 10px rgba(17, 17, 17, 0.07), 0 12px 28px rgba(17, 17, 17, 0.08);
+  --shadow-lg: 0 8px 18px rgba(17, 17, 17, 0.08), 0 20px 44px rgba(17, 17, 17, 0.12);
+  /* A white that lets the grey page show through: cards that hold people's
+     words (reviews, comments) sit on it. */
+  --surface: rgba(255, 255, 255, 0.62);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+::selection {
+  background: var(--accent-blue);
+}
+
+/* A visible ring for keyboard users, in the site's own button blue, instead of
+   the browser default or nothing. */
+:focus-visible {
+  outline: 2px solid var(--btn-primary-blue);
+  outline-offset: 2px;
 }
 
 html {
@@ -80,6 +114,8 @@ nav.site-nav {
   background: var(--accent-blue);
   position: relative;
   z-index: 10;
+  /* A soft edge instead of a hard stop where the blue meets the page. */
+  box-shadow: 0 1px 0 rgba(17, 17, 17, 0.04), 0 6px 20px rgba(17, 17, 17, 0.05);
   /* Nav bar → PT Serif Caption */
   font-family: var(--font-display), Georgia, "Times New Roman", serif;
 }
@@ -115,10 +151,15 @@ nav.site-nav {
   display: flex;
   align-items: center;
   background: var(--page-bg-alt);
-  border-radius: 20px;
-  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
   gap: 6px;
   width: 200px;
+  transition: box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+}
+.nav-search:focus-within {
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(123, 186, 255, 0.45);
 }
 .nav-search input {
   border: none;
@@ -145,8 +186,8 @@ nav.site-nav {
   width: 320px;
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.13);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   z-index: 50;
 }
@@ -230,7 +271,9 @@ nav.site-nav {
 }
 .nav-links {
   display: flex;
-  gap: 32px;
+  /* 8px plus each link's 12px side padding keeps the words exactly 32px apart,
+     as before. The padding gives the hover a soft pill to sit in. */
+  gap: 8px;
   align-items: center;
 }
 .nav-links a {
@@ -238,9 +281,16 @@ nav.site-nav {
   color: var(--text);
   font-size: 15px;
   font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  transition: background 0.2s var(--ease);
+}
+.nav-links a:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 .nav-links a.active {
   font-weight: 700;
+  background: rgba(255, 255, 255, 0.6);
 }
 .nav-links a.nav-cta,
 .nav-log-btn {
@@ -257,9 +307,15 @@ nav.site-nav {
   align-items: center;
   gap: 4px;
 }
+.nav-links a.nav-cta,
+.nav-log-btn {
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+}
 .nav-links a.nav-cta:hover,
 .nav-log-btn:hover {
-  opacity: 0.85;
+  background: var(--btn-nav-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(123, 186, 255, 0.45);
 }
 
 /* ── FOOTER (shared across every page) ── */
@@ -325,13 +381,17 @@ footer.site-footer {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: #ccc;
   display: block;
-  transition: transform 0.15s;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
 }
+/* A lift rather than a zoom: the cover rises off the page like a record pulled
+   from a shelf, and its edges stay crisp. */
 .media-thumb:hover .media-thumb-cover {
-  transform: scale(1.04);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 .media-thumb-popup {
   position: absolute;
@@ -341,8 +401,8 @@ footer.site-footer {
   width: 200px;
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.13);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   padding: 10px 12px;
   opacity: 0;
   pointer-events: none;
@@ -621,4 +681,25 @@ footer.site-footer {
   .nav-search {
     max-width: 160px;
   }
+}
+
+/* ── Design refresh, round 2 ── */
+
+/* Each page settles in gently. `backwards` fill means nothing is left applied
+   once it finishes, so it can't trap position: fixed children afterwards. */
+@media (prefers-reduced-motion: no-preference) {
+  main {
+    animation: page-in 0.45s var(--ease) backwards;
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Buttons give a little when pressed. */
+button:not(:disabled):active {
+  transform: scale(0.97);
 }

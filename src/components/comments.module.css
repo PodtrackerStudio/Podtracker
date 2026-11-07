@@ -46,6 +46,13 @@
   line-height: 1.5;
   white-space: pre-wrap;
   max-width: 520px;
+  /* A chat-style bubble, so the thread reads like a conversation. */
+  justify-self: start;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 4px var(--radius-lg) var(--radius-lg) var(--radius-lg);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-sm);
 }
 
 .empty {
@@ -67,13 +74,18 @@
   padding: 12px 14px;
   font-size: 14px;
   font-family: var(--font-body), Arial, Helvetica, sans-serif;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
   background: #fff;
   color: var(--text);
   resize: vertical;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .input:focus {
-  outline: 2px solid var(--accent-blue);
+  outline: none;
+  border-color: #9cc2fb;
+  box-shadow: 0 0 0 4px var(--accent-blue);
 }
 
 .error {
@@ -98,9 +110,11 @@
   font-size: 15px;
   font-family: var(--font-display), Georgia, "Times New Roman", serif;
   cursor: pointer;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s, opacity 0.15s;
 }
 .submit:hover:not(:disabled) {
-  opacity: 0.88;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 .submit:disabled {
   opacity: 0.5;
@@ -117,4 +131,16 @@
   .text {
     grid-column: 2;
   }
+}
+
+.loginLink {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--btn-primary-blue);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+.loginLink:hover {
+  color: var(--link-hover);
 }

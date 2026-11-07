@@ -89,11 +89,11 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   const entry = await db.logEntry.findUnique({
     where: { id },
     include: {
-      // Only the three fields this page renders. `user: true` pulled the whole
+      // Only the fields this page renders (id is for the avatar). `user: true` pulled the whole
       // row, password hash and email included, into a Server Component that
       // hands data to Client Components — nothing leaked, but the shape made a
       // leak one careless prop away.
-      user: { select: { username: true, displayName: true } },
+      user: { select: { id: true, username: true, displayName: true } },
       episode: { include: { podcast: true } },
       podcast: true,
     },
@@ -164,7 +164,9 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             {entry.episode && podcast && <div className={styles.showName}>{podcast.title}</div>}
 
             <div className={styles.byline}>
-              <span>
+              <span className={styles.byWho}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className={styles.bylineAvatar} src={avatarSrc(entry.user.id)} alt="" />
                 Review by{" "}
                 <Link href={`/user/${usernameToPath(entry.user.username)}`} className={styles.author}>
                   {entry.user.displayName}

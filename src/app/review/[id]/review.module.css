@@ -17,6 +17,8 @@
   object-fit: cover;
   display: block;
   background: #ccc;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .title {
@@ -41,7 +43,7 @@
 
 .byline {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 40px;
   font-family: var(--font-display), Georgia, "Times New Roman", serif;
   font-size: 15px;
@@ -86,6 +88,12 @@
   line-height: 1.6;
   max-width: 640px;
   white-space: pre-wrap;
+  /* The review sits on a soft card, like a note someone left you. */
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
 }
 
 @media (max-width: 720px) {
@@ -156,4 +164,20 @@
 .ownerActions [role="alert"] {
   font-size: 13px;
   color: var(--dont);
+}
+
+/* The reviewer's face beside their name: a review is a person talking. */
+.byWho {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.bylineAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ccc;
+  border: 2px solid #fff;
+  box-shadow: var(--shadow-sm);
 }
