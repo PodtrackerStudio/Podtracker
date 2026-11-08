@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon } from "@/components/icons";
 import { PASSWORD_HINT } from "@/lib/passwordPolicy";
@@ -8,6 +8,9 @@ import { usernameToPath } from "@/lib/routeParams";
 import styles from "./settings.module.css";
 
 const AVATAR_MAX_SIDE = 400;
+
+/** Long enough to read the goodbye, short enough not to feel stuck. */
+const LEAVE_AFTER_SECONDS = 5;
 
 type User = {
   username: string;
@@ -40,6 +43,59 @@ export function SettingsForm({ user }: { user: User }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwStatus, setPwStatus] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [changingPw, setChangingPw] = useState(false);
+
+  // Delete account. `armed` is the difference between seeing the button and
+  // seeing the form — the fields do not exist until you ask for them, so the
+  // destructive control is never one stray click from happening.
+  const [armed, setArmed] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteUsername, setDeleteUsername] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  // Set once the account is gone. Holds the warning text when the login could
+  // not be fully removed, so the goodbye screen can say so.
+  const [deleted, setDeleted] = useState<{ warning?: string } | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (secondsLeft === null) return;
+    if (secondsLeft <= 0) {
+      // Not router.push: there is no account to come back to, so leaving this
+      // page in history would send them to a Settings page that redirects to
+      // /login. A hard replace also drops any client state still holding their
+      // old profile.
+      window.location.replace("/");
+      return;
+    }
+    const timer = setTimeout(() => setSecondsLeft((n) => (n === null ? null : n - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [secondsLeft]);
+
+  async function handleDeleteAccount() {
+    setDeleteError(null);
+    setDeleting(true);
+
+    const res = await fetch("/api/account", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: deletePassword, confirmUsername: deleteUsername }),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      setDeleting(false);
+      setDeleteError(data?.error ?? "Something went wrong. Your account has not been deleted.");
+      return;
+    }
+
+    // Don't clear `deleting` — the form is replaced wholesale below, and
+    // leaving the button live for a frame invites a second request.
+    setDeletePassword("");
+    setDeleteUsername("");
+    setDeleted({ warning: data?.warning });
+    setSecondsLeft(LEAVE_AFTER_SECONDS);
+  }
 
   async function handleChangePassword() {
     setPwStatus(null);
@@ -160,6 +216,24 @@ export function SettingsForm({ user }: { user: User }) {
     }
   }
 
+  // Replaces the whole page once the account is gone. Returning early matters:
+  // every field below renders from a profile that no longer exists.
+  if (deleted) {
+    return (
+      <div className={styles.goodbye}>
+        <h2>Your account has been deleted</h2>
+        <p>
+          Your profile, ratings, reviews, lists and diary entries have all been removed from
+          Podtracker. Thanks for giving it a go.
+        </p>
+        {deleted.warning && <div className={`${styles.statusMsg} ${styles.error}`}>{deleted.warning}</div>}
+        <p className={styles.goodbyeNote}>
+          {secondsLeft === null ? null : <>Taking you to the home page in {secondsLeft}…</>}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className={styles.tabs}>
@@ -248,6 +322,80 @@ export function SettingsForm({ user }: { user: User }) {
             <button className={styles.saveButton} onClick={handleChangePassword} disabled={changingPw}>
               {changingPw ? "Saving…" : "Change password"}
             </button>
+          </div>
+
+          {/* Deliberately last on the page and visually separated. It is the
+              only irreversible control on the site. */}
+          <div className={styles.danger}>
+            <h2 className={styles.subheading}>Delete account</h2>
+            <p className={styles.dangerText}>
+              This removes your profile, ratings, reviews, lists, diary entries, follows and
+              likes. It happens immediately and <strong>cannot be undone</strong> — we cannot
+              get any of it back for you afterwards.
+            </p>
+
+            {!armed ? (
+              <button className={styles.dangerButton} onClick={() => setArmed(true)}>
+                Delete my account
+              </button>
+            ) : (
+              <>
+                <div className={styles.authField}>
+                  <label htmlFor="deletePassword">Your password</label>
+                  <input
+                    id="deletePassword"
+                    type="password"
+                    autoComplete="current-password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.authField}>
+                  <label htmlFor="deleteUsername">
+                    Type <strong>{user.username}</strong> to confirm
+                  </label>
+                  <input
+                    id="deleteUsername"
+                    /* Off for all four: a saved value appearing in the box is
+                       exactly the stray confirmation this field exists to
+                       prevent. */
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    value={deleteUsername}
+                    onChange={(e) => setDeleteUsername(e.target.value)}
+                  />
+                </div>
+
+                {deleteError && <div className={`${styles.statusMsg} ${styles.error}`}>{deleteError}</div>}
+
+                <div className={styles.dangerRow}>
+                  <button
+                    className={styles.dangerButton}
+                    onClick={handleDeleteAccount}
+                    /* The username check is the server's to enforce; mirroring
+                       it here just stops a request that is certain to fail. */
+                    disabled={deleting || !deletePassword || deleteUsername.trim() !== user.username}
+                  >
+                    {deleting ? "Deleting…" : "Permanently delete my account"}
+                  </button>
+                  <button
+                    className={styles.cancelButton}
+                    onClick={() => {
+                      setArmed(false);
+                      setDeletePassword("");
+                      setDeleteUsername("");
+                      setDeleteError(null);
+                    }}
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </>
       )}

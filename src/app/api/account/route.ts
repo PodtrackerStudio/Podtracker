@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser, authErrorMessage } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { rateLimit, clientKey, AUTH_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
 import { siteOrigin } from "@/lib/siteUrl";
 
 /**
@@ -132,4 +134,153 @@ export async function PATCH(request: Request) {
     console.error("[account] save failed:", error);
     return NextResponse.json({ error: "We couldn't save that just now. Please try again." }, { status: 503 });
   }
+}
+
+/**
+ * Delete the signed-in user's account, permanently.
+ *
+ * Until 2026-11-07 there was no way to do this. Terms §10 and the Privacy
+ * Policy both promised deletion on request, and the only way to honour that
+ * was Sasha editing Supabase by hand. This is that promise, built.
+ *
+ * ## An account lives in two systems, and both halves must go
+ *
+ * The login (email, password, session) is Supabase's. The profile and
+ * everything hanging off it is ours. Deleting one and not the other leaves a
+ * broken account in a different way each time, so this refuses to start unless
+ * it can finish — see the `isSupabaseAdminConfigured` check below.
+ *
+ * ## Why our database goes first
+ *
+ * If the auth user went first and our delete then failed, the person could no
+ * longer log in while every review, list and diary entry of theirs stayed
+ * public — the privacy promise broken, and no way for them to retry. The other
+ * order fails safe: their data is gone, which is what was actually promised,
+ * and a stranded login is something we can clear up and they can tell us
+ * about. So: database, then Supabase.
+ *
+ * ## One delete is enough
+ *
+ * Every relation to `User` in `schema.prisma` is `onDelete: Cascade`, so a
+ * single `user.delete` takes the ratings, episode ratings, log entries, lists
+ * and their items, follows in both directions, podcast follows, favorites,
+ * comments and likes with it. No transaction is needed and none is used —
+ * Postgres does the cascade in one statement. If a relation is ever added
+ * **without** `onDelete: Cascade`, this route starts failing with a foreign
+ * key error rather than silently orphaning rows, which is the right way round.
+ */
+export async function DELETE(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+
+  // Same limit as the password form: this takes a password and is therefore
+  // something to guess at, and it is the most destructive call on the site.
+  const limitKey = clientKey(request, "delete-account", user.id);
+  const limited = rateLimit(limitKey, AUTH_LIMIT);
+  if (!limited.allowed) {
+    return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, {
+      status: 429,
+      headers: { "Retry-After": String(limited.retryAfterSeconds) },
+    });
+  }
+
+  // Checked before anything is touched. Half-deleting is worse than not
+  // starting: see the note above. The same shape as /api/donate's Stripe
+  // check — the code is fine, the key is simply not set in this environment.
+  if (!isSupabaseAdminConfigured) {
+    console.error(
+      "[account] SUPABASE_SERVICE_ROLE_KEY is not set, so account deletion is refused. " +
+        "Nothing was deleted. Add it in Vercel (Project → Settings → Environment Variables) " +
+        "and in .env locally — Supabase → Project Settings → API → service_role.",
+    );
+    return NextResponse.json(
+      {
+        error:
+          "Account deletion isn't switched on yet. Nothing has been deleted — " +
+          "email podtracker13@gmail.com and we'll do it by hand.",
+      },
+      { status: 503 },
+    );
+  }
+
+  const { password, confirmUsername } = await request.json().catch(() => ({}));
+
+  if (!password) {
+    return NextResponse.json({ error: "Please enter your password." }, { status: 400 });
+  }
+  // Proves intent, the way GitHub asks you to type a repository's name. The
+  // password alone proves who you are, not that you meant to do this — a
+  // signed-in browser with a saved password is one stray click otherwise.
+  if (typeof confirmUsername !== "string" || confirmUsername.trim() !== user.username) {
+    return NextResponse.json(
+      { error: `Type your username exactly — ${user.username} — to confirm.` },
+      { status: 400 },
+    );
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  // Supabase's copy of the address, not the profile's: the two differ while an
+  // email change waits for its link. Signing in with the profile's copy would
+  // fail and read as a wrong password. Same reasoning as the password route.
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+  if (!authUser?.email) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: authUser.email,
+    password,
+  });
+  if (verifyError) {
+    return NextResponse.json({ error: "That password is incorrect." }, { status: 403 });
+  }
+
+  // ── Past this line things are destroyed. ──
+
+  try {
+    await db.user.delete({ where: { id: user.id } });
+  } catch (error) {
+    // P2025: already gone. Someone double-clicked, or it was deleted by hand.
+    // Not an error from the person's point of view — carry on and clear the
+    // login, which is the half that would otherwise be left behind.
+    if ((error as { code?: string })?.code !== "P2025") {
+      console.error("[account] delete failed, nothing removed:", error);
+      return NextResponse.json(
+        { error: "We couldn't delete your account just now. Nothing has been removed — please try again." },
+        { status: 503 },
+      );
+    }
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { error: authDeleteError } = await admin.auth.admin.deleteUser(user.id);
+
+  if (authDeleteError) {
+    // Their data is gone, which is what was promised, but the login survives —
+    // so that address cannot be signed up again until someone clears it. Loud,
+    // with the id, because fixing it means finding this user in the dashboard.
+    console.error(
+      `[account] profile ${user.id} was deleted but its Supabase login was not: ` +
+        `${authDeleteError.message}. Delete the user with that id in ` +
+        `Supabase → Authentication → Users, or that email cannot sign up again.`,
+    );
+    return NextResponse.json(
+      {
+        ok: true,
+        warning:
+          "Your profile and everything in it has been deleted. One part of your login " +
+          "couldn't be removed automatically — email podtracker13@gmail.com and we'll " +
+          "finish it off. You won't be able to sign up with the same address until then.",
+      },
+      { status: 200 },
+    );
+  }
+
+  // Clears this browser's cookies. The user it referred to no longer exists,
+  // so Supabase may well reject the call — the cookies are cleared either way,
+  // and there is nothing left to fail at.
+  await supabase.auth.signOut().catch(() => null);
+
+  return NextResponse.json({ ok: true });
 }

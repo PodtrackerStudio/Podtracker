@@ -20,15 +20,15 @@ export const metadata: Metadata = {
  * — there is no company — based in **Michigan, USA**, and **Michigan law**
  * governs. If an LLC is ever formed, section 1 and section 14 both change.
  *
- * **One thing here describes the site as it should be, not as it is**, marked
- * at the line:
- *   - §10 says you can *ask* to have your account deleted, because there is no
- *     self-serve deletion to point at. Restore the stronger wording when there
- *     is.
+ * **Everything here now describes the site as it actually is.** Two things did
+ * not, and both were fixed on 2026-11-07:
+ *   - §10 said a Privacy Policy "is being prepared". It now links `/privacy`,
+ *     which exists on this branch.
+ *   - §10 said you could only *ask* to have your account deleted. Self-serve
+ *     deletion was built the same day, so the stronger wording is back.
  *
- * §10's "a Privacy Policy is being prepared" was replaced on 2026-11-07 with a
- * link to `/privacy`, which exists on this branch. Both documents are waiting
- * on the same review — see `docs/privacy-policy-review.md`.
+ * Both documents are waiting on the same review — see
+ * `docs/privacy-policy-review.md`.
  *
  * Written against what the site actually does rather than a template: accounts
  * through Supabase, user-written reviews and lists, podcast metadata and
@@ -181,13 +181,14 @@ export default function TermsPage() {
           <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> and we will.
         </p>
         <p>
-          {/* Was "You can delete your account at any time", which the site cannot
-              do: there is no DELETE on /api/account, only a password route and a
-              profile PATCH. A written promise we cannot keep is worse than no
-              promise. Restore the original sentence the moment self-serve
-              deletion exists. */}
-          You can ask us to delete your account at any time by emailing us, and we will remove your
-          profile, ratings, reviews, lists and diary entries from the site.
+          {/* Restored 2026-11-07, when DELETE /api/account was built. Between
+              2026-11-04 and then this said to email us, because there was no
+              self-serve deletion and a written promise we could not keep was
+              worse than no promise. */}
+          You can delete your account at any time from{" "}
+          <Link href="/settings">your settings</Link>. Your profile, ratings, reviews, lists and
+          diary entries go with it, immediately. If anything goes wrong, email us and we&apos;ll
+          finish it off.
         </p>
 
         <h2>11. The site is provided as it is</h2>

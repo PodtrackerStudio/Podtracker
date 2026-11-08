@@ -71,6 +71,114 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-07 — Self-serve account deletion
+
+- **Branch:** `legal-pages` (same branch as the legal documents — it closes the
+  gap they exposed, and the two should land together)
+- **Requested by:** sashaknyshjr@gmail.com — "yes lets do delete account",
+  after the privacy review found three documents promising deletion the site
+  could not do.
+- **Status:** **Built and tested. One operational step outstanding** — see
+  Follow-ups.
+
+**What changed**
+
+- **`DELETE /api/account`.** Requires the password *and* the username typed
+  back, rate-limited with the same `AUTH_LIMIT` as the password form. Deletes
+  the `User` row, then the Supabase Auth user, then clears the cookies.
+- **`src/lib/supabase/admin.ts`** — a service-role Supabase client. The first
+  privileged credential in the app, and the only thing that can delete a login:
+  by design the anon key cannot, so there was no way to do this without it.
+- **Settings → Authentication → Delete account.** Collapsed to a single button
+  until armed, so the fields do not exist until you ask for them. Confirm stays
+  disabled until the password is filled and the username matches exactly.
+  Cancel collapses it and wipes both fields. On success the whole form is
+  replaced by a goodbye screen that sends them to `/` after five seconds.
+- **`.env.example`** documents `SUPABASE_SERVICE_ROLE_KEY` with a warning about
+  what it can do.
+- Terms §10 and Privacy §9/§13 now describe self-serve deletion instead of
+  telling people to email. The privacy policy's "correction 7" from earlier the
+  same day is therefore reversed, and both the page comment and
+  `docs/privacy-policy-review.md` record that.
+
+**Why the database goes before Supabase**
+
+Deleting the auth user first and failing on our own delete would leave someone
+unable to log in while every review, list and diary entry of theirs stayed
+public — the privacy promise broken, with no way for them to retry. The other
+order fails safe: the data is gone, which is what was actually promised, and a
+stranded login is recoverable and visible. So: database, then Supabase.
+
+If the Supabase half fails, the route still returns 200 with a `warning`, the
+goodbye screen shows it, and the server logs the user id and exactly where to
+delete it by hand.
+
+**Why it refuses outright without the service-role key**
+
+Same shape as `/api/donate` without a Stripe key: 503, and **nothing is
+deleted**. Deleting the profile while leaving the login would mean that email
+could never sign up again and the site would show them signed in with no
+profile. Half-deleting is worse than not starting.
+
+**One `user.delete` really is enough — tested, not assumed**
+
+Every relation to `User` in `schema.prisma` already had `onDelete: Cascade`, so
+no transaction is needed. That was verified against a real Postgres 16 rather
+than read off the schema: a scratch database, `prisma migrate deploy`, a user
+seeded with one of every row type plus a second user interacting with their
+content. **16 assertions, all passing** — ratings, episode ratings, podcast
+follows, favourites, log entries, lists, list items, comments, likes and
+follows in both directions all go; the other user survives intact with their
+own rating; *their* comment on the deleted user's log entry and *their* like on
+the deleted user's list go too, via the parent; the shared podcast and episode
+catalogue is untouched; and a second delete returns `P2025`, which the route
+treats as success rather than an error.
+
+**Also verified:** `npx tsc --noEmit` clean and `npm run build` successful
+after clearing `.next`; `DELETE /api/account` returns 401 signed out; the UI
+driven with Playwright against the production build — no password field before
+arming, confirm disabled when empty, with the password alone, and with a
+near-miss username, enabled only when both are right, fields gone after
+Cancel, no horizontal overflow at 390px.
+
+**Not verified, and it cannot be from here:** the signed-in path end to end —
+password check, cascade, Supabase deletion — needs real Supabase credentials,
+which this environment does not have. The cascade is proven against real
+Postgres and the password check is the same code as the password-change route,
+but **the first real deletion should be done on a throwaway account.**
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/supabase/admin.ts` | Added — service-role client, with the rules for using it |
+| `src/app/api/account/route.ts` | Modified — added `DELETE` |
+| `src/app/settings/SettingsForm.tsx` | Modified — danger zone and goodbye screen |
+| `src/app/settings/settings.module.css` | Modified — delete-account styles |
+| `.env.example` | Modified — `SUPABASE_SERVICE_ROLE_KEY` |
+| `src/app/terms/page.tsx` | Modified — §10 restored to self-serve wording |
+| `src/app/privacy/page.tsx` | Modified — §9 and §13, and the correction-7 note |
+| `docs/privacy-policy-review.md` | Modified — the gap section rewritten as built |
+
+**A note on the design**
+
+There is no Figma frame for any of this, and the working agreement says to ask
+rather than invent. Sasha was told so in the same reply. Nothing new was
+designed: the button is `.saveButton` with `--dont` instead of `--text`, the
+column is `.authField`'s 320px, and the separator is a `--border` rule. Replace
+it wholesale if a frame turns up.
+
+**Follow-ups**
+
+- **Add `SUPABASE_SERVICE_ROLE_KEY` in Vercel** (Supabase → Project Settings →
+  API → `service_role`). Until then the button refuses and deletes nothing,
+  and Terms §10 and Privacy §9 overstate the site. **This blocks merging the
+  branch**, because merging publishes both documents.
+- Test the first real deletion on a throwaway account, not a real one.
+- Backups still hold a copy for a while after deletion. Privacy §7 and §9 both
+  say so now, but nothing enforces or tracks a retention window.
+- `User.termsAcceptedAt` still does not exist, unchanged by this work.
+
 ### 2026-11-07 — `legal-pages` branch: terms restored, privacy policy pending
 
 - **Branch:** `legal-pages` — **deliberately not `main`**
@@ -160,9 +268,9 @@ its DPA applies and the Hobby non-commercial and AI-training clauses do not.
 
 - **Do not merge this branch** until Sasha says his brother's review is done.
   Merging publishes both documents.
-- **Build account deletion** — a `DELETE` on `/api/account`. Three documents
-  now promise it and the only way to honour it today is Sasha editing Supabase
-  by hand. This is the biggest gap the review surfaced.
+- ~~**Build account deletion**~~ — **done the same day**; see the entry above.
+  It needs `SUPABASE_SERVICE_ROLE_KEY` set in Vercel before this branch can
+  merge, otherwise the documents overstate what the site does.
 - **Decide the minimum age once** and make terms §2, the signup checkbox and
   the privacy policy agree. 13 pulls COPPA in; 16 sidesteps the UK/EU
   age-of-consent question.

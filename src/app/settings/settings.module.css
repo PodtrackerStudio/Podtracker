@@ -230,3 +230,102 @@
   color: var(--text-muted);
   margin-top: 6px;
 }
+
+/* ── DELETE ACCOUNT ──
+   Added 2026-11-07 with the delete endpoint. There is no Figma frame for this
+   — Sasha was told so when it was built. Everything here is taken from values
+   already in this file and from the design tokens: the button is `.saveButton`
+   with `--dont` in place of `--text`, and the column is `.authField`'s 320px.
+   Replace it wholesale if a frame turns up. */
+.danger {
+  max-width: 420px;
+  margin: 56px auto 0;
+  padding-top: 32px;
+  /* A rule rather than a tinted panel: the section needs to read as separate
+     from the password form above it, not as an alarm going off. */
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.dangerText {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0 auto 24px;
+}
+
+.dangerButton {
+  background: var(--dont);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 32px;
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.dangerButton:hover {
+  opacity: 0.85;
+}
+.dangerButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Without this the :hover above wins and a disabled button brightens when you
+   point at it, which reads as working. Same fix as `.btnPrimary` on signup. */
+.dangerButton:disabled:hover {
+  opacity: 0.5;
+}
+
+.dangerRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+/* Deliberately the quieter of the two: cancelling is the safe choice, so it
+   should not compete for attention, but it must stay obviously clickable. */
+.cancelButton {
+  background: none;
+  border: none;
+  padding: 10px 8px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.cancelButton:hover {
+  color: var(--text);
+}
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Replaces the whole form once the account is gone. */
+.goodbye {
+  max-width: 460px;
+  margin: 24px auto 0;
+  text-align: center;
+}
+.goodbye h2 {
+  font-size: 26px;
+  font-weight: 400;
+  margin-bottom: 16px;
+}
+.goodbye p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.goodbyeNote {
+  margin-top: 20px;
+  font-size: 14px;
+  /* Reserves the line's height so the block doesn't jump when the countdown
+     text disappears on the last tick. */
+  min-height: 1.6em;
+}

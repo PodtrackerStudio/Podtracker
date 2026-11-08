@@ -45,8 +45,15 @@ export const metadata: Metadata = {
  *     said both are collected. Set to YES, which matches §1 and matches the
  *     derivative-data answer Sasha gave the generator.
  *  7. §9's account termination wording no longer implies self-serve deletion.
- *     `/api/account` has PATCH and no DELETE, so it says email us — the same
- *     correction already made to Terms §10.
+ *     **Reversed the same day**: `DELETE /api/account` was built on
+ *     2026-11-07, so §9 describes the real Settings flow again and Terms §10
+ *     was restored to match. Left in this list because the correction and its
+ *     reversal are both part of the history a reviewer should see.
+ *
+ *     **This depends on `SUPABASE_SERVICE_ROLE_KEY` being set in production.**
+ *     Without it the route deletes nothing and tells the person to email —
+ *     safe, but it makes §9 and Terms §10 overstate what the site does. Do not
+ *     publish these pages until that key is in Vercel.
  *
  * ## Still open, deliberately left alone for the review
  *
@@ -88,7 +95,7 @@ export default function PrivacyPage() {
               Four companies help run the site: Vercel (hosting and analytics), Supabase, Stripe
               and Resend. Nobody else gets your data.
             </li>
-            <li>You can ask us to delete your account and everything in it at any time.</li>
+            <li>You can delete your account, and everything in it, at any time.</li>
             <li>There are no ads on Podtracker, and no advertising trackers.</li>
           </ul>
           <p>
@@ -766,26 +773,32 @@ export default function PrivacyPage() {
         </p>
 
         <h3>Account Information</h3>
-        <p>If you would at any time like to review or change the information in your account, you can:</p>
+        <p>
+          If you would at any time like to review, change or delete the information in your
+          account, you can:
+        </p>
         <ul>
           <li>
             Log in to your <Link href="/settings">account settings</Link> and update your user
             account.
           </li>
+          <li>
+            {/* Correction 7 was reversed on 2026-11-07, hours after it was
+                made: DELETE /api/account now exists, so the generated text's
+                claim that you can terminate your account yourself is true
+                again. Terms §10 was restored in the same change. */}
+            Delete your account from <Link href="/settings">Settings → Authentication → Delete
+            account</Link>. We ask for your password and your username first, because this cannot
+            be undone.
+          </li>
         </ul>
         <p>
-          {/* Generated text implied you could terminate the account yourself
-              from settings. /api/account has PATCH and no DELETE — there is no
-              self-serve deletion to point at. This is the same correction
-              already made to Terms §10; restore the stronger wording the moment
-              a delete endpoint exists. */}
-          To close your account, email us at{" "}
-          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> and ask — there is no
-          self-serve delete button yet, so this is the way to do it and we will act on it. Upon your
-          request to terminate your account, we will deactivate or delete your account and
-          information from our active databases. However, we may retain some information in our
-          files to prevent fraud, troubleshoot problems, assist with any investigations, enforce our
-          legal terms and/or comply with applicable legal requirements.
+          Upon your request to terminate your account, we will delete your account and information
+          from our active databases immediately. However, we may retain some information in our
+          files to prevent fraud, troubleshoot problems, assist with any investigations, enforce
+          our legal terms and/or comply with applicable legal requirements. Backups are overwritten
+          on their own schedule, so a copy can survive there for a short time after it has gone
+          from the site.
         </p>
         <p>
           <strong>
@@ -1239,8 +1252,8 @@ export default function PrivacyPage() {
         </p>
         <p>Your email address is never shown publicly.</p>
         <p>
-          If you ask us to delete your account, we remove this content from Podtracker. We cannot
-          remove copies that search engines or other services may already have cached or stored.
+          If you delete your account, we remove this content from Podtracker. We cannot remove
+          copies that search engines or other services may already have cached or stored.
         </p>
 
         <h2 id="policyupdates">14. Do we make updates to this notice?</h2>

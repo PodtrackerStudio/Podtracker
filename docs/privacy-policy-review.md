@@ -96,18 +96,50 @@ visitor, and a search engine, can see any profile and everything on it.
 `/settings`, `/log`, `/api/`, `/auth/` and the password-reset pages are
 disallowed in `robots.txt` and are behind auth checks.
 
-### Account deletion — the one real gap
+### Account deletion — built 2026-11-07
 
-**`/api/account` has `PATCH` and no `DELETE`.** There is no way for a user to
-delete their own account, and no endpoint for an admin to do it either; it would
-be done by hand in the Supabase dashboard.
+This was the one real gap when the documents were drafted: `/api/account` had
+`PATCH` and no `DELETE`, so three documents promised deletion the site could not
+do. **`DELETE /api/account` now exists**, reachable from Settings →
+Authentication → Delete account.
 
-Both documents are worded around this honestly — they say to email and ask,
-rather than promising a button that does not exist. Three places say it:
-Terms §10, Privacy §9 (Account Information), and Privacy §13.
+How it works, because the reviewer will reasonably want to know what "delete"
+actually means here:
 
-This is the highest-priority thing to actually build. Until it exists, the
-promise is only as good as Sasha reading his email.
+- You must enter **your password** and **type your username** before the button
+  activates. The server re-checks both; the client-side check only avoids a
+  request that is certain to fail.
+- It deletes the `User` row. Every relation to it in `schema.prisma` is
+  `onDelete: Cascade`, so Postgres removes the ratings, episode ratings, log
+  entries (the diary), lists and their items, follows in both directions,
+  podcast follows, favourites, comments and likes in the same statement. This
+  was tested against a real Postgres: 16 assertions, including that another
+  user's comment on a deleted user's review goes too, and that the shared
+  podcast catalogue is untouched.
+- It then deletes the **Supabase Auth user**, so the login is gone and the email
+  address can be used to sign up again.
+- The order is deliberate: our database first, Supabase second. If it were the
+  other way round and the second step failed, the person could no longer log in
+  while all their reviews stayed public — the privacy promise broken with no way
+  for them to retry.
+
+**Two honest limits**, both now stated in Privacy §9:
+
+1. We may retain some information to prevent fraud, meet legal obligations and
+   so on — standard, and it is what the policy says.
+2. **Backups.** Deleting removes the rows from the live database. Supabase's
+   automatic backups are overwritten on their own schedule, so a copy can
+   survive there briefly. Privacy §7 already covers this in general terms
+   ("stored in backup archives… isolate it from any further processing until
+   deletion is possible") and §9 now says it plainly.
+
+**One operational precondition.** Deleting a Supabase login needs the
+**service-role key**, which the anon key cannot do by design. The route reads
+`SUPABASE_SERVICE_ROLE_KEY`; if it is not set it **deletes nothing at all** and
+tells the person to email instead, rather than removing their data and
+stranding their login. That is the safe failure, but it means Terms §10 and
+Privacy §9 overstate the site until the key is in Vercel. **Setting it is a
+precondition for merging this branch.**
 
 ---
 
@@ -126,7 +158,7 @@ the line in `src/app/privacy/page.tsx`, so any can be put back.
 | 4 | §5 Cookies | "set out in our Cookie Notice" | The inventory itself, inline | There is no Cookie Notice page. Linking to nothing is worse than saying it plainly |
 | 5 | §4 Sharing | A "Business Partners… products, services, or promotions" bullet | Removed | There are no business partners |
 | 6 | §11 Table | Category F (Internet activity) **NO**, Category G (Geolocation) **NO** | Both **YES** | Directly contradicted §1, which says log/usage and location data are collected. YES matches both §1 and the derivative-data answer Sasha gave the generator. Both categories were also added to the twelve-month disclosure list and the retention list, for consistency |
-| 7 | §9 Account Information | Implied you could terminate your account from settings | Says to email, because there is no self-serve delete | See the gap above. Same correction already made to Terms §10 |
+| 7 | §9 Account Information | Implied you could terminate your account from settings | ~~Says to email~~ — **reversed on 2026-11-07**: deletion was built the same day, so §9 describes the real Settings flow and Terms §10 was restored to match | Listed because the correction and its reversal are both history worth seeing. Depends on the service-role key above |
 
 Corrections 1–5 narrow what the policy claims. Correction 6 **widens** it — it
 admits to collecting two more categories than the generated version did. That
@@ -194,10 +226,12 @@ one, so nothing was guessed.
 
 1. Review both pages. They render at `/privacy` and `/terms` when the branch is
    checked out and `npm run dev` is running.
-2. Build account deletion — a `DELETE` on `/api/account` — because three
-   documents now promise it.
-3. Decide the age question and make Terms, the checkbox and the policy agree.
-4. Only then merge `legal-pages` into `main`, which publishes both.
+2. ~~Build account deletion~~ — **done 2026-11-07**, see above.
+3. **Add `SUPABASE_SERVICE_ROLE_KEY` to Vercel** (Supabase → Project Settings →
+   API → `service_role`). Without it the delete button refuses and two
+   documents overstate the site. This blocks the merge.
+4. Decide the age question and make Terms, the checkbox and the policy agree.
+5. Only then merge `legal-pages` into `main`, which publishes both.
 
 Phillip wrote the original Terms and has **not** been told that the page was
 reverted on 2026-11-04, restored on this branch, or edited since. Someone should
