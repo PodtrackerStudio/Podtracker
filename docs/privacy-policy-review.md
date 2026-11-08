@@ -6,17 +6,29 @@ done. The Terms page was deliberately pulled from `main` on 2026-11-04 for this
 reason.
 
 This file exists for the person reviewing them — Sasha's brother, a law
-student. It is in three parts:
+student. It is in four parts:
 
 1. **What the site actually does**, so the documents can be checked against
    reality without reading any code.
 2. **Seven places the generated privacy policy was factually wrong** about
    Podtracker and was corrected. Each is listed so it can be reverted.
+2b. **Four clauses added to the Terms by Claude** on 2026-11-08. The least
+   validated text in either document — read these first.
 3. **Open questions** that need a legal answer rather than a factual one.
 
-The privacy policy was generated with [Termly](https://termly.io) on
-2026-11-07, from answers Sasha gave question by question. The Terms were drafted
-from scratch against the codebase. **Neither has been read by a lawyer.**
+Where each document came from, because it changes how much to trust the
+wording:
+
+- **Privacy Policy** — generated with [Termly](https://termly.io) on
+  2026-11-07 from answers Sasha gave question by question, then checked line by
+  line against the codebase. Termly's templates are attorney-drafted, so the
+  *language* has had a lawyer on it; whether it *fits Podtracker* is what
+  part 2 is about.
+- **Terms of Service** — written from scratch by Phillip against the codebase,
+  plus four clauses added by Claude on 2026-11-08 (part 2b). Those four had no
+  lawyer anywhere near them, not even a template's.
+
+**Neither document has been read by a lawyer.**
 
 ---
 
@@ -166,6 +178,43 @@ direction is deliberate: a privacy policy that under-declares is the one that
 causes trouble.
 
 ---
+
+## 2b. Four clauses added to the Terms, drafted by Claude
+
+Sasha nearly regenerated the whole Terms with Termly to pick these up, and
+decided to keep Phillip's text and add to it instead. The trade-off is worth
+being explicit about: **Termly's clauses come off an attorney-drafted template,
+and these do not.** They are plain-English renderings of standard clauses
+written by an AI. They are the least validated text in either document and
+should be the first thing read.
+
+| § | Clause | What it does | Watch for |
+|---|---|---|---|
+| 8 | **DMCA** (expanded) | Was one "email us" paragraph. Now lists the six things a §512(c)(3) notice must contain, gives a counter-notice route with the 10–14 business day restore window, and states a repeat-infringer policy | **The safe harbour does not exist until a designated agent is registered with the US Copyright Office.** See below |
+| 13 | **Indemnification** (new) | User covers our reasonable costs for claims arising from what they posted or did | Scoped to claims actually caused by the user, with notice and a right to take over the defence, so it is not one-sided. Check the scope is tight enough |
+| 15 | **Governing law and disputes** (expanded) | Absorbed the old §14 and added a 30-day talk-to-us-first step before anything formal. Preserves small claims court | **No arbitration clause and no class-action waiver** — deliberately. See below |
+| 16 | **The rest** (new) | Severability, entire agreement, no-waiver, assignment, survival of §§11–13 | Standard. Check the survival list is right |
+
+Old §13 (changes) became §14 and old §14 (governing law) became §15. Nothing
+outside the file referenced those numbers.
+
+**Two decisions that were deliberately not made here:**
+
+1. **The DMCA agent is a registration, not a paragraph.** Writing a DMCA
+   section does not create safe-harbour protection under 17 U.S.C. §512(c).
+   That requires a designated agent registered with the US Copyright Office at
+   `dmca.copyright.gov` — about $6, renewable every three years. Until that is
+   done, §8 describes a process Podtracker is running voluntarily rather than a
+   statutory protection it can rely on. For a site whose entire content is
+   user-posted, this is the single cheapest piece of legal protection available
+   and it is currently not in place.
+
+2. **No arbitration or class-action waiver.** Most US consumer terms have one.
+   It was left out on purpose rather than slipped in: it is a genuine
+   trade-off — it caps class-action exposure, but mass-arbitration filing fees
+   can be far worse than the thing they prevent, and for a one-person site with
+   a US$50 liability cap it may buy nothing. This is a lawyer's call. Raise it
+   with Sasha either way; do not treat its absence as an oversight.
 
 ## 3. Open questions for the review
 

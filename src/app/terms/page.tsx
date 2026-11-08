@@ -18,7 +18,7 @@ export const metadata: Metadata = {
  * The three `TODO` fields it shipped with were answered by Sasha on 2026-11-04
  * and are filled in below: the operator is **Alexander Knysh as an individual**
  * — there is no company — based in **Michigan, USA**, and **Michigan law**
- * governs. If an LLC is ever formed, section 1 and section 14 both change.
+ * governs. If an LLC is ever formed, section 1 and section 15 both change.
  *
  * **Everything here now describes the site as it actually is.** Two things did
  * not, and both were fixed on 2026-11-07:
@@ -26,6 +26,32 @@ export const metadata: Metadata = {
  *     which exists on this branch.
  *   - §10 said you could only *ask* to have your account deleted. Self-serve
  *     deletion was built the same day, so the stronger wording is back.
+ *
+ * ## Four clauses added 2026-11-08 — Claude's drafting, nobody's review
+ *
+ * Sasha nearly regenerated the whole document with Termly to get these, and
+ * chose to keep Phillip's text and add to it instead. **So §8's expansion and
+ * §§13, 15 and 16 were written by Claude.** They are plain-English versions of
+ * standard clauses, not lawyer-drafted ones, and they are the least validated
+ * text in either document — Termly's equivalents would at least have had an
+ * attorney on the template. Flag them first in the review.
+ *
+ *   - **§8** grew from a "email us" paragraph into a real DMCA section: the
+ *     six things a §512(c)(3) notice must contain, a counter-notice route, and
+ *     a repeat-infringer policy. **The safe harbour this is written for does
+ *     not exist until a designated agent is registered with the US Copyright
+ *     Office** (dmca.copyright.gov, $6). Registering is the actual deliverable;
+ *     the text alone buys nothing.
+ *   - **§13** indemnification, scoped to claims arising from the user's own
+ *     acts, with notice and defence carve-outs so it is not one-sided.
+ *   - **§15** absorbed the old §14 and added a 30-day talk-to-us-first step.
+ *     **Deliberately no arbitration clause and no class-action waiver** — that
+ *     is a real decision with real trade-offs and belongs to a lawyer, not to
+ *     a default. Raise it; don't add one quietly.
+ *   - **§16** severability, entire agreement, no-waiver, assignment, survival.
+ *
+ * Renumbering: old §13 (changes) is now §14, old §14 (governing law) is now
+ * §15. Nothing outside this file referenced those two numbers.
  *
  * Both documents are waiting on the same review — see
  * `docs/privacy-policy-review.md`.
@@ -40,7 +66,7 @@ export const metadata: Metadata = {
  * change materially.
  */
 
-const LAST_UPDATED = "3 November 2026";
+const LAST_UPDATED = "8 November 2026";
 
 export default function TermsPage() {
   return (
@@ -59,6 +85,13 @@ export default function TermsPage() {
             <li>Donations are gifts. They don&apos;t buy anything, and they aren&apos;t refundable.</li>
             <li>You can delete your account whenever you like, and your content goes with it.</li>
             <li>Podtracker is small and new. It may break. Please don&apos;t rely on it for anything important.</li>
+            {/* An indemnity is a real obligation on the reader, so it belongs
+                in a summary whose whole point is "know what you're agreeing
+                to". Leaving it only in §13 would make the summary flattering
+                rather than honest. */}
+            <li>
+              If something you post lands us in a legal dispute, you cover the cost of it.
+            </li>
           </ul>
           <p>
             This summary is here so you actually know what you&apos;re agreeing to. The full terms
@@ -153,9 +186,49 @@ export default function TermsPage() {
         <h2>8. Copyright complaints</h2>
         <p>
           If you believe something on Podtracker infringes your copyright, email{" "}
-          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> with enough detail to
-          identify the work and where it appears on the site, and a way to contact you. We will
-          review it and remove anything that shouldn&apos;t be there.
+          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a>. We take these
+          seriously and will remove anything that shouldn&apos;t be there.
+        </p>
+        <p>
+          So that we can act on it, please include all of the following. This is what US copyright
+          law (the DMCA, 17 U.S.C. §512) asks a notice to contain, and a notice missing any of it
+          may take us longer to deal with:
+        </p>
+        <ul>
+          <li>Your physical or electronic signature.</li>
+          <li>Which work you say has been infringed.</li>
+          <li>
+            What on Podtracker you are complaining about, and where — a link to the exact page is
+            best.
+          </li>
+          <li>Your name, address, telephone number and email address.</li>
+          <li>
+            A statement that you believe in good faith that the use isn&apos;t authorised by the
+            copyright owner, its agent, or the law.
+          </li>
+          <li>
+            A statement, <strong>under penalty of perjury</strong>, that the information in your
+            notice is accurate and that you are the copyright owner or authorised to act for them.
+          </li>
+        </ul>
+        <p>
+          <strong>If we remove something of yours and you think we got it wrong</strong>, you can
+          send a counter-notice to the same address. It needs your signature, what was removed and
+          where it was, a statement under penalty of perjury that you believe it was removed by
+          mistake or misidentification, and your name, address and telephone number. You will also
+          need to agree to the jurisdiction of the federal court for your district — or, if you are
+          outside the United States, any district where we may be found — and to accept service
+          from the person who complained. If we receive a valid counter-notice, we may put the
+          content back after 10 to 14 business days, unless they tell us they have gone to court.
+        </p>
+        <p>
+          <strong>Repeat infringers.</strong> In appropriate circumstances we will close the
+          accounts of people who infringe copyright repeatedly.
+        </p>
+        <p>
+          Please don&apos;t send a notice about something you have no right to complain about.
+          Under US law, knowingly misrepresenting that material is infringing can make you liable
+          for the costs it causes.
         </p>
 
         <h2>9. Donations</h2>
@@ -212,18 +285,62 @@ export default function TermsPage() {
           fraud, or for anything else that cannot lawfully be limited.
         </p>
 
-        <h2>13. Changes to these terms</h2>
+        <h2>13. If what you do causes us a legal problem</h2>
+        <p>
+          If someone brings a claim against us because of something you posted, something you did
+          on Podtracker, or because you broke these terms, you agree to cover our reasonable costs
+          in dealing with it, including legal fees.
+        </p>
+        <p>
+          This only covers claims that actually come from what you did. If one arrives, we&apos;ll
+          tell you promptly, we won&apos;t settle it in a way that costs you or admits fault on
+          your behalf without asking you first, and you can take over defending it if you&apos;d
+          rather.
+        </p>
+
+        <h2>14. Changes to these terms</h2>
         <p>
           We may update these terms as the site changes. If a change matters, we&apos;ll say so on
           the site or by email before it takes effect. Carrying on using Podtracker after that means
           you accept the new terms.
         </p>
 
-        <h2>14. Governing law</h2>
+        <h2>15. Governing law, and sorting out disagreements</h2>
         <p>
-          These terms are governed by the laws of the State of Michigan, USA, and disputes will be
-          dealt with by the courts there. If you are a consumer, this
-          doesn&apos;t take away rights you have under the law of the country you live in.
+          <strong>Please talk to us first.</strong> If you have a problem with Podtracker, email{" "}
+          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> and give us 30 days to
+          put it right. Most things can be sorted out this way, and it is faster and cheaper for
+          both of us than anything else on this page.
+        </p>
+        <p>
+          If that doesn&apos;t work, these terms are governed by the laws of the State of Michigan,
+          USA, and disputes will be dealt with by the courts there. If you are a consumer, this
+          doesn&apos;t take away rights you have under the law of the country you live in, and it
+          doesn&apos;t stop you bringing a claim in your local small claims court.
+        </p>
+
+        <h2>16. The rest</h2>
+        <p>
+          If any part of these terms turns out to be unenforceable, the rest of them still stand —
+          that one part is treated as removed and everything else carries on.
+        </p>
+        <p>
+          These terms, together with our <Link href="/privacy">Privacy Policy</Link>, are the whole
+          agreement between you and us about Podtracker, and they replace anything said before.
+        </p>
+        <p>
+          If we don&apos;t enforce something straight away, we haven&apos;t given up the right to
+          enforce it later.
+        </p>
+        <p>
+          You can&apos;t transfer your rights under these terms to someone else. We may transfer
+          ours if Podtracker is sold or moves to another company, and if that happens we&apos;ll
+          say so on the site beforehand.
+        </p>
+        <p>
+          Sections 11, 12 and 13 — the as-is statement, the limit on our liability, and your
+          agreement to cover claims your own actions cause — carry on applying after you close your
+          account.
         </p>
 
         <div className={styles.contact}>

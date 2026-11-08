@@ -71,6 +71,90 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-08 — Four clauses added to the Terms, instead of regenerating them
+
+- **Branch:** `legal-pages`
+- **Requested by:** sashaknyshjr@gmail.com — asked whether the privacy policy
+  being 5× longer than the Terms was normal, considered regenerating the Terms
+  with Termly to pick up the missing standard clauses, then: "scratch that I
+  think just explain the clauses to me and add them".
+- **Status:** Complete. Still not merged.
+
+**The question behind it, measured rather than guessed**
+
+Privacy Policy 6,307 words / 21 pages; Terms 1,186 words / 5 pages — 5.3×. But
+about half the privacy policy is jurisdictional boilerplate (§11 US state laws
+alone is 28% of it, §3 legal bases 10%, §12 Australia/NZ/South Africa 7%,
+§6 transfers 5%). The part actually describing Podtracker is ~1,500 words,
+which is about the same as the Terms. So the Terms were not unusually thin on
+substance — they were missing standard clauses.
+
+**Why not regenerate with Termly**
+
+Sasha raised the fair counter that Termly's templates are attorney-drafted and
+Claude's prose is not, which is true and is the strongest argument for the
+generator. The deciding factor the other way: the Terms are *contractual* where
+the privacy policy is *statutory*. A generator is good at reciting law and bad
+at describing a site, and the best parts of Phillip's text — podcast metadata
+from Apple and RSS with a takedown offer, donations as non-refundable
+non-tax-deductible gifts that buy no influence over ratings, a licence scoped
+to community ranking features — are exactly what a generator cannot produce.
+Seven false statements in the generated privacy policy made the cost of the
+other path concrete.
+
+**What was added** — all four written by Claude, flagged as such in the page
+comment, in `docs/privacy-policy-review.md` §2b, and on the PDF cover:
+
+- **§8 Copyright complaints**, expanded from one paragraph into a real DMCA
+  section: the six things a §512(c)(3) notice must contain, a counter-notice
+  route with the 10–14 business day restore window, a repeat-infringer policy,
+  and a warning about knowingly false notices.
+- **§13 Indemnification** (new), scoped to claims arising from the user's own
+  acts, with prompt notice, no settlement binding them without asking, and a
+  right to take over the defence — so it is not one-sided.
+- **§15 Governing law and disputes**, absorbing the old §14 and adding a
+  30-day talk-to-us-first step. Small claims preserved.
+- **§16 The rest** (new): severability, entire agreement, no-waiver,
+  assignment, and survival of §§11–13.
+
+Old §13 became §14 and old §14 became §15. Nothing outside the file referenced
+those numbers; the page comment's "section 14" reference was updated.
+
+A bullet was added to the plain-English summary saying the reader covers legal
+costs their own posts cause. A summary whose stated purpose is "know what
+you're agreeing to" should not omit the one new obligation on the reader.
+
+**Two things deliberately not done**
+
+- **No arbitration clause and no class-action waiver.** It caps class-action
+  exposure, but mass-arbitration filing fees can cost more than they prevent,
+  and liability is already capped at US$50. A real trade-off, so it is raised
+  for the lawyer rather than defaulted in either direction.
+- **The DMCA agent is not registered.** Writing §8 does not create safe-harbour
+  protection — that needs a designated agent filed with the US Copyright Office
+  (`dmca.copyright.gov`, ~$6, renewed every three years). Until then §8
+  describes a voluntary process, not a statutory shield. Recorded as the
+  highest-value outstanding item.
+
+**Verified:** `npx tsc --noEmit` clean; production build successful; `/terms`
+renders with sections numbered 1–16 with no gaps or duplicates; the regenerated
+PDF contains every new clause.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/terms/page.tsx` | Modified — §8 expanded, §§13/15/16 added, renumbering, date bumped to 8 November 2026, summary bullet, page comment |
+| `docs/privacy-policy-review.md` | Modified — new §2b on the four clauses, and the intro now says where each document's wording came from |
+
+**Follow-ups**
+
+- **Register the DMCA designated agent.** Cheapest protection available for a
+  site made entirely of user-posted content, and it is not in place.
+- Decide the arbitration question with the reviewer.
+- Everything still outstanding from the two entries below, in particular
+  `SUPABASE_SERVICE_ROLE_KEY` in Vercel before this branch can merge.
+
 ### 2026-11-07 — Self-serve account deletion
 
 - **Branch:** `legal-pages` (same branch as the legal documents — it closes the
