@@ -71,7 +71,16 @@ Four companies, and only these four:
 phrasing: hosting, cloud computing, data storage, authentication, analytics,
 payments and email. Those seven categories are these four companies — Vercel
 covers the first two plus analytics, Supabase covers storage and
-authentication. Nobody is hidden behind the longer list.
+authentication.
+
+**As of 2026-11-08 the policy says so itself.** §4 keeps Termly's category
+list and then names the four companies in a table, with what each does and a
+link to its privacy notice. This was added because the summary says "four
+companies" while §4 listed seven categories, which reads as a contradiction
+even though it isn't — and because §11 already promises Minnesota and Oregon
+residents a list of *specific* third parties on request, so there was nothing
+to gain by making them ask. The table is the thing in this document most
+likely to go stale; it needs updating whenever the stack changes.
 
 Nothing is sold or shared. There is no ad network, no retargeting, no data
 broker, no CRM, no marketing email tool. The only email that leaves the site is

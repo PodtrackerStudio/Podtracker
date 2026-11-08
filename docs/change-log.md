@@ -147,11 +147,34 @@ PDF contains every new clause.
 | `src/app/terms/page.tsx` | Modified — §8 expanded, §§13/15/16 added, renumbering, date bumped to 8 November 2026, summary bullet, page comment |
 | `docs/privacy-policy-review.md` | Modified — new §2b on the four clauses, and the intro now says where each document's wording came from |
 
+**Also, later the same day — the processors are named in Privacy §4**
+
+Sasha asked whether the summary blocks were all necessary. They are not: the
+privacy policy had **three** layers — the plain-English box, Termly's "Summary
+of key points", and thirteen per-section "In Short" lines. He chose to keep
+Termly's, so nothing was cut.
+
+The audit did turn up a real inconsistency, and that was fixed. The summary
+says "four companies help run the site" while §4 listed **seven** categories of
+third party. Not a contradiction — Vercel covers three of those categories and
+Supabase two — but it reads as one. §4 now keeps Termly's category list and
+adds a table naming Vercel, Supabase, Resend and Stripe, what each does, and a
+link to each one's privacy notice. The URLs were checked rather than recalled:
+Vercel's canonical page is `vercel.com/privacy`, not the `/legal/privacy-policy`
+path that an archived PDF points at.
+
+Naming them is also consistent with the document's own §11, which already gives
+Minnesota and Oregon residents the right to request a list of specific third
+parties. **That table is the most stale-prone thing in either document** — it
+has to change whenever the stack does.
+
 **Follow-ups**
 
 - **Register the DMCA designated agent.** Cheapest protection available for a
   site made entirely of user-posted content, and it is not in place.
 - Decide the arbitration question with the reviewer.
+- Keep Privacy §4's processor table in step with the real stack. Adding a
+  service without updating it makes the policy false.
 - Everything still outstanding from the two entries below, in particular
   `SUPABASE_SERVICE_ROLE_KEY` in Vercel before this branch can merge.
 

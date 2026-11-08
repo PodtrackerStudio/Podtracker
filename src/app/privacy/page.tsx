@@ -522,6 +522,78 @@ export default function PrivacyPage() {
           <li>Payment Processors</li>
           <li>Email delivery service</li>
         </ul>
+        {/* Added 2026-11-08. Seven generic categories above, but only four
+            actual companies — the summary says "four companies" and a reader
+            comparing the two would reasonably think they conflict. Naming them
+            resolves it, and §11 already promises Minnesota and Oregon
+            residents a list of specific third parties on request, so there is
+            nothing gained by making them ask. Keep this table in step with
+            what the site really uses; it is the easiest thing here to let go
+            stale. */}
+        <p>
+          <strong>In practice those categories are four companies.</strong> We think it is more
+          useful to name them than to leave you with the list above:
+        </p>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th scope="col">Who</th>
+                <th scope="col">What they do for us</th>
+                <th scope="col">Their privacy notice</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Vercel</th>
+                <td>
+                  Hosts the site and runs its server code, and provides the analytics that count
+                  page views
+                </td>
+                <td>
+                  <a href="https://vercel.com/privacy" target="_blank" rel="noopener noreferrer">
+                    vercel.com/privacy
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Supabase</th>
+                <td>Stores the database, and handles signing up and logging in</td>
+                <td>
+                  <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">
+                    supabase.com/privacy
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Resend</th>
+                <td>Sends account email — confirming your address and resetting your password</td>
+                <td>
+                  <a
+                    href="https://resend.com/legal/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    resend.com/legal/privacy-policy
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Stripe</th>
+                <td>Takes donations. Card details are entered on Stripe&apos;s own pages</td>
+                <td>
+                  <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer">
+                    stripe.com/privacy
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          No one else receives your personal information. If that ever changes, this table changes
+          with it.
+        </p>
         <p>We also may need to share your personal information in the following situations:</p>
         <ul>
           {/* The generated list had a "Business Partners … to offer you certain
