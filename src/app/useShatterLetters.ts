@@ -15,15 +15,14 @@ import { useEffect } from "react";
  *     computed font and sampled every few pixels. Each opaque sample becomes a
  *     ball whose "home" is that pixel, in page coordinates.
  *   - Balls fly with the cursor's velocity plus a burst away from it, are free
- *     for a moment, then spring home, fading from the rating colours back to
- *     the text colour. When all of a letter's balls are home, the real letter
+ *     for a moment, then spring home. The balls are the letter's own colour
+ *     (black), per Phillip. When all of a letter's balls are home, the real letter
  *     fades back in and the balls fade out over the same 250ms.
  *   - A single fixed, pointer-events-none canvas draws everything, and the
  *     animation loop only runs while there are balls, so an idle page costs
  *     nothing.
  */
 
-const PALETTE = ["#ff40d9", "#28ba60", "#c7bf2d", "#ff0000", "#7bbaff", "#9ccbff"];
 const GAP = 2.4; // CSS px between samples: smaller means more balls
 const RADIUS = 1.35;
 const FREE_MS = [450, 1100]; // how long a ball flies before heading home
@@ -43,11 +42,6 @@ type Burst = {
   home: [number, number, number];
   landedAt: number | null;
 };
-
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace("#", "");
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-}
 
 function cssColourToRgb(css: string): [number, number, number] {
   const m = css.match(/\d+(\.\d+)?/g);
@@ -129,7 +123,7 @@ export function useShatterLetters(container: React.RefObject<HTMLElement | null>
           x: hx, y: hy, hx, hy,
           vx: (dx / d) * burst + pvx * 0.35 + (Math.random() - 0.5) * 3,
           vy: (dy / d) * burst + pvy * 0.35 + (Math.random() - 0.5) * 3 - 1.5,
-          colour: hexToRgb(PALETTE[(Math.random() * PALETTE.length) | 0]),
+          colour: home,
           freeUntil: now + FREE_MS[0] + Math.random() * (FREE_MS[1] - FREE_MS[0]),
         };
       });
@@ -221,7 +215,7 @@ export function useShatterLetters(container: React.RefObject<HTMLElement | null>
           burst.el.style.opacity = "1";
         }
 
-        // Draw: colour eases to the text colour as each ball nears home.
+        // Draw, in the letter's own colour.
         for (const b of burst.balls) {
           const away = Math.min(1, Math.hypot(b.hx - b.x, b.hy - b.y) / 40);
           const t = now < b.freeUntil ? 1 : away;
