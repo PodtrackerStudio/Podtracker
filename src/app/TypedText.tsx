@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import styles from "./landing.module.css";
+import { useShatterLetters } from "./useShatterLetters";
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
@@ -78,6 +79,11 @@ export function TypedText({ text, speedMs = 70, startDelayMs = 350, onFinished }
     if (finished) onFinishedRef.current?.();
   }, [finished]);
 
+  // Once typed out, each letter can be knocked apart with the cursor and
+  // reassembles itself; see useShatterLetters.
+  const visibleRef = useRef<HTMLSpanElement>(null);
+  useShatterLetters(visibleRef, finished);
+
   return (
     <span className={styles.typedWrap}>
       {/* Screen readers get the whole heading at once — the animation is decorative. */}
@@ -91,8 +97,18 @@ export function TypedText({ text, speedMs = 70, startDelayMs = 350, onFinished }
         <span className={styles.typedCaret} />
       </span>
 
-      <span className={styles.typedVisible} aria-hidden="true">
-        {text.slice(0, visibleCount)}
+      <span ref={visibleRef} className={styles.typedVisible} aria-hidden="true">
+        {finished
+          ? Array.from(text).map((ch, i) =>
+              ch === " " ? (
+                " "
+              ) : (
+                <span key={i} data-letter="">
+                  {ch}
+                </span>
+              ),
+            )
+          : text.slice(0, visibleCount)}
         <span className={finished ? styles.typedCaretBlinking : styles.typedCaret} />
       </span>
     </span>

@@ -81,7 +81,11 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
+  /* A little slack past the ghost's width. Once typed, the headline is split
+     into one span per letter (so each can be knocked apart, see
+     useShatterLetters), which loses kerning across letters and comes out a
+     hair wider — enough to push the caret onto a line of its own. */
+  width: calc(100% + 0.75em);
 }
 .typedSrOnly {
   position: absolute;
