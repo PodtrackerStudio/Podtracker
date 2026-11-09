@@ -71,6 +71,40 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-09 — Personal themes: each person picks their own colours and font
+
+- **Branch:** `personal-theme`, fast-forwarded onto `main`
+- **Requested by:** Phillip: "make a feature where a person can customize the colors and fonts of the website but make it personal to them, give it an accent and a main color". He chose *only the person themselves sees it, site-wide* (not visitors to their profile), and *saved to the account* (not a cookie).
+- **Status:** Complete. Real save is untested while signed in (see Follow-ups).
+
+**What changed**
+
+- **Database:** migration `20261107000000_add_user_theme` adds nullable `User.themeMain`, `themeAccent` and `themeFont`. It was applied to Supabase on 2026-11-07, before the code shipped. That was safe because the old code ignores unknown columns. Null means Sasha's default.
+- **`src/lib/theme.ts`:** presets, font pairs, validation (`cleanHex` accepts only `#rrggbb`; `cleanFont` is a whitelist) and `themeVars`/`themeCss`, which turn a theme into overrides of the existing CSS variables.
+  - Main colour sets `--accent-blue`, `--btn-nav-blue`, `--bg`, `--page-bg-alt` and `--border`, all as `color-mix` tints.
+  - Accent sets `--btn-primary-blue`, `--on-accent`, `--theme-on-accent` (black or white by luminance) and `--link-hover`.
+  - Font overrides `--font-display` and, for some pairs, `--font-body`. `--font-rating` (Londrina) is never overridden.
+- **Applying it:** `getCurrentUser` now also selects the three theme fields. `SiteNav` writes `<style id="personal-theme">html:root{…}</style>` for a signed-in person with a theme. The nav already runs on every page with a signed-in user, so this adds no queries and doesn't make any static route dynamic. Pages without the nav (login/signup) show the default theme, which is fine since nobody is signed in there.
+- **Fonts:** DM Sans, Nunito, Fraunces, Space Mono, plus a second handle on PT Serif (`--font-pt-serif`, for the Classic sample card), all loaded with `preload: false`, so a browser only downloads the ones a page uses.
+- **Settings → Theme tab** (`ThemeEditor.tsx`, `theme.module.css`): swatches, a custom `<input type="color">`, font cards, and a live preview. The preview works by setting inline vars on `<html>`, which are removed on unmount so an unsaved preview never sticks. It also has a mini preview card, Save and "Reset to original". Saving goes through `PUT /api/account/theme`, which returns 401 when signed out and 400 for invalid colours or fonts.
+- **Hard-coded colours routed through the variables** so themes reach them: white text on accent buttons → `var(--on-accent)` (status, landing, auth, comments, profile `.btnEdit`). Blue `rgba(…)` glows and shadows → `color-mix` of the variable. Input focus borders → `color-mix`. Donate button text → `var(--theme-on-accent, var(--text))`. The default theme renders the same as before.
+
+**Why**
+
+Overriding the variables the site is already built on means no component knows themes exist, and Sasha's design stays the default for everyone who hasn't chosen otherwise. Main colours are stored as vivid bases and used as tints, so any colour a person picks still leaves dark text readable on the nav and cards.
+
+Checked with screenshots: the editor (default, Mint/Orange/Friendly, Lavender/Ink/Editorial on a phone) and a show page and profile with a Peach/Purple/Modern theme injected. That surfaced outlined buttons vanishing on tinted backgrounds, which was fixed by tinting `--border`. tsc, eslint and `next build` pass.
+
+**How to reverse**
+
+- Per person: Settings → Theme → "Reset to original".
+- The feature: `git revert` the feature commit. The columns can stay, since they're harmless. To drop them as well, add a migration with `ALTER TABLE "User" DROP COLUMN "themeMain", DROP COLUMN "themeAccent", DROP COLUMN "themeFont";`, which deletes everyone's saved choices.
+
+**Follow-ups**
+
+- A real signed-in save wasn't exercised by Claude, because it can't sign in as a user. Phillip should try it once on the live site.
+- Sasha hasn't seen this yet. The default look is unchanged, but he may have opinions on the presets and fonts.
+
 ### 2026-11-07 — Design refresh: softer, more relaxed, more community-feeling
 
 - **Branch:** `design-refresh`, rebased and fast-forwarded onto `main`
