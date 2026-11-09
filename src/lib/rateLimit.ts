@@ -100,6 +100,9 @@ export const AUTH_LIMIT = { limit: 8, windowMs: 15 * 60 * 1000, blockMs: 15 * 60
 
 /** Signup: looser, since a person filling in a form legitimately retries, but
  *  tight enough to stop bulk account creation from one address. */
+/** Comments, per account: a lively thread is a few a minute, not dozens. */
+export const COMMENT_LIMIT = { limit: 8, windowMs: 60 * 1000, blockMs: 2 * 60 * 1000 };
+
 export const SIGNUP_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000, blockMs: 60 * 60 * 1000 };
 
 export const RATE_LIMITED_MESSAGE =

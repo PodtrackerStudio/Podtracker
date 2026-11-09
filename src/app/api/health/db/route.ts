@@ -69,7 +69,7 @@ function classify(message: string): string {
   return "unrecognised";
 }
 
-export async function GET() {
+async function runCheck(): Promise<{ report: Record<string, unknown>; status: number }> {
   const url = process.env.DATABASE_URL;
 
   const report: Record<string, unknown> = {
@@ -87,7 +87,7 @@ export async function GET() {
 
   if (!url) {
     report.verdict = "DATABASE_URL is not set in this environment. Nothing can connect.";
-    return NextResponse.json(report, { status: 503 });
+    return { report, status: 503 };
   }
 
   let parsed: URL;
@@ -95,7 +95,7 @@ export async function GET() {
     parsed = new URL(url);
   } catch {
     report.verdict = "DATABASE_URL is set but is not a valid URL — it was mangled on the way in.";
-    return NextResponse.json(report, { status: 503 });
+    return { report, status: 503 };
   }
 
   report.database = {
@@ -128,13 +128,48 @@ export async function GET() {
         ? "Database reachable and the schema is present."
         : "Database reachable but the schema was never applied — signup will still fail.";
 
-    return NextResponse.json(report);
+    return { report, status: 200 };
   } catch (error) {
     const message = String((error as Error)?.message ?? error);
     report.connection = { ok: false, ms: Date.now() - started, cause: classify(message) };
     report.verdict = "Database unreachable from this deployment.";
-    return NextResponse.json(report, { status: 503 });
+    return { report, status: 503 };
   } finally {
     await pool.end().catch(() => {});
   }
+}
+
+/**
+ * At most one real probe per instance every 30 seconds, shared by everyone who
+ * asks meanwhile.
+ *
+ * The probe opens its own connection, deliberately outside the app's pool so
+ * it reports the database rather than the pool. But this URL is public and
+ * Supavisor allows only 15 session connections, so before 2026-11-09 anyone
+ * looping ~15 concurrent requests here could starve the real pool and take the
+ * site down (EMAXCONNSESSION, the 2026-11-06 outage), on demand. Now a burst
+ * costs one connection.
+ */
+const FRESH_MS = 30_000;
+let last: { at: number; report: Record<string, unknown>; status: number } | null = null;
+let inFlight: Promise<{ report: Record<string, unknown>; status: number }> | null = null;
+
+export async function GET() {
+  if (!last || Date.now() - last.at > FRESH_MS) {
+    inFlight ??= runCheck()
+      .then((result) => {
+        last = { at: Date.now(), ...result };
+        return result;
+      })
+      .finally(() => {
+        inFlight = null;
+      });
+    await inFlight.catch(() => {});
+  }
+  if (!last) return NextResponse.json({ verdict: "Health check failed to run." }, { status: 503 });
+  const { report, status } = last;
+  return NextResponse.json(
+    { ...report, cachedForSeconds: Math.round((FRESH_MS - (Date.now() - last.at)) / 1000) },
+    { status, headers: { "Cache-Control": "no-store" } },
+  );
 }

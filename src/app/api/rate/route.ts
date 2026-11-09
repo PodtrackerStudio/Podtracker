@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { ensurePodcast, ensureEpisode, episodeKeyFromGuid } from "@/lib/ensureRecords";
+import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
 import { RatingTier } from "@/generated/prisma/enums";
+import { findStoredEpisodeId } from "@/lib/storedEpisode";
 
 const TIERS = new Set<string>(Object.values(RatingTier));
 
@@ -31,12 +32,11 @@ export async function GET(request: Request) {
   if (!podcast) return NextResponse.json({ tier: null });
 
   if (episodeKey) {
-    const episodes = await db.episode.findMany({ where: { podcastId: podcast.id }, select: { id: true, externalId: true } });
-    const match = episodes.find((e) => e.externalId && episodeKeyFromGuid(e.externalId) === episodeKey);
-    if (!match) return NextResponse.json({ tier: null });
+    const episodeId = await findStoredEpisodeId(podcast.id, String(episodeKey));
+    if (!episodeId) return NextResponse.json({ tier: null });
 
     const rating = await db.episodeRating.findUnique({
-      where: { userId_episodeId: { userId: user.id, episodeId: match.id } },
+      where: { userId_episodeId: { userId: user.id, episodeId } },
       select: { tier: true },
     });
     return NextResponse.json({ tier: rating?.tier ?? null });

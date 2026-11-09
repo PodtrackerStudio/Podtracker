@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { rateLimit, COMMENT_LIMIT } from "@/lib/rateLimit";
 
 const MAX_LENGTH = 2000;
 
@@ -17,6 +18,16 @@ const MAX_LENGTH = 2000;
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+
+  // Per account, so one account can't flood a thread, and so people sharing
+  // an IP (a campus network) don't throttle each other.
+  const limited = rateLimit(`comment:${user.id}`, COMMENT_LIMIT);
+  if (!limited.allowed) {
+    return NextResponse.json(
+      { error: "You're commenting very fast. Take a breather and try again in a minute." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    );
+  }
 
   const { logEntryId, listId, text } = await request.json().catch(() => ({}));
 
@@ -35,8 +46,12 @@ export async function POST(request: Request) {
       const target = await db.logEntry.findUnique({ where: { id: String(logEntryId) }, select: { id: true } });
       if (!target) return NextResponse.json({ error: "That review no longer exists." }, { status: 404 });
     } else {
-      const target = await db.list.findUnique({ where: { id: String(listId) }, select: { id: true } });
-      if (!target) return NextResponse.json({ error: "That list no longer exists." }, { status: 404 });
+      const target = await db.list.findUnique({ where: { id: String(listId) }, select: { id: true, isWatchlist: true } });
+      // A Next listening list is private and has no page, so nobody can be
+      // commenting on it legitimately. Same rule as /api/likes.
+      if (!target || target.isWatchlist) {
+        return NextResponse.json({ error: "That list no longer exists." }, { status: 404 });
+      }
     }
 
     const comment = await db.comment.create({

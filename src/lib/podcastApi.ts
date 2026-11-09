@@ -274,6 +274,14 @@ function toFeedEpisode(item: Parser.Item): FeedEpisode {
     audioUrl: itunesExt.enclosure?.url ?? null,
     durationSeconds: parseDurationToSeconds(itunesExt.itunes?.duration),
     coverUrl: itunesExt.itunes?.image ?? null,
-    guid: item.guid ?? item.link ?? item.title ?? crypto.randomUUID(),
+    // Last resorts are deterministic. A random UUID here re-rolled on every
+    // parse, so the episode's link and stored rating broke each hour. The
+    // order before them is unchanged on purpose: stored rows depend on it.
+    guid:
+      item.guid ??
+      item.link ??
+      item.title ??
+      itunesExt.enclosure?.url ??
+      `pt-nogid:${item.isoDate ?? item.pubDate ?? "unknown"}`,
   };
 }

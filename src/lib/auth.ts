@@ -55,6 +55,10 @@ function warnOnceAboutMissingKeys() {
  * in?" during one render share a single verification instead of each making
  * their own round trip to Supabase.
  */
+/** Per server instance; see the email sync below. */
+const emailSyncFailedAt = new Map<string, number>();
+const EMAIL_SYNC_BACKOFF_MS = 60 * 60 * 1000;
+
 export const getCurrentUser = cache(async () => {
   // No Supabase keys — nobody can be signed in, so say so instead of throwing.
   //
@@ -103,11 +107,21 @@ export const getCurrentUser = cache(async () => {
   // Supabase owns the email. After a confirmed change, bring the profile's copy
   // into line the first time the person is seen. See `api/account/route.ts`.
   // A failure here only delays the copy, so it never blocks the request.
-  if (profile && authUser.email && authUser.email.toLowerCase() !== profile.email.toLowerCase()) {
+  if (
+    profile &&
+    authUser.email &&
+    authUser.email.toLowerCase() !== profile.email.toLowerCase() &&
+    (emailSyncFailedAt.get(profile.id) ?? 0) < Date.now() - EMAIL_SYNC_BACKOFF_MS
+  ) {
     try {
       await db.user.update({ where: { id: profile.id }, data: { email: authUser.email } });
       profile.email = authUser.email;
+      emailSyncFailedAt.delete(profile.id);
     } catch (error) {
+      // Typically P2002: another profile already holds the address. That won't
+      // fix itself on the next request, and retrying on *every* page and API
+      // call cost a write plus a log line each time. Try again in an hour.
+      emailSyncFailedAt.set(profile.id, Date.now());
       console.error("[auth] could not sync the profile email:", error);
     }
   }

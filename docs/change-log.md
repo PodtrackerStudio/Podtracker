@@ -71,6 +71,47 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-09 — Backend review: fixes for abuse, error handling and paging
+
+- **Branch:** `backend-fixes`
+- **Requested by:** Phillip: "review all of the backend code for podtracker and fix any issues or vulnerabilities"
+- **Status:** Complete for the items below; two findings deliberately not taken (see Why).
+
+**What changed**
+
+- **`/api/health/db` could take the site down on demand.** It is public and opened a fresh database connection per request, outside the app's pool, against a pooler with 15 session slots. Now at most one probe per instance every 30s, shared by concurrent callers, and the response says `cachedForSeconds`.
+- **Comments:** they can no longer be posted on a private Next listening list (same rule as `/api/likes`). There is a per-account limit of `COMMENT_LIMIT` (8/min, then a 2-minute block, in memory per instance like the other limits).
+- **`ensureEpisode`:** an iTunes or feed-host outage now throws, so routes answer 502 "Could not save…" (retryable) instead of 404 "not in the show's feed". Only definitive answers return null: no such show, or a permanent 4xx feed.
+- **Episode paging:** `sort=oldest` with an offset past the end returned the newest episodes (negative `slice` end). It now returns an empty page.
+- **Signup:** decides between a username clash and an email clash by querying the username, rather than reading `meta.target`, which Prisma 7 driver adapters no longer populate.
+- **Email sync in `getCurrentUser`:** after a failed sync (e.g. P2002), it backs off for an hour per user instead of retrying on every request.
+- **Feed parsing:** the last-resort guid is now deterministic (enclosure URL, then date). The old `crypto.randomUUID()` re-rolled every parse and killed the episode's link hourly. The earlier fallbacks keep their order, because stored rows depend on it.
+- **`findStoredEpisodeId`** (`src/lib/storedEpisode.ts`) replaces four hand-copied key→row lookups (rate GET, next-listening DELETE, viewerState, ratingSummary). next-listening DELETE also gained the try/catch POST already had, and lost a pointless dynamic import.
+
+**Checked and fine, no change**
+
+Every write route checks login and ownership. List items, Next listening, log, favourites, follow and likes all scope by `user.id`. The avatar endpoint allows PNG/JPEG/WebP/GIF only (no SVG) with `nosniff`. Discord interactions verify the Ed25519 signature. Password reset requires a Supabase recovery session. Auth routes are rate-limited.
+
+**Why**
+
+Tested locally:
+- the paging past the end returns `[]`;
+- three concurrent health requests share one `checkedAt`;
+- signed-out comment and next-listening calls are still 401;
+- show, episode, review and profile pages all 200.
+
+tsc, eslint and `next build` pass. The signup fix wasn't exercised against the database, because the session's permissions blocked a probe write.
+
+Not taken:
+1. **Parallel resolution in list creation.** Parallel iTunes lookups are what broke Explore on 2026-08-27, and concurrent `ensurePodcast` upserts can race.
+2. **Writing episodes that only Apple search can resolve.** This is a real gap: the episode page can show them via `recoverEpisodeFromSearch`, but Rate, Log and List 404. It needs the title hint threaded through four components and five routes, plus a search-based `ensurePodcast`, so it is a feature-sized change of its own.
+
+**Follow-ups**
+
+- The search-only episodes above.
+- `/api/search` is public and fans out to iTunes, which rate-limits per IP. A per-IP limit there would protect the shared quota.
+- Rate limits are in memory per serverless instance, so they are a speed bump, not a wall. A shared store (e.g. Upstash Redis) would make them real.
+
 ### 2026-11-09 — Personal themes: each person picks their own colours and font
 
 - **Branch:** `personal-theme`, fast-forwarded onto `main`
