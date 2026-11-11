@@ -79,6 +79,9 @@ export function SignupForm() {
       return;
     }
 
+    // The account now exists — report it to hundredusers once.
+    (window as Window & { hu?: (event: string) => void }).hu?.("signup");
+
     const data = await res.json().catch(() => null);
 
     // With email confirmation on, signing up does NOT sign you in — Supabase

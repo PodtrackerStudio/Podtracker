@@ -71,6 +71,32 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-11 — hundredusers analytics snippet
+
+- **Branch:** `claude/sleepy-gates-p7jx1i`
+- **Requested by:** Sasha: add the hundredusers analytics tag to every page, and fire a `signup` event when an account is created
+- **Status:** Complete
+
+**What changed**
+
+- The root layout now renders `<script defer src="https://hundredusers.com/t.js" data-key="hu_8fbd67513003">` in `<head>`, so it is on every page once.
+- `SignupForm` calls `window.hu?.("signup")` once, right after `/api/auth/signup` returns OK (the account exists at that point, whether or not email confirmation is still pending).
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/layout.tsx` | Modified — hundredusers script in `<head>` |
+| `src/app/signup/SignupForm.tsx` | Modified — `signup` event on successful account creation |
+
+**Why**
+
+The layout renders on every route, so one tag covers the whole site. The event is fired on the client because `window.hu` only exists in the browser; the success response is the first point the client knows the account was created. The key was used exactly as given. Vercel Analytics (`SiteAnalytics`) was left as it was.
+
+**Follow-ups**
+
+- None.
+
 ### 2026-11-09 — Backend review: fixes for abuse, error handling and paging
 
 - **Branch:** `backend-fixes`

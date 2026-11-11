@@ -141,6 +141,9 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={[ptSerifCaption, roboto, londrinaSolid, ptSerifSample, dmSans, nunito, fraunces, spaceMono].map((f) => f.variable).join(" ")}>
+      <head>
+        <script defer src="https://hundredusers.com/t.js" data-key="hu_8fbd67513003"></script>
+      </head>
       <body>
         <JsonLd data={siteSchema} />
         {children}
