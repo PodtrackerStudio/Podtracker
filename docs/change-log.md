@@ -71,6 +71,82 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-11 — Hundred Users analytics, kept off the auth pages
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — trialled hundredusers.com, liked
+  it, asked for their tag in the `<head>` of every page plus a `signup`
+  conversion event. Explicitly: don't add other analytics, don't change
+  anything else.
+- **Status:** Complete and deployed.
+
+**What changed**
+
+- `src/components/HundredUsersAnalytics.tsx` (new) — `next/script` with
+  `strategy="afterInteractive"`, key `hu_8fbd67513003`, **and a guard that
+  returns `null` on `/auth/*`**.
+- `src/app/layout.tsx` — renders it once, below `SiteAnalytics`.
+- `src/app/signup/SignupForm.tsx` — `window.hu?.("signup")` immediately after
+  `/api/auth/signup` returns ok, plus a `declare global` so a typo in the event
+  name is a compile error rather than a silent miss.
+
+**The one place the request could not be followed literally**
+
+"Every page" would have included `/auth/confirm`, and that is a **rendered
+page, not a server redirect** — it shows a "Click below to finish signing in"
+button, so the browser sits on:
+
+```
+/auth/confirm?token_hash=<live token>&type=signup&next=/home
+```
+
+with the full layout mounted. That token is a working sign-in credential for
+an hour. Page-view analytics almost universally record `location.href`, so the
+tag would have copied live credentials into a third party's database.
+
+This is not hypothetical: `SiteAnalytics`'s `beforeSend` exists for exactly
+this reason and strips `/auth/*` query strings before Vercel sees them. The
+Hundred Users tag takes a key and nothing else, so there is no hook to strip
+with — the only control is not loading it. Hence the wrapper. The cost is that
+`/auth/*` page views go uncounted; those are transient steps nobody browses,
+and `robots.txt` already excludes them.
+
+`/auth/callback` is a route handler and never runs client JS, so it was never
+at risk. The guard is a `startsWith("/auth/")` prefix match anyway, so anything
+added under `/auth` later is covered without anyone remembering.
+
+**Verified in a browser, not by inspection**
+
+- Tag present exactly once on `/`, `/explore`, `/terms`, `/signup`, with
+  `data-key="hu_8fbd67513003"`.
+- **Absent on `/auth/confirm?token_hash=…`, with no fetch attempted.**
+- Still exactly one tag after a client-side navigation — not two.
+- `signup` fires exactly once on a successful signup (API stubbed), and
+  **nothing fires when signup fails** with a 409.
+- `npx tsc --noEmit` clean, production build successful.
+
+**Note on the vendor.** Sasha asked first whether hundredusers.com was
+legitimate. It could not be verified from here — the domain is outside this
+session's allowed network list, and a web search found no independent reviews
+of it at all. That is not evidence of anything bad, but nobody has vetted them,
+which is part of why the auth-page guard matters more than it would for a
+known vendor.
+
+**Follow-ups**
+
+- **The privacy policy on `legal-pages` is now wrong.** §4 names four
+  processors and says "No one else receives your personal information", and §5
+  says the two listed technologies are "the whole list". This is a fifth
+  processor and a third-party script. **Add it to both sections before that
+  branch merges.** This is exactly the staleness predicted when that table was
+  written.
+- Nothing published today contradicts anything, because the terms and privacy
+  pages are not live yet — but the live site now has third-party analytics and
+  no published privacy policy. Worth closing that gap soon.
+- If the subscription is cancelled, delete `HundredUsersAnalytics.tsx`, its
+  import and use in `layout.tsx`, the `window.hu` call and the `declare global`
+  in `SignupForm.tsx`. Nothing else depends on it.
+
 ### 2026-11-09 — Backend review: fixes for abuse, error handling and paging
 
 - **Branch:** `backend-fixes`

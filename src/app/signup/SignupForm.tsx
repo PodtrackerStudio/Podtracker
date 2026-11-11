@@ -10,6 +10,20 @@ import styles from "./auth.module.css";
 // short enough that nobody sits wondering whether the page has finished.
 const RETURN_AFTER_SECONDS = 8;
 
+/**
+ * Hundred Users' analytics, loaded in the root layout. Declared rather than
+ * cast at the call site so a typo in the event name is a compile error.
+ *
+ * Optional because the script is third-party and deferred: it may not have
+ * loaded yet when someone signs up fast, and it will be absent entirely for
+ * anyone running a blocker. Every call site must use `?.`.
+ */
+declare global {
+  interface Window {
+    hu?: (event: string) => void;
+  }
+}
+
 export function SignupForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -80,6 +94,16 @@ export function SignupForm() {
     }
 
     const data = await res.json().catch(() => null);
+
+    // The account now exists, so this is the moment to count it. Fired here
+    // rather than after the email is confirmed because that happens on
+    // /auth/confirm, a different page, and a confirmation can land days later
+    // or never — counting there would undercount real signups.
+    //
+    // `?.` is doing real work: the script is third-party and deferred, so it
+    // may not have loaded yet, and it is absent entirely behind a blocker.
+    // A signup must never fail because an analytics call threw.
+    window.hu?.("signup");
 
     // With email confirmation on, signing up does NOT sign you in — Supabase
     // withholds the session until the link is clicked. Redirecting to /home
