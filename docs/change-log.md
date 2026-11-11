@@ -71,6 +71,72 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-11 — `placeholder-cover.svg` was invalid XML and rendered nowhere
+
+- **Branch:** `main`
+- **Requested by:** nobody — found while checking whether `/user/sasha` was fit
+  to record a demo video against. Sasha had asked for a shot list.
+- **Status:** Complete.
+
+**What was wrong**
+
+The file has been **invalid XML since it was added on 2026-10-19**:
+
+```
+error on line 10 at column 21: Comment must not contain '--' (double-hyphen)
+```
+
+Its header comment explained which design tokens the artwork uses and wrote
+them the normal way, as `--page-bg-alt` and `--didnt-finish`. A double hyphen
+inside an XML comment is illegal, so the parse fails, so every browser renders
+the file at 0×0 as a broken image. **The comment documenting the artwork is
+what broke the artwork.**
+
+**Why it went unnoticed for three weeks**
+
+Everything that is usually checked looked fine. The file exists, the request
+returns **HTTP 200**, and the `Content-Type` is **`image/svg+xml`**. `curl`
+reports nothing wrong, and so does the network tab. The only visible symptom
+is in the DOM: `naturalWidth === 0` with `complete === true`, which means the
+browser fetched it and then failed to decode it.
+
+**Blast radius**
+
+37 references across 13 files use it as the fallback whenever real artwork is
+missing — the podcast and episode pages, Explore, every profile sub-page,
+favourites, creator pages, and the demo profile. So a missing cover has been
+showing as a broken-image icon site-wide rather than the neutral grey
+placeholder that was intended. On `/user/sasha` that was the three listening
+cards and all three next-listening thumbnails.
+
+**The fix**
+
+Token names written without their leading dashes, plus a note in the file
+saying why they must stay that way, so the next person documenting them does
+not reintroduce it.
+
+**Verified**
+
+- The file parses; **all six SVGs in `public/` parse** (the other five were
+  already fine).
+- `/user/sasha` renders 19 images with **none broken**, where six were before.
+- Production build successful.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `public/placeholder-cover.svg` | Modified — removed the `--` sequences from the header comment |
+
+**Follow-ups**
+
+- Worth knowing for next time: a 200 response with the right content type does
+  not mean an SVG renders. If artwork looks broken, check `naturalWidth` in the
+  DOM rather than the network tab.
+- This entry was written after the fix was already committed in `6e0374f`,
+  because the Stop hook caught the missing log entry. The fix itself is
+  unchanged; only this record was late.
+
 ### 2026-11-11 — Hundred Users analytics, kept off the auth pages
 
 - **Branch:** `main`
