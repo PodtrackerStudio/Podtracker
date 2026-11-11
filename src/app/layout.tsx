@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { PT_Serif_Caption, Roboto, Londrina_Solid, DM_Sans, Nunito, Fraunces, Space_Mono } from "next/font/google";
 import { JsonLd } from "@/components/JsonLd";
 import { SiteAnalytics } from "@/components/SiteAnalytics";
-import { HundredUsersAnalytics } from "@/components/HundredUsersAnalytics";
 import { staticSiteOrigin } from "@/lib/siteUrl";
 import "./globals.css";
 
@@ -146,17 +145,6 @@ export default function RootLayout({
         <JsonLd data={siteSchema} />
         {children}
         <SiteAnalytics />
-        {/* Hundred Users analytics, added 2026-11-11 at Sasha's request.
-            Loaded through a wrapper that holds it back on /auth/* — those URLs
-            carry live sign-in tokens in the query string. The reasoning is in
-            HundredUsersAnalytics.tsx; read it before replacing this with the
-            bare tag.
-
-            It is also a FIFTH processor. The privacy policy on `legal-pages`
-            names four and says "No one else receives your personal
-            information", so merging that branch without adding this makes the
-            policy false. Noted in docs/change-log.md. */}
-        <HundredUsersAnalytics />
       </body>
     </html>
   );

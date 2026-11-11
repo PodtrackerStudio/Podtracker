@@ -78,7 +78,11 @@ rejected. This is the part that saves the most time later.
   it, asked for their tag in the `<head>` of every page plus a `signup`
   conversion event. Explicitly: don't add other analytics, don't change
   anything else.
-- **Status:** Complete and deployed.
+- **Status:** **Added, deployed, then REMOVED the same day at Sasha's request**
+  — he dropped the subscription. The entry is kept rather than deleted because
+  it was live on production for a few hours, and because the auth-token
+  finding below is worth keeping whatever analytics gets added next. See
+  "Removed again" at the end.
 
 **What changed**
 
@@ -132,20 +136,42 @@ of it at all. That is not evidence of anything bad, but nobody has vetted them,
 which is part of why the auth-page guard matters more than it would for a
 known vendor.
 
+**Removed again, same day**
+
+Sasha cancelled the subscription and asked for it taken out. Removed in commit
+below: `HundredUsersAnalytics.tsx` deleted, the import and element gone from
+`layout.tsx`, the `window.hu` call and its `declare global` gone from
+`SignupForm.tsx`.
+
+`git diff` against the commit before it went in reports **no change at all** to
+either file, so this is a clean removal rather than an approximate one.
+Confirmed in a browser as well as in the source: no script tag, `window.hu`
+undefined, and **zero requests to hundredusers.com** across `/`, `/explore`
+and `/signup`. The key appears nowhere in a fresh `.next` build.
+
+He said "I removed the thing" before this, meaning the subscription — the code
+was still live on production at that point and still fetching their script on
+every page load. Worth remembering that cancelling a SaaS and removing its tag
+are two separate jobs.
+
+**Two things worth keeping from this**
+
+1. **`/auth/confirm` is a rendered page, not a redirect**, and its URL carries
+   a live sign-in token. Any future analytics, heatmap, session-replay or error
+   tracker must either strip `/auth/*` query strings or not load there.
+   Session replay would be worse than page-view analytics: it would capture the
+   token *and* the form. `SiteAnalytics` already handles this for Vercel;
+   anything new has to handle it too.
+2. The `HundredUsersAnalytics.tsx` wrapper is a working pattern for exactly
+   that, recoverable from git history if a third-party tag is ever added again.
+
 **Follow-ups**
 
-- **The privacy policy on `legal-pages` is now wrong.** §4 names four
-  processors and says "No one else receives your personal information", and §5
-  says the two listed technologies are "the whole list". This is a fifth
-  processor and a third-party script. **Add it to both sections before that
-  branch merges.** This is exactly the staleness predicted when that table was
-  written.
-- Nothing published today contradicts anything, because the terms and privacy
-  pages are not live yet — but the live site now has third-party analytics and
-  no published privacy policy. Worth closing that gap soon.
-- If the subscription is cancelled, delete `HundredUsersAnalytics.tsx`, its
-  import and use in `layout.tsx`, the `window.hu` call and the `declare global`
-  in `SignupForm.tsx`. Nothing else depends on it.
+- **None outstanding.** The earlier follow-up saying Privacy §4 and §5 on
+  `legal-pages` needed a fifth processor added is **void** — there is no fifth
+  processor again. Those sections are correct as written: four companies,
+  two tracking technologies. Do not add a row for a service that no longer
+  exists.
 
 ### 2026-11-09 — Backend review: fixes for abuse, error handling and paging
 
