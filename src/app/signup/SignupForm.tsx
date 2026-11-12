@@ -184,7 +184,10 @@ export function SignupForm() {
                 above, and "read the terms" is a reasonable thing to do
                 mid-signup. */}
             <label htmlFor="consent">
-              I&apos;m at least 16 years old and I have read the{" "}
+              {/* "I agree to", not "I have read" — the legal review noted that
+                  "by using the site you agree" is weak, and that the checkbox
+                  is the one place real assent is captured. 2026-11-12. */}
+              I&apos;m at least 16 years old and I agree to the{" "}
               <Link href="/terms" target="_blank" rel="noopener noreferrer">
                 terms and conditions
               </Link>{" "}

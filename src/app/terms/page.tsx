@@ -113,13 +113,20 @@ export default function TermsPage() {
 
         <h2>2. Who can use Podtracker</h2>
         <p>
-          You must be at least 13 years old to have an account. If you are in the United Kingdom or
-          the European Economic Area, you must be at least 16, or have permission from a parent or
-          guardian.
+          {/* One age everywhere, 2026-11-12. This said 13, with 16 in the
+              UK/EEA; the signup checkbox said 16; the Privacy Policy said
+              nothing. The legal review flagged the three-way disagreement.
+              16 was chosen over the memo's suggestion of 13 because it is
+              what the checkbox already asked people to confirm, it removes
+              the UK/EEA carve-out entirely, and it keeps COPPA well clear.
+              Changing it means changing all three places — Terms §2, the
+              signup checkbox, and Privacy §12. */}
+          You must be at least 16 years old to have an account. This is the same everywhere; there
+          is no separate age for different countries.
         </p>
         <p>
-          We don&apos;t knowingly collect information from children under those ages. If you believe
-          a child has created an account, email us and we will delete it.
+          We don&apos;t knowingly collect information from anyone under 16. If you believe someone
+          under 16 has created an account, email us and we will delete it.
         </p>
 
         <h2>3. Your account</h2>
@@ -144,6 +151,21 @@ export default function TermsPage() {
           example a show&apos;s average rating or a list of popular reviews. That permission lasts
           as long as you keep the content on the site, and ends when you delete it, except for
           copies already in routine backups.
+        </p>
+        <p>
+          {/* Two gaps the legal review found in this section: it never said
+              that storing your content necessarily means our vendors hold it,
+              and it never said what happens to a show's average once you
+              delete a rating that fed into it. 2026-11-12. */}
+          To store and show your content we necessarily pass it to the companies that run the site
+          for us — our host and our database provider. They are named in our{" "}
+          <Link href="/privacy">Privacy Policy</Link>, which also says what each of them does.
+        </p>
+        <p>
+          If you delete a rating or review, it stops counting towards any average or ranking it fed
+          into, and those figures are recalculated without it. What we cannot undo is the past: if
+          someone read your review or saw a rating before you removed it, we have no way to reach
+          back and change what they already saw.
         </p>
         <p>By posting, you confirm that it&apos;s yours to post and that it doesn&apos;t break anyone else&apos;s rights.</p>
 
@@ -287,9 +309,15 @@ export default function TermsPage() {
 
         <h2>13. If what you do causes us a legal problem</h2>
         <p>
-          If someone brings a claim against us because of something you posted, something you did
-          on Podtracker, or because you broke these terms, you agree to cover our reasonable costs
-          in dealing with it, including legal fees.
+          {/* Narrowed 2026-11-12. This used to cover claims arising because
+              "you broke these terms", which the legal review called broad and
+              potentially overreaching for a consumer site — it would have
+              covered, say, someone who used a second account. Now limited to
+              claims arising from what the user actually posted or did to
+              someone else. */}
+          If someone brings a claim against us because of something you posted on Podtracker, or
+          something you did to another person here, you agree to cover our reasonable costs in
+          dealing with it, including legal fees.
         </p>
         <p>
           This only covers claims that actually come from what you did. If one arrives, we&apos;ll
@@ -313,10 +341,15 @@ export default function TermsPage() {
           both of us than anything else on this page.
         </p>
         <p>
+          {/* "the courts there" named no court, which the legal review flagged
+              as too vague to be useful. Washtenaw County is where Ann Arbor
+              is, and where the operator is based. If the operator moves, or an
+              LLC is formed elsewhere, this changes with §1. 2026-11-12. */}
           If that doesn&apos;t work, these terms are governed by the laws of the State of Michigan,
-          USA, and disputes will be dealt with by the courts there. If you are a consumer, this
-          doesn&apos;t take away rights you have under the law of the country you live in, and it
-          doesn&apos;t stop you bringing a claim in your local small claims court.
+          USA, and any dispute will be dealt with by the state or federal courts located in
+          Washtenaw County, Michigan. If you are a consumer, this doesn&apos;t take away rights you
+          have under the law of the country you live in, and it doesn&apos;t stop you bringing a
+          claim in your local small claims court.
         </p>
 
         <h2>16. The rest</h2>

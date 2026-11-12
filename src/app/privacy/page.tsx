@@ -55,6 +55,33 @@ export const metadata: Metadata = {
  *     safe, but it makes §9 and Terms §10 overstate what the site does. Do not
  *     publish these pages until that key is in Vercel.
  *
+ * ## 2026-11-12 — the legal review came back, and this is what changed
+ *
+ * Sasha's brother reviewed both documents and had Harvey produce a memo. Every
+ * false statement it found was a leftover from the Termly template, and all of
+ * them are now fixed. Each is commented at the line:
+ *
+ *   - **SCCs "between our group companies"** — there are no group companies,
+ *     and none have ever been signed. §6 now says only what is true: the four
+ *     vendors address transfers in their own standard terms.
+ *   - **"We have contracts in place"** restricting vendors — nothing bespoke
+ *     was ever negotiated. §4 now says we are on each vendor's standard terms.
+ *   - **"web beacons and pixels"** — removed from §5; it contradicted the
+ *     inventory four lines below it.
+ *   - **"marketing or events"** — removed; the site does neither.
+ *   - **"We do not collect any information from third parties"** — false on
+ *     its face. Show data comes from Apple and RSS. Reworded to distinguish
+ *     information about shows from information about you.
+ *   - **Retention** said nothing outlives the account, which §9 and §12 then
+ *     contradicted. §7 now states the rule and both exceptions together.
+ *   - **Australia, New Zealand, South Africa and Canada** — all removed. The
+ *     policy claimed to "satisfy" Australian and New Zealand law, which nobody
+ *     had checked. Sections renumbered 13–16 down to 12–15.
+ *   - **Performance of a contract** added to §3, and **showing your reviews
+ *     publicly** added to §2 as a stated purpose.
+ *   - **Minimum age** was absent here, 13 in the Terms and 16 on the signup
+ *     checkbox. Now 16 in all three.
+ *
  * ## Still open, deliberately left alone for the review
  *
  * - §3 lists Consent, Legal Obligations and Vital Interests as legal bases but
@@ -63,8 +90,9 @@ export const metadata: Metadata = {
  *   the code.
  * - There is no minors section at all, and the three documents disagree on the
  *   age: Terms §2 says 13 (16 in the UK/EEA), the signup checkbox says 16.
- * - Rights requests go to a Termly-hosted form. Termly is therefore a processor
- *   and is not in §4's list, and the link dies if the subscription lapses.
+ * - ~~Rights requests go to a Termly-hosted form.~~ **Resolved 2026-11-12** —
+ *   the form is gone and every route is now email. Termly is no longer a
+ *   processor, and §4's four-company table is complete again.
  * - §2's purpose list is very thin — account creation and vital interests only.
  *   It does not mention showing your reviews to other people, which is the
  *   main thing the site does with what you write.
@@ -73,9 +101,6 @@ export const metadata: Metadata = {
  */
 
 const LAST_UPDATED = "7 November 2026";
-
-/** Termly-hosted rights request form. One place, because it appears three times. */
-const DSAR_URL = "https://app.termly.io/dsar/379aa4d1-e7d9-4708-b234-a8f90a363de8";
 
 export default function PrivacyPage() {
   return (
@@ -121,7 +146,9 @@ export default function PrivacyPage() {
             Use Podtracker. A social platform for podcast users, where they can follow their
             favourite shows, rate and review episodes, and follow other accounts.
           </li>
-          <li>Engage with us in other related ways, including any marketing or events</li>
+          {/* Removed 2026-11-12: "Engage with us in other related ways,
+              including any marketing or events." Podtracker runs no marketing
+              campaigns and holds no events. Flagged in the legal review. */}
         </ul>
         <p>
           <strong>Questions or concerns?</strong> Reading this Privacy Notice will help you
@@ -151,8 +178,15 @@ export default function PrivacyPage() {
           religious beliefs. We do not process sensitive personal information.
         </p>
         <p>
-          <strong>Do we collect any information from third parties?</strong> We do not collect any
-          information from third parties.
+          {/* Was a flat "We do not collect any information from third
+              parties", which is wrong on its face: show and episode data comes
+              from Apple and from public RSS feeds. It is not personal
+              information about you, but the sentence as written was false.
+              Flagged in the legal review 2026-11-12. */}
+          <strong>Do we collect any information from third parties?</strong> We collect podcast and
+          episode information — titles, descriptions, artwork, publication dates — from Apple and
+          from podcasts&apos; own public RSS feeds. That is information about shows, not about you.
+          We do not obtain any personal information about you from anyone else.
         </p>
         <p>
           <strong>How do we process your information?</strong> We process your information to
@@ -180,13 +214,10 @@ export default function PrivacyPage() {
           information.
         </p>
         <p>
-          <strong>How do you exercise your rights?</strong> The easiest way to exercise your rights
-          is by submitting a{" "}
-          <a href={DSAR_URL} target="_blank" rel="noopener noreferrer">
-            data subject access request
-          </a>
-          , or by contacting us. We will consider and act upon any request in accordance with
-          applicable data protection laws.
+          <strong>How do you exercise your rights?</strong> Email us at{" "}
+          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> and say what you want.
+          We will consider and act upon any request in accordance with applicable data protection
+          laws.
         </p>
 
         <h2 id="toc">Table of contents</h2>
@@ -225,9 +256,6 @@ export default function PrivacyPage() {
           </li>
           <li>
             <a href="#uslaws">Do United States residents have specific privacy rights?</a>
-          </li>
-          <li>
-            <a href="#otherlaws">Do other regions have specific privacy rights?</a>
           </li>
           <li>
             <a href="#public">What&apos;s public on Podtracker</a>
@@ -383,6 +411,28 @@ export default function PrivacyPage() {
             We may process your information so you can create and log in to your account, as well as
             keep your account in working order.
           </li>
+          {/* Added 2026-11-12. The generated list never mentioned showing your
+              reviews to other people, which is the main thing this site does
+              with what you write. §12 said profiles are public, but as a fact
+              about the site rather than as a stated processing purpose — and
+              the legal review flagged that gap. */}
+          <li>
+            <strong>To show your contributions to other people.</strong> Podtracker is a public
+            site. We publish your username, display name, profile picture, bio, any link you add,
+            and the ratings, reviews, lists and diary entries you create, so that other people can
+            read them. We also use your ratings to work out a show&apos;s or episode&apos;s average
+            rating, which is shown to everyone. This is the main thing we do with what you write,
+            and it is why the site exists.
+          </li>
+          <li>
+            <strong>To keep the site working and safe.</strong> We use log and usage data to run
+            the site, fix faults, and prevent abuse such as spam, fake reviews or attempts to
+            manipulate a rating.
+          </li>
+          <li>
+            <strong>To contact you about your account.</strong> We send email to confirm your
+            address and to reset your password. We do not send marketing email.
+          </li>
           <li>
             <strong>To save or protect an individual&apos;s vital interest.</strong> We may process
             your information when necessary to save or protect an individual&apos;s vital interest,
@@ -416,6 +466,17 @@ export default function PrivacyPage() {
           on the following legal bases to process your personal information:
         </p>
         <ul>
+          {/* Added 2026-11-12. The generated policy omitted performance of a
+              contract, which is the obvious basis for running an account
+              somebody asked us to create, and listed only consent, legal
+              obligations and vital interests. Both the review memo and the
+              earlier read of this document flagged the gap. */}
+          <li>
+            <strong>Performance of a contract.</strong> When you create an account you are asking us
+            to provide the Services, and these Terms are the agreement between us. We process your
+            email address, username and the ratings, reviews, lists and diary entries you create
+            because we cannot run your account or show you the site without them.
+          </li>
           <li>
             <strong>Consent.</strong> We may process your information if you have given us
             permission (i.e., consent) to use your personal information for a specific purpose. You
@@ -433,63 +494,15 @@ export default function PrivacyPage() {
             as situations involving potential threats to the safety of any person.
           </li>
         </ul>
-        <p>
-          <em>
-            <strong>
-              <u>If you are located in Canada, this section applies to you.</u>
-            </strong>
-          </em>
-        </p>
-        <p>
-          We may process your information if you have given us specific permission (i.e., express
-          consent) to use your personal information for a specific purpose, or in situations where
-          your permission can be inferred (i.e., implied consent). You can withdraw your consent at
-          any time.
-        </p>
-        <p>
-          In some exceptional cases, we may be legally permitted under applicable law to process
-          your information without your consent, including, for example:
-        </p>
-        <ul>
-          <li>
-            If collection is clearly in the interests of an individual and consent cannot be
-            obtained in a timely way
-          </li>
-          <li>For investigations and fraud detection and prevention</li>
-          <li>For business transactions provided certain conditions are met</li>
-          <li>
-            If it is contained in a witness statement and the collection is necessary to assess,
-            process, or settle an insurance claim
-          </li>
-          <li>
-            For identifying injured, ill, or deceased persons and communicating with next of kin
-          </li>
-          <li>
-            If we have reasonable grounds to believe an individual has been, is, or may be victim of
-            financial abuse
-          </li>
-          <li>
-            If it is reasonable to expect collection and use with consent would compromise the
-            availability or the accuracy of the information and the collection is reasonable for
-            purposes related to investigating a breach of an agreement or a contravention of the
-            laws of Canada or a province
-          </li>
-          <li>
-            If disclosure is required to comply with a subpoena, warrant, court order, or rules of
-            the court relating to the production of records
-          </li>
-          <li>
-            If it was produced by an individual in the course of their employment, business, or
-            profession and the collection is consistent with the purposes for which the information
-            was produced
-          </li>
-          <li>If the collection is solely for journalistic, artistic, or literary purposes</li>
-          <li>If the information is publicly available and is specified by the regulations</li>
-          <li>
-            We may disclose de-identified information for approved research or statistics projects,
-            subject to ethics oversight and confidentiality commitments
-          </li>
-        </ul>
+        {/* The whole Canada block (PIPEDA express/implied consent plus
+            eleven statutory exceptions) was removed on 2026-11-12. The
+            legal review flagged that nobody had checked whether any of it
+            was true or relevant, and a generated recital of another
+            country's law is a liability rather than a protection: every
+            sentence in a privacy policy is a promise. The Australia, New
+            Zealand and South Africa sections went for the same reason. If
+            Podtracker ever has enough Canadian users to matter, put it
+            back deliberately, checked by someone. */}
 
         <h2 id="whoshare">4. When and with whom do we share your personal information?</h2>
         <p>
@@ -502,15 +515,23 @@ export default function PrivacyPage() {
           </em>
         </p>
         <p>
+          {/* The generated text claimed bespoke contracts that "mean they
+              cannot do anything with your personal information unless we have
+              instructed them to", that they "will not share it with any
+              organisation apart from us", and that they "commit to retain it
+              for the period we instruct". Nothing bespoke has been negotiated
+              with any of them — Podtracker is on each vendor's standard terms.
+              Those terms do include data processing commitments, but claiming
+              more than that is a promise we cannot evidence. Softened
+              2026-11-12 after the legal review. */}
           <strong>Vendors, Consultants, and Other Third-Party Service Providers.</strong> We may
           share your data with third-party vendors, service providers, contractors, or agents
           (&ldquo;<strong>third parties</strong>&rdquo;) who perform services for us or on our behalf
-          and require access to such information to do that work. We have contracts in place with
-          our third parties, which are designed to help safeguard your personal information. This
-          means that they cannot do anything with your personal information unless we have
-          instructed them to do it. They will also not share your personal information with any
-          organisation apart from us. They also commit to protect the data they hold on our behalf
-          and to retain it for the period we instruct.
+          and require access to such information to do that work. We use each of these companies on
+          their standard published terms, which include their own data processing commitments. We
+          have not negotiated separate agreements with any of them, and we do not control how they
+          run their own services — their privacy notices are linked below so you can read what
+          each of them commits to.
         </p>
         <p>The categories of third parties we may share personal information with are as follows:</p>
         <ul>
@@ -611,13 +632,15 @@ export default function PrivacyPage() {
           <strong>
             <em>In Short:</em>
           </strong>{" "}
-          <em>We may use cookies and other tracking technologies to collect and store your information.</em>
+          <em>We use one cookie, to keep you signed in. Nothing else.</em>
         </p>
         <p>
-          We may use cookies and similar tracking technologies (like web beacons and pixels) to
-          gather information when you interact with our Services. Some online tracking technologies
-          help us maintain the security of our Services and your account, prevent crashes, fix bugs,
-          save your preferences, and assist with basic site functions.
+          {/* "(like web beacons and pixels)" removed 2026-11-12: it listed
+              technologies this site does not use, and contradicted the
+              inventory four lines below. Flagged in the legal review. */}
+          We use one cookie to keep you signed in, which helps us maintain the security of your
+          account and the site, and lets a page know who you are without asking you to log in
+          again.
         </p>
         <p>
           {/* Removed from the generated text: a paragraph saying third parties
@@ -670,16 +693,24 @@ export default function PrivacyPage() {
           necessary measures to protect your personal information in accordance with this Privacy
           Notice and applicable law.
         </p>
-        <p>European Commission&apos;s Standard Contractual Clauses:</p>
         <p>
-          We have implemented measures to protect your personal information, including by using the
-          European Commission&apos;s Standard Contractual Clauses for transfers of personal
-          information between our group companies and between us and our third-party providers.
-          These clauses require all recipients to protect all personal information that they process
-          originating from the EEA or UK in accordance with European data protection laws and
-          regulations. Our Standard Contractual Clauses can be provided upon request. We have
-          implemented similar appropriate safeguards with our third-party service providers and
-          partners and further details can be provided upon request.
+          {/* The worst claim in the generated document, and the one the legal
+              review singled out. It said we use the European Commission's
+              Standard Contractual Clauses "between our group companies" —
+              there are no group companies, there is one person — and that
+              "our Standard Contractual Clauses can be provided upon request",
+              which we could not do, because none have ever been signed. What
+              is actually true is that the four vendors incorporate SCCs into
+              their own standard terms. Rewritten 2026-11-12 to say only that.
+              If an EU user ever asks, the honest answer is now the one the
+              page gives. */}
+          <strong>About transfers out of the EEA and UK.</strong> Podtracker is one person in
+          Michigan. There is no company, no group of companies, and we have not separately signed
+          Standard Contractual Clauses with anyone. What we rely on is the four companies listed
+          above: each is a US provider whose own standard terms address international transfers,
+          including the European Commission&apos;s Standard Contractual Clauses where they apply.
+          Their privacy notices are linked in that table, and they describe those arrangements in
+          more detail than we are in a position to.
         </p>
 
         <h2 id="inforetain">7. How long do we keep your information?</h2>
@@ -692,19 +723,34 @@ export default function PrivacyPage() {
             this Privacy Notice unless otherwise required by law.
           </em>
         </p>
+        {/* The generated version said flatly that nothing is kept longer than
+            the account exists, which §9 and §13 then contradicted by
+            mentioning fraud, legal obligations and backups. The legal review
+            caught the inconsistency. Rewritten 2026-11-12 so the general rule
+            and its two exceptions sit together in one place. */}
         <p>
-          We will only keep your personal information for as long as it is necessary for the
-          purposes set out in this Privacy Notice, unless a longer retention period is required or
-          permitted by law (such as tax, accounting, or other legal requirements). No purpose in
-          this notice will require us keeping your personal information for longer than the period
-          of time in which users have an account with us.
+          <strong>The general rule:</strong> we keep your personal information for as long as you
+          have an account. Delete your account and your profile, ratings, reviews, lists and diary
+          entries are removed from the site immediately.
         </p>
+        <p>There are two exceptions, and we would rather state them than leave them implied:</p>
+        <ul>
+          <li>
+            <strong>Backups.</strong> Our database provider takes automatic backups on its own
+            schedule. A copy of deleted information can survive in those backups for a short period
+            until they are overwritten in the normal course. We do not use backups to restore
+            deleted accounts.
+          </li>
+          <li>
+            <strong>Legal and safety reasons.</strong> We may keep a limited record where we need it to
+            prevent fraud or abuse, to deal with a dispute, or because the law requires it — for
+            example, records relating to a donation, which we may need for tax purposes.
+          </li>
+        </ul>
         <p>
-          When we have no ongoing legitimate business need to process your personal information, we
-          will either delete or anonymise such information, or, if this is not possible (for
-          example, because your personal information has been stored in backup archives), then we
-          will securely store your personal information and isolate it from any further processing
-          until deletion is possible.
+          When we no longer need your personal information for either of those reasons, we delete it
+          or anonymise it. Where that is not immediately possible, we isolate it from any further
+          use until it can be deleted.
         </p>
 
         <h2 id="infosafe">8. How do we keep your information safe?</h2>
@@ -736,14 +782,14 @@ export default function PrivacyPage() {
           </strong>{" "}
           <em>
             Depending on your state of residence in the US or in some regions, such as the European
-            Economic Area (EEA), United Kingdom (UK), Switzerland, and Canada, you have rights that
+            Economic Area (EEA), United Kingdom (UK) and Switzerland, you have rights that
             allow you greater access to and control over your personal information. You may review,
             change, or terminate your account at any time, depending on your country, province, or
             state of residence.
           </em>
         </p>
         <p>
-          In some regions (like the EEA, UK, Switzerland, and Canada), you have certain rights under
+          In some regions (like the EEA, UK and Switzerland), you have certain rights under
           applicable data protection laws. These may include the right (i) to request access and
           obtain a copy of your personal information, (ii) to request rectification or erasure;
           (iii) to restrict the processing of your personal information; (iv) if applicable, to data
@@ -1173,13 +1219,10 @@ export default function PrivacyPage() {
 
         <h3>How to Exercise Your Rights</h3>
         <p>
-          To exercise these rights, you can contact us by submitting a{" "}
-          <a href={DSAR_URL} target="_blank" rel="noopener noreferrer">
-            data subject access request
-          </a>
-          , by emailing us at{" "}
-          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a>, or by referring to the
-          contact details at the bottom of this document.
+          To exercise these rights, email us at{" "}
+          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a>, or use the contact
+          details at the bottom of this document. There is no form to fill in — tell us what you
+          want and we will deal with it.
         </p>
         <p>
           Under certain US state data protection laws, you can designate an authorised agent to make
@@ -1225,97 +1268,18 @@ export default function PrivacyPage() {
           section <a href="#contact">How can you contact us about this notice?</a>
         </p>
 
-        <h2 id="otherlaws">12. Do other regions have specific privacy rights?</h2>
-        <p>
-          <strong>
-            <em>In Short:</em>
-          </strong>{" "}
-          <em>You may have additional rights based on the country you reside in.</em>
-        </p>
+        {/* Section 12 "Do other regions have specific privacy rights?"
+            was removed on 2026-11-12. It recited Australia's Privacy Act
+            1988, New Zealand's Privacy Act 2020 and South Africa's POPIA,
+            and claimed this notice "satisfies the notice requirements"
+            of the first two. Nobody had checked whether that was true,
+            which the legal review flagged — and a claim to satisfy a law
+            nobody has read is the kind of statement a regulator treats as
+            deceptive. Removed rather than verified, because Podtracker has
+            no users in any of those countries and no reason to make the
+            claim. Sections renumbered 13-16 down to 12-15. */}
 
-        <h3>Australia and New Zealand</h3>
-        <p>
-          We collect and process your personal information under the obligations and conditions set
-          by Australia&apos;s Privacy Act 1988 and New Zealand&apos;s Privacy Act 2020 (Privacy
-          Act).
-        </p>
-        <p>
-          This Privacy Notice satisfies the notice requirements defined in both Privacy Acts, in
-          particular: what personal information we collect from you, from which sources, for which
-          purposes, and other recipients of your personal information.
-        </p>
-        <p>
-          If you do not wish to provide the personal information necessary to fulfil their applicable
-          purpose, it may affect our ability to provide our services, in particular:
-        </p>
-        <ul>
-          <li>offer you the products or services that you want</li>
-          <li>respond to or help with your requests</li>
-          <li>manage your account with us</li>
-          <li>confirm your identity and protect your account</li>
-        </ul>
-        <p>
-          At any time, you have the right to request access to or correction of your personal
-          information. You can make such a request by contacting us by using the contact details
-          provided in the section{" "}
-          <a href="#request">
-            How can you review, update, or delete the data we collect from you?
-          </a>
-        </p>
-        <p>
-          If you believe we are unlawfully processing your personal information, you have the right
-          to submit a complaint about a breach of the Australian Privacy Principles to the{" "}
-          <a
-            href="https://www.oaic.gov.au/privacy/privacy-complaints/lodge-a-privacy-complaint-with-us"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Office of the Australian Information Commissioner
-          </a>{" "}
-          and a breach of New Zealand&apos;s Privacy Principles to the{" "}
-          <a
-            href="https://www.privacy.org.nz/your-rights/making-a-complaint/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Office of New Zealand Privacy Commissioner
-          </a>
-          .
-        </p>
-
-        <h3>Republic of South Africa</h3>
-        <p>
-          At any time, you have the right to request access to or correction of your personal
-          information. You can make such a request by contacting us by using the contact details
-          provided in the section{" "}
-          <a href="#request">
-            How can you review, update, or delete the data we collect from you?
-          </a>
-        </p>
-        <p>
-          If you are unsatisfied with the manner in which we address any complaint with regard to
-          our processing of personal information, you can contact the office of the regulator, the
-          details of which are:
-        </p>
-        <p>
-          <a href="https://inforegulator.org.za/" target="_blank" rel="noopener noreferrer">
-            The Information Regulator (South Africa)
-          </a>
-          <br />
-          General enquiries:{" "}
-          <a href="mailto:enquiries@inforegulator.org.za">enquiries@inforegulator.org.za</a>
-          <br />
-          Complaints (complete POPIA/PAIA form 5):{" "}
-          <a href="mailto:PAIAComplaints@inforegulator.org.za">
-            PAIAComplaints@inforegulator.org.za
-          </a>{" "}
-          &amp;{" "}
-          <a href="mailto:POPIAComplaints@inforegulator.org.za">
-            POPIAComplaints@inforegulator.org.za
-          </a>
-        </p>
-
-        <h2 id="public">13. What&apos;s public on Podtracker</h2>
+        <h2 id="public">12. What&apos;s public on Podtracker</h2>
         <p>
           Podtracker is a public site. Your username, display name, profile picture, bio, any link
           you add to your profile, and the ratings, reviews, lists and diary entries you create are
@@ -1328,7 +1292,25 @@ export default function PrivacyPage() {
           copies that search engines or other services may already have cached or stored.
         </p>
 
-        <h2 id="policyupdates">14. Do we make updates to this notice?</h2>
+        {/* New section, 2026-11-12. The policy said nothing about age at all,
+            while Terms §2 said 13 (16 in the UK/EEA) and the signup checkbox
+            said 16 — a three-way disagreement the legal review flagged. All
+            three now say 16. If that number ever changes, it changes in all
+            three places or none. */}
+        <h3>How old you have to be</h3>
+        <p>
+          You must be at least <strong>16</strong> to have a Podtracker account. The same age
+          applies everywhere; there is no separate rule for different countries. We ask you to
+          confirm it when you sign up.
+        </p>
+        <p>
+          We do not knowingly collect personal information from anyone under 16. If you believe
+          someone under 16 has created an account, email{" "}
+          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> and we will delete the
+          account and everything in it.
+        </p>
+
+        <h2 id="policyupdates">13. Do we make updates to this notice?</h2>
         <p>
           <strong>
             <em>In Short:</em>
@@ -1344,7 +1326,7 @@ export default function PrivacyPage() {
           information.
         </p>
 
-        <h2 id="contact">15. How can you contact us about this notice?</h2>
+        <h2 id="contact">14. How can you contact us about this notice?</h2>
         <p>
           If you have questions or comments about this notice, you may email us at{" "}
           <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> or contact us by post
@@ -1359,7 +1341,7 @@ export default function PrivacyPage() {
         </p>
 
         <h2 id="request">
-          16. How can you review, update, or delete the data we collect from you?
+          15. How can you review, update, or delete the data we collect from you?
         </h2>
         <p>
           Based on the applicable laws of your country or state of residence in the US, you may have
@@ -1367,12 +1349,8 @@ export default function PrivacyPage() {
           how we have processed it, correct inaccuracies, or delete your personal information. You
           may also have the right to withdraw your consent to our processing of your personal
           information. These rights may be limited in some circumstances by applicable law. To
-          request to review, update, or delete your personal information, please fill out and submit
-          a{" "}
-          <a href={DSAR_URL} target="_blank" rel="noopener noreferrer">
-            data subject access request
-          </a>
-          , or email us at <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a>.
+          request to review, update, or delete your personal information, email us at{" "}
+          <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a>.
         </p>
 
         <div className={styles.contact}>

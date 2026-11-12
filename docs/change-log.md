@@ -71,6 +71,104 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-12 — Legal review came back; every false statement fixed
+
+- **Branch:** `legal-pages`
+- **Requested by:** sashaknyshjr@gmail.com — his brother (law student) reviewed
+  both documents and had Harvey, a legal AI, produce a memo. Sasha relayed the
+  findings and said to ignore the LLC recommendation until ~1,000 users.
+- **Status:** All actionable findings fixed. **Still not merged** — see
+  Follow-ups.
+
+**One correction made to the feedback itself**
+
+The relayed note said DMCA registration "would obligate you to monitor the
+website for copyright-infringing content". **17 U.S.C. §512(m) says the
+opposite**: safe harbour is expressly not conditioned on monitoring the service
+or affirmatively seeking facts indicating infringement. The duties are register
+an agent, remove specific content on a valid notice, and implement a
+repeat-infringer policy. The Harvey memo agrees — it puts ongoing work at
+"almost none until a notice arrives" — so this was a paraphrase slip rather
+than a disagreement. Worth correcting because believing it implied patrolling
+the site might have deterred the $6 registration, which the memo rates the
+best-value step available.
+
+**Privacy Policy — seven template lies, all removed**
+
+Every one was Termly leftover, and each is commented at the line:
+
+| Was | Now |
+| --- | --- |
+| SCCs used "between our group companies", and "our Standard Contractual Clauses can be provided upon request" | There are no group companies and none were ever signed. §6 says only that the four vendors address transfers in their own standard terms |
+| "We have contracts in place" restricting what vendors may do | Nothing bespoke was negotiated. §4 says we are on each vendor's standard published terms |
+| Tracking "like web beacons and pixels" | Removed — it contradicted the two-item inventory four lines below |
+| "Engage with us… including any marketing or events" | Removed; the site does neither |
+| "We do not collect any information from third parties" | False on its face. Reworded to separate information about *shows* (Apple, RSS) from information about *you* |
+| Retention: nothing outlives the account | §9 and §12 contradicted that. §7 now states the rule plus both exceptions — backups, and legal/safety records — in one place |
+| Australia, New Zealand, South Africa and Canada sections | All removed. The policy claimed to "satisfy" Australian and NZ notice requirements, which nobody had checked. Sections renumbered 13–16 → 12–15 |
+
+**Also added to the Privacy Policy**
+
+- **Performance of a contract** as a legal basis in §3 — the obvious basis for
+  running an account somebody asked for, and absent from the generated version.
+- **Showing your reviews publicly** as a stated processing purpose in §2, plus
+  keeping the site working, and account email. §2 previously listed account
+  creation and vital interests only, and never mentioned the main thing the
+  site does with what you write.
+- **A minimum-age section**, which did not exist at all.
+- The **Termly-hosted rights form is gone**; every route is now email. Termly is
+  no longer a processor, so §4's four-company table is complete again.
+
+**Minimum age — one number everywhere**
+
+Terms said 13 (16 in the UK/EEA), the signup checkbox said 16, the policy said
+nothing. Now **16** in all three. Chosen over the memo's suggestion of 13
+because it is what the checkbox already asked people to confirm, it removes the
+UK/EEA carve-out, and it keeps COPPA well clear. The cost is losing 13–15 year
+olds as users, which Sasha accepted by default.
+
+**Terms**
+
+- **§13 indemnity narrowed.** Covered claims arising because "you broke these
+  terms" — broad enough to catch someone running a second account. Now limited
+  to what the user posted or did to another person.
+- **§15 names a court**: state or federal courts in Washtenaw County, Michigan,
+  rather than "the courts there".
+- **§4 gained two sentences** the review found missing: that storing content
+  necessarily means vendors hold it, and that deleting a rating removes it from
+  averages and rankings going forward.
+- **Signup checkbox says "I agree to"** rather than "I have read" — the memo
+  noted the checkbox is the only place real assent is captured.
+
+**Verified:** `npx tsc --noEmit` clean; production build successful; all nine
+flagged phrases absent from the rendered page; sections numbered 1–15 with no
+gaps; 24 internal links, none broken; the age reads 16 on `/terms`, `/privacy`
+and `/signup`.
+
+**Follow-ups**
+
+- **LLC: deferred by Sasha** until ~1,000 users. Noted, not forgotten — until
+  then he is personally liable, and Terms §1 and §15 both change if one is
+  formed.
+- **Register the DMCA agent** at dmca.copyright.gov (~$6, renew every three
+  years), then put the agent's name, address, phone and email in Terms §8.
+  Needs a postal address first — a PO box avoids publishing a home address on a
+  federal register.
+- **Postal address in Privacy §14 is still city-level** ("Ann Arbor, MI 48105").
+  Legally thin rather than wrong: GDPR asks for contact details, which the email
+  satisfies, and CCPA's thresholds do not reach this site. Complete it before
+  launch.
+- **"Click to accept" for material Terms changes** — the memo flagged
+  continued-use acceptance as weak. That is a product change, not a text one,
+  and is not built.
+- **A person still needs to read §§8, 13, 15 and 16 of the Terms closely.**
+  They were drafted by Claude and the memo says so explicitly.
+- `SUPABASE_SERVICE_ROLE_KEY` in Vercel still blocks the merge — account
+  deletion refuses without it while three documents promise it.
+- `legal-pages` is behind `main` (themes, backend fixes, the SVG fix). Merge
+  `main` in before merging out.
+
+
 ### 2026-11-08 — Four clauses added to the Terms, instead of regenerating them
 
 - **Branch:** `legal-pages`
