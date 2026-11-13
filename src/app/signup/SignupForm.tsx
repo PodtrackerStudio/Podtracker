@@ -187,7 +187,7 @@ export function SignupForm() {
               {/* "I agree to", not "I have read" — the legal review noted that
                   "by using the site you agree" is weak, and that the checkbox
                   is the one place real assent is captured. 2026-11-12. */}
-              I&apos;m at least 16 years old and I agree to the{" "}
+              I&apos;m at least 13 years old and I agree to the{" "}
               <Link href="/terms" target="_blank" rel="noopener noreferrer">
                 terms and conditions
               </Link>{" "}

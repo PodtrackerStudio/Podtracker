@@ -71,10 +71,91 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-13 — Minimum age 16 to 13, and the owner's email taken out of this file
+
+- **Branch:** `main`
+- **Requested by:** Sasha — "change everything to 13 now please", shortly after
+  the documents went live, adding "Idk why I said 16".
+- **Status:** Complete and deployed.
+
+**Where 16 came from**
+
+Sasha asked for it on 2026-11-04, when the signup checkbox was built: "a
+checkmark that says I'm at least 16 years old". Nothing since had reason to
+question it, so when the legal review flagged the three-way age disagreement on
+2026-11-12 it was settled at 16 to match the checkbox. The review memo had
+recommended 13 as the usual US floor; this returns to that.
+
+**Changed in four places, which is all of them**
+
+| File | What |
+| --- | --- |
+| `src/app/terms/page.tsx` | §2 minimum age, and both "under 16" sentences |
+| `src/app/privacy/page.tsx` | §12 "How old you have to be", and both "under 16" sentences |
+| `src/app/signup/SignupForm.tsx` | The consent checkbox label |
+| Both pages | `LAST_UPDATED` to 13 November 2026 — a material change to published text |
+
+**The trade-off, accepted knowingly**
+
+A flat 13 drops the UK/EEA carve-out the Terms used to carry. GDPR's default
+age for consent to information society services is 16, with member states free
+to lower it — the UK and Ireland differ, Germany is 16, France 15. For a US
+user base this is fine, and Sasha was told before the change was made. If real
+EU users appear, the carve-out goes back; the condition is written into the
+comment at Terms §2.
+
+13 sits exactly on the COPPA line rather than below it, so nothing changes
+there: the site still does not knowingly collect from anyone under 13.
+
+**Separately: the owner's personal email address was in this file 38 times**
+
+Every entry written in the "Requested by" style named it. **This repository is
+public**, and `git log --format=%ae` shows the address appears nowhere in commit
+metadata — the commits are authored by `noreply@anthropic.com` and by Phillip's
+machine — so this file was the only thing publishing it.
+
+All 38 are now "Sasha". The site's own contact address, `podtracker13@gmail.com`,
+is deliberately left alone: it is published on the site on purpose.
+
+**This does not scrub it from git history.** Anyone running `git log -p` on this
+file can still find it. Removing it from history means a force-push, which the
+working agreement in `CLAUDE.md` forbids and which would disrupt Phillip's
+clone. What this change does achieve: the address no longer appears when
+browsing the repository, no longer lands in anyone's working copy on clone, and
+is no longer the current content that code search indexes. That is a real
+improvement without rewriting shared history.
+
+**Do not reintroduce it.** Write "Sasha", not the address.
+
+**A verification trap worth recording**
+
+The first check after the age edit reported 16 everywhere and missing dates,
+which looked like the change had silently failed. It had not. A `next-server`
+process from an earlier check still held port 3000, so the newly started server
+never bound — `errno: -98`, EADDRINUSE, buried in its log — and every request
+was answered by the old build.
+
+`CLAUDE.md` already warns that a busy port 3000 is this project's own server.
+The lesson to add: **when a server is started in the background, confirm from
+its log that it bound before trusting anything it serves.** A failed bind is
+invisible from the client side — you get healthy-looking 200s from the wrong
+build.
+
+**Verified, after killing the stale process:** `npx tsc --noEmit` clean;
+production build successful; `/terms`, `/privacy` and `/signup` each render 13
+and none render 16; both documents show "Last updated: 13 November 2026".
+
+**Follow-ups**
+
+- Unchanged from the publication entry below. `SUPABASE_SERVICE_ROLE_KEY` in
+  Vercel is still the one outstanding item that makes a published document
+  inaccurate.
+
+
 ### 2026-11-13 — Terms and Privacy Policy published
 
 - **Branch:** `legal-pages` merged into `main`
-- **Requested by:** sashaknyshjr@gmail.com — "include both the terms and
+- **Requested by:** Sasha — "include both the terms and
   conditions and private policy in the site as is. Upload them back (make sure
   you link it in the sign up page)."
 - **Status:** Live.
@@ -148,7 +229,7 @@ These are no longer pre-launch blockers. They are live-site items:
 ### 2026-11-12 — Legal review came back; every false statement fixed
 
 - **Branch:** `legal-pages`
-- **Requested by:** sashaknyshjr@gmail.com — his brother (law student) reviewed
+- **Requested by:** Sasha — his brother (law student) reviewed
   both documents and had Harvey, a legal AI, produce a memo. Sasha relayed the
   findings and said to ignore the LLC recommendation until ~1,000 users.
 - **Status:** All actionable findings fixed. **Still not merged** — see
@@ -335,7 +416,7 @@ has to change whenever the stack does.
 ### 2026-11-11 — Hundred Users analytics, kept off the auth pages
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — trialled hundredusers.com, liked
+- **Requested by:** Sasha — trialled hundredusers.com, liked
   it, asked for their tag in the `<head>` of every page plus a `signup`
   conversion event. Explicitly: don't add other analytics, don't change
   anything else.
@@ -512,7 +593,7 @@ Checked with screenshots: the editor (default, Mint/Orange/Friendly, Lavender/In
 ### 2026-11-08 — Four clauses added to the Terms, instead of regenerating them
 
 - **Branch:** `legal-pages`
-- **Requested by:** sashaknyshjr@gmail.com — asked whether the privacy policy
+- **Requested by:** Sasha — asked whether the privacy policy
   being 5× longer than the Terms was normal, considered regenerating the Terms
   with Termly to pick up the missing standard clauses, then: "scratch that I
   think just explain the clauses to me and add them".
@@ -581,7 +662,7 @@ PDF contains every new clause.
 
 - **Branch:** `legal-pages` (same branch as the legal documents — it closes the
   gap they exposed, and the two should land together)
-- **Requested by:** sashaknyshjr@gmail.com — "yes lets do delete account",
+- **Requested by:** Sasha — "yes lets do delete account",
   after the privacy review found three documents promising deletion the site
   could not do.
 - **Status:** **Built and tested. One operational step outstanding** — see
@@ -688,7 +769,7 @@ it wholesale if a frame turns up.
 ### 2026-11-07 — `legal-pages` branch: terms restored, privacy policy pending
 
 - **Branch:** `legal-pages` — **deliberately not `main`**
-- **Requested by:** sashaknyshjr@gmail.com — generated a privacy policy in
+- **Requested by:** Sasha — generated a privacy policy in
   Termly and asked for it and the terms to go up together. Chose a branch over
   `main` once told everything on `main` auto-deploys.
 - **Status:** **Both pages built and verified — do not merge until the legal
@@ -842,7 +923,7 @@ Before deploying, before/after screenshots were taken at 1440px and 390px for ho
 ### 2026-11-06 — Sign in with Google
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — "let's just start on google". Apple
+- **Requested by:** Sasha — "let's just start on google". Apple
   rejected over the $99/yr developer membership, Facebook over its missing-email
   case, Discord declined.
 - **Status:** **Reverted the same day — see the update below.** The code was
@@ -1801,7 +1882,7 @@ the dashboard toggle and a production deploy.
 ### 2026-11-06 (later) — Episodes found by search no longer die on click
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — "how can I get episodes like that
+- **Requested by:** Sasha — "how can I get episodes like that
   presidents on the site", after establishing the episode "popped up in the
   search engine, and only then when I click it nothing shows up". He chose the
   recovery-hint approach from four options.
@@ -1905,7 +1986,7 @@ Then the real page against a dev server pointed at that fixture:
 ### 2026-11-06 — Error and not-found pages; a 500 on unknown podcast ids
 
 - **Branch:** `main`
-- **Reported by:** sashaknyshjr@gmail.com — "wtf is this" on
+- **Reported by:** Sasha — "wtf is this" on
   `/podcast/6822357740/episode/7e71ceebd139`, which "said server crashed".
   Later: "the rest of the site works, just this specific episode doesn't even
   though it should be available."
@@ -2111,7 +2192,7 @@ reporting an outage and crashing the page.
 ### 2026-11-04 — Terms page restored with its placeholders answered
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — answered the three questions the
+- **Requested by:** Sasha — answered the three questions the
   page was reverted over: no LLC, he operates it personally, Michigan.
 - **Status:** Complete, then **taken down again the same day for legal review**
   — see the update below. The page went back up with no placeholders, but was
@@ -2205,7 +2286,7 @@ Rendered in a real browser:
 ### 2026-11-04 — Age and terms confirmation on signup
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — a checkbox on the create-account
+- **Requested by:** Sasha — a checkbox on the create-account
   form reading "I'm at least 16 years old and I have read the terms and
   conditions", **not** a link, since `/terms` came down the same day. "Make it
   so the checkmark actually works."
@@ -2349,7 +2430,7 @@ horizontal scroll at 390px.
 ### 2026-10-28 — Episode pages never showed you your own rating
 
 - **Branch:** `main`
-- **Reported by:** sashaknyshjr@gmail.com — rated a Theo Von episode "Ok", the
+- **Reported by:** Sasha — rated a Theo Von episode "Ok", the
   average moved, but the mic was still grey when he opened the episode again.
 - **Status:** Fixed and verified against a real Postgres.
 
@@ -2434,7 +2515,7 @@ page has worked this way since it was built.
 ### 2026-10-27 — Two landing-page copy fixes; the third report was not a defect
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — three copy slips reported as live
+- **Requested by:** Sasha — three copy slips reported as live
   for a week, to be fixed in one push.
 - **Status:** Two fixed and pushed. The third does not exist in this repo — see
   below and Follow-ups.
@@ -2490,7 +2571,7 @@ removing the second reintroduces layout shift during typing.
 ### 2026-10-24 — "That password isn't allowed" never said why
 
 - **Branch:** `main`
-- **Reported by:** sashaknyshjr@gmail.com — a friend signing up was refused with
+- **Reported by:** Sasha — a friend signing up was refused with
   a password well over ten characters and could not tell what was wrong.
 - **Status:** Fixed. **The underlying Supabase setting is still unidentified** —
   see Follow-ups.
@@ -2611,7 +2692,7 @@ three forms. `tsc`, `eslint` and a production build clean.
 ### 2026-10-22 — `<p>` tags showing in podcast descriptions
 
 - **Branch:** `main`
-- **Reported by:** sashaknyshjr@gmail.com — "change all the descriptions and
+- **Reported by:** Sasha — "change all the descriptions and
   remove the `<p>` part from them".
 - **Status:** Fixed.
 
@@ -2681,7 +2762,7 @@ and a production build clean.
 ### 2026-10-22 — Home page shows up to 8 reviews instead of 3
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com. He asked whether reviews could be
+- **Requested by:** Sasha. He asked whether reviews could be
   auto-liked so more of them reached the home page — "so the site feels less
   dead". The answer was no, and the real fix was one number.
 - **Status:** Complete.
@@ -2824,7 +2905,7 @@ confirmed by sending real mail.
 ### 2026-10-19 — A subheading under the landing headline, fading in after it types
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — a subheading under "Welcome to
+- **Requested by:** Sasha — a subheading under "Welcome to
   Podtracker" saying "Your Podcast listening diary." then "Log, rate, and review
   every podcast you listen to.", fading in once the headline has typed out.
 - **Status:** Complete, verified in a browser.
@@ -3044,7 +3125,7 @@ email started arriving.
 ### 2026-10-15 — The average-rating microphone ignored the rating
 
 - **Branch:** `main`
-- **Reported by:** sashaknyshjr@gmail.com — "the two average ratings are highly
+- **Reported by:** Sasha — "the two average ratings are highly
   recommend but the microphone is still green", with a screenshot of
   `/podcast/360084272` showing a pink **Highly Recommend** label under a green
   mic.
@@ -3173,7 +3254,7 @@ allow-list, email rate limit) promoted to steps of their own.
 ### 2026-10-07 — `npm run stats`: where the site actually stands
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com, who asked how many users the site
+- **Requested by:** Sasha, who asked how many users the site
   has. The answer lived across three Supabase dashboard screens, and the number
   that matters most wasn't on any of them.
 - **Status:** Complete, and **verified against a real Postgres** — unusually for
@@ -3240,7 +3321,7 @@ one turned out to be installed:
 ### 2026-10-07 — Any username with a space was unreachable on every profile route
 
 - **Branch:** `main`
-- **Reported by:** sashaknyshjr@gmail.com — "I can't lookup new users", with a
+- **Reported by:** Sasha — "I can't lookup new users", with a
   screenshot of `/user/Palm%20Beach%20Pete` showing *No user found with username
   "Palm%20Beach%20Pete"*.
 - **Status:** Fixed.
@@ -3305,7 +3386,7 @@ earlier accounts had single-word usernames.
 ### 2026-10-06 — Make signup survive a launch: the app half of custom SMTP
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com. He is gathering ~50 users before a
+- **Requested by:** Sasha. He is gathering ~50 users before a
   Product Hunt launch and asked me to "set up the smtp side".
 - **Status:** App side complete. **The SMTP switch itself is still not done** —
   it is dashboard work only Sasha can do. `docs/supabase-smtp.md` is the runbook.
@@ -3364,7 +3445,7 @@ complains, because people who can't get in don't write to you** — so a push fo
 ### 2026-10-04 — Explore's Popular episodes row was empty while its full list worked
 
 - **Branch:** `main`
-- **Reported by:** sashaknyshjr@gmail.com — "the explore page isn't showing top
+- **Reported by:** Sasha — "the explore page isn't showing top
   episodes before you click on full list".
 - **Status:** Fixed, **cause inferred rather than observed** — see below.
 
@@ -3463,7 +3544,7 @@ present and the Popular episodes section correctly absent.
 ### 2026-10-03 — Turn on real community data: ratings, and the home page feed
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com. Reviews written, accounts made,
+- **Requested by:** Sasha. Reviews written, accounts made,
   shows followed, things rated — "take all of the activity on the site and start
   implementing it". His order: **(1)** average rating and distribution, **(2)**
   home page showing new uploads from followed shows, **(3)** his reviews in
@@ -3611,7 +3692,7 @@ label shown. Still no database: how it *looks* is unverified.
 ### 2026-10-03 — Delete a review
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — "quickly add a delete feature for
+- **Requested by:** Sasha — "quickly add a delete feature for
   reviews".
 - **Status:** Complete, but **not verified against a database** — see Follow-ups
   before trusting it.
@@ -3684,7 +3765,7 @@ to click.
 ### 2026-10-02 — Correct three stale facts in CLAUDE.md, and document `HAS_COMMUNITY_DATA`
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com, after I told him Explore was
+- **Requested by:** Sasha, after I told him Explore was
   hardcoded and he corrected me: "explore is real the site is live". He was
   right. I had quoted CLAUDE.md's build-status table instead of reading the code.
 - **Status:** Complete. Documentation only — **no behaviour changed, and
@@ -3745,7 +3826,7 @@ first. Recorded in CLAUDE.md so the next session doesn't learn it the hard way.
 ### 2026-09-30 — A dead-link message on /login, shipped and then reverted same day
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — "make an expired-link screen that
+- **Requested by:** Sasha — "make an expired-link screen that
   says 'Sorry something went wrong.. we are working to fix it' and use the same
   font and background colors that is on our site".
 - **Status:** **Reverted.** Shipped in `75099e0`, removed in the commit that
@@ -3812,7 +3893,7 @@ requested one, rather than the reverse.
 ### 2026-09-30 — Every confirmation email pointed at localhost (a Supabase setting, not code)
 
 - **Branch:** none — **nothing in this repository changed.**
-- **Reported and fixed by:** sashaknyshjr@gmail.com, in the Supabase dashboard.
+- **Reported and fixed by:** Sasha, in the Supabase dashboard.
 - **Status:** Fixed and confirmed. A fresh signup on the live site produced a
   working link that signed the account in.
 
@@ -3869,7 +3950,7 @@ permanent, not an edge case. Sasha is designing the screen for it.
 ### 2026-09-28 — Favorites on someone else's profile showed your own shows
 
 - **Branch:** `main`
-- **Reported by:** sashaknyshjr@gmail.com — opened another member's profile,
+- **Reported by:** Sasha — opened another member's profile,
   pressed Favorites, and saw the podcasts *he* follows under their name.
 - **Status:** Fixed. Verified for a visitor; the signed-in owner's view could
   not be exercised here — see below.
@@ -3933,7 +4014,7 @@ but nobody has watched the owner half render.
 ### 2026-09-26 — The profile page died on the live site while every other page worked
 
 - **Branch:** `main`
-- **Reported by:** sashaknyshjr@gmail.com — signed in on a second device, used
+- **Reported by:** Sasha — signed in on a second device, used
   the live site, and the profile page returned a server error after having
   worked. Every other page was fine, and it still works on his own machine.
 - **Status:** A likely cause is fixed. **Not confirmed against production** —
@@ -4035,7 +4116,7 @@ database showed it. **Protect the first query, not the biggest one.**
 ### 2026-09-26 — Search finds people, not just shows and episodes
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — "the search bar needs to show users too".
+- **Requested by:** Sasha — "the search bar needs to show users too".
 - **Status:** Complete and verified against seeded local accounts.
 
 **What changed**
@@ -4589,7 +4670,7 @@ environment, via the CLI.
 ### 2026-09-17 — Donations rejected by Stripe: Managed Payments wanted a tax code
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — first real test of the donate
+- **Requested by:** Sasha — first real test of the donate
   button, on his machine with a live test-mode key.
 - **Status:** Complete and **verified.** A $10 test-mode donation completed on
   2026-09-17 and appears in Stripe's Transactions list as Succeeded. First money
@@ -4663,7 +4744,7 @@ worked" was read as a completed checkout when it meant the error had gone.
 ### 2026-09-17 — Donations take real money: Stripe Checkout wired to /donate
 
 - **Branch:** `main`
-- **Requested by:** sashaknyshjr@gmail.com — set up a Stripe account and asked
+- **Requested by:** Sasha — set up a Stripe account and asked
   what it takes to connect it to the donation page.
 - **Status:** Complete in code, **not verified against a real Stripe account.**
   See "What has not been proven" below before trusting it with live money.
@@ -9187,7 +9268,7 @@ JSON. The new hook avoids `jq` for the same reason.
 ### 2026-08-13 — Created `main` so a second person can work in this repo
 
 - **Branch:** `main` (created), from `claude/change-log-documentation-mr4x5v`
-- **Requested by:** sashaknyshjr@gmail.com — needs a collaborator to have access,
+- **Requested by:** Sasha — needs a collaborator to have access,
   which is the reason this work is happening in a shared repo at all.
 - **Status:** Complete, with one manual step left to Sasha
 
@@ -9214,7 +9295,7 @@ repo's three commits (change-log system, hooks, type fix) on top of it, rather
 than the reverse. Nothing here should be force-pushed over until that is decided.
 
 - **Branch:** `claude/change-log-documentation-mr4x5v`
-- **Requested by:** sashaknyshjr@gmail.com — explicitly asked for these, which
+- **Requested by:** Sasha — explicitly asked for these, which
   `CLAUDE.md` requires before touching them.
 - **Status:** Complete
 
@@ -9267,7 +9348,7 @@ they share `.next` and the build corrupts the running dev server's state.
 ### 2026-08-13 — Imported Sasha's existing codebase; removed the scaffold built earlier
 
 - **Branch:** `claude/change-log-documentation-mr4x5v`
-- **Requested by:** sashaknyshjr@gmail.com — supplied `podtrackercode.zip`, the
+- **Requested by:** Sasha — supplied `podtrackercode.zip`, the
   real project, after the session had wrongly assumed the project was greenfield.
 - **Status:** Complete
 
@@ -9374,7 +9455,7 @@ variant that was deliberately on hold.
 > treat any of it as the current state of the project.
 
 - **Branch:** `claude/change-log-documentation-mr4x5v`
-- **Requested by:** sashaknyshjr@gmail.com — supplied the project spec
+- **Requested by:** Sasha — supplied the project spec
   (`Rough_draft_for_Podcast_website_2.pdf`) and the Figma export of the landing
   page (`Landing_page_podcast_1.zip`), and asked for the first page to be built.
 - **Status:** Complete
@@ -9484,7 +9565,7 @@ to system fonts.
 ### 2026-08-13 — Made change log updates automatic via hooks
 
 - **Branch:** `claude/change-log-documentation-mr4x5v`
-- **Requested by:** sashaknyshjr@gmail.com — asked that this log be appended to
+- **Requested by:** Sasha — asked that this log be appended to
   every time they ask for something or after a session of work, so the record is
   reliably there for future sessions rather than depending on memory.
 - **Status:** Complete
@@ -9556,7 +9637,7 @@ finer granularity is wanted after all, the Stop hook is the place to change it.
 ### 2026-08-13 — Established the change log
 
 - **Branch:** `claude/change-log-documentation-mr4x5v`
-- **Requested by:** sashaknyshjr@gmail.com — asked for a document recording all
+- **Requested by:** Sasha — asked for a document recording all
   changes and edits made, so the record can be referenced in later sessions when
   other users work in this repo with Claude.
 - **Status:** Complete

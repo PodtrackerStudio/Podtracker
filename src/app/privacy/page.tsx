@@ -100,7 +100,7 @@ export const metadata: Metadata = {
  * The date below must be bumped whenever this changes materially.
  */
 
-const LAST_UPDATED = "7 November 2026";
+const LAST_UPDATED = "13 November 2026";
 
 export default function PrivacyPage() {
   return (
@@ -1294,18 +1294,22 @@ export default function PrivacyPage() {
 
         {/* New section, 2026-11-12. The policy said nothing about age at all,
             while Terms §2 said 13 (16 in the UK/EEA) and the signup checkbox
-            said 16 — a three-way disagreement the legal review flagged. All
-            three now say 16. If that number ever changes, it changes in all
-            three places or none. */}
+            said 16 — a three-way disagreement the legal review flagged.
+
+            Set to 16 on 2026-11-12, then to 13 on 2026-11-13 at Sasha's
+            request. 13 is what the review memo recommended as the usual US
+            floor. See the longer note in Terms §2 for the UK/EEA trade-off
+            that a flat 13 accepts. If this number changes again it changes
+            here, in Terms §2, and on the signup checkbox, or in none of
+            them. */}
         <h3>How old you have to be</h3>
         <p>
-          You must be at least <strong>16</strong> to have a Podtracker account. The same age
-          applies everywhere; there is no separate rule for different countries. We ask you to
+          You must be at least <strong>13</strong> to have a Podtracker account. We ask you to
           confirm it when you sign up.
         </p>
         <p>
-          We do not knowingly collect personal information from anyone under 16. If you believe
-          someone under 16 has created an account, email{" "}
+          We do not knowingly collect personal information from anyone under 13. If you believe
+          someone under 13 has created an account, email{" "}
           <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> and we will delete the
           account and everything in it.
         </p>

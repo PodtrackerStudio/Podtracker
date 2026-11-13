@@ -66,7 +66,7 @@ export const metadata: Metadata = {
  * change materially.
  */
 
-const LAST_UPDATED = "8 November 2026";
+const LAST_UPDATED = "13 November 2026";
 
 export default function TermsPage() {
   return (
@@ -113,20 +113,26 @@ export default function TermsPage() {
 
         <h2>2. Who can use Podtracker</h2>
         <p>
-          {/* One age everywhere, 2026-11-12. This said 13, with 16 in the
-              UK/EEA; the signup checkbox said 16; the Privacy Policy said
-              nothing. The legal review flagged the three-way disagreement.
-              16 was chosen over the memo's suggestion of 13 because it is
-              what the checkbox already asked people to confirm, it removes
-              the UK/EEA carve-out entirely, and it keeps COPPA well clear.
-              Changing it means changing all three places — Terms §2, the
-              signup checkbox, and Privacy §12. */}
-          You must be at least 16 years old to have an account. This is the same everywhere; there
-          is no separate age for different countries.
+          {/* One age everywhere. Changed 16 -> 13 on 2026-11-13 at Sasha's
+              request, which is what the review memo recommended as the usual
+              US floor. 16 had only ever been there because he asked for that
+              number on the signup checkbox on 2026-11-04, not because anyone
+              had decided it.
+
+              KNOWN TRADE-OFF: a flat 13 drops the UK/EEA carve-out this
+              section used to carry. GDPR's default age for consent to
+              information society services is 16, and member states may lower
+              it — the UK and Ireland differ, Germany is 16, France 15. For a
+              US user base this is fine, and Sasha accepted it knowingly. If
+              real EU users turn up, put the carve-out back.
+
+              Changing it again means all four places: here, the two sentences
+              below, the signup checkbox, and Privacy §12. */}
+          You must be at least 13 years old to have an account.
         </p>
         <p>
-          We don&apos;t knowingly collect information from anyone under 16. If you believe someone
-          under 16 has created an account, email us and we will delete it.
+          We don&apos;t knowingly collect information from anyone under 13. If you believe someone
+          under 13 has created an account, email us and we will delete it.
         </p>
 
         <h2>3. Your account</h2>
