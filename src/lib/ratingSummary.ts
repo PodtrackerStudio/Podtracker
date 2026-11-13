@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { episodeKeyFromGuid } from "./episodeKey";
+import { findStoredEpisodeId } from "./storedEpisode";
 import { summariseTierCounts, EMPTY_SUMMARY, type RatingSummary, type Tier } from "./ratingScale";
 
 /**
@@ -87,15 +87,10 @@ export async function getEpisodeRatingSummaryByKey(
     });
     if (!podcast) return EMPTY_SUMMARY;
 
-    const episodes = await db.episode.findMany({
-      where: { podcastId: podcast.id, externalId: { not: null } },
-      select: { id: true, externalId: true },
-    });
+    const episodeId = await findStoredEpisodeId(podcast.id, episodeKey);
+    if (!episodeId) return EMPTY_SUMMARY;
 
-    const match = episodes.find((e) => e.externalId && episodeKeyFromGuid(e.externalId) === episodeKey);
-    if (!match) return EMPTY_SUMMARY;
-
-    return await getEpisodeRatingSummary(match.id);
+    return await getEpisodeRatingSummary(episodeId);
   } catch {
     return EMPTY_SUMMARY;
   }

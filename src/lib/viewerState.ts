@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { getCurrentUser } from "./auth";
-import { episodeKeyFromGuid } from "./episodeKey";
+import { findStoredEpisodeId } from "./storedEpisode";
 
 /** UI tier keys, matching RatingWidget's. */
 export type TierKey = "highly" | "recommend" | "ok" | "dont" | "didnt";
@@ -117,13 +117,9 @@ export async function getViewerEpisodeState(
     // Small by construction: `ensureEpisode` only writes a row once somebody
     // rates, logs or lists an episode, so this is the handful anyone has
     // touched rather than the show's whole back catalogue.
-    const episodes = await db.episode.findMany({
-      where: { podcastId: podcast.id, externalId: { not: null } },
-      select: { id: true, externalId: true },
-    });
-
-    const match = episodes.find((e) => e.externalId && episodeKeyFromGuid(e.externalId) === episodeKey);
-    if (!match) return NONE_EPISODE;
+    const episodeId = await findStoredEpisodeId(podcast.id, episodeKey);
+    if (!episodeId) return NONE_EPISODE;
+    const match = { id: episodeId };
 
     const [rating, watchItem] = await Promise.all([
       db.episodeRating.findUnique({

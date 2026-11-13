@@ -164,10 +164,15 @@ export async function getEpisodePage(
   const count = Math.min(EPISODE_PAGE_MAX, Math.max(1, Math.floor(limit)));
   // The feed is newest-first (sorted in `fetchPodcastFeed`), so "oldest" reads
   // it from the other end without copying all of it.
+  // Past the end is an empty page. Without the guard, "oldest" computed a
+  // negative slice end, which `slice` reads as counting from the end — so a
+  // stale offset returned the *newest* episodes as if they were older ones.
   const slice =
-    sort === "oldest"
-      ? all.slice(Math.max(0, all.length - start - count), all.length - start).reverse()
-      : all.slice(start, start + count);
+    start >= all.length
+      ? []
+      : sort === "oldest"
+        ? all.slice(Math.max(0, all.length - start - count), all.length - start).reverse()
+        : all.slice(start, start + count);
 
   return {
     podcastTitle: podcast.title,

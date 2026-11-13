@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { SettingsForm } from "./SettingsForm";
 import styles from "./settings.module.css";
 import { db } from "@/lib/db";
+import { cleanTheme } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -38,6 +39,7 @@ export default async function SettingsPage() {
             bio: profile?.bio ?? null,
             avatarUrl: profile?.avatarUrl ?? null,
           }}
+          theme={cleanTheme({ main: user.themeMain, accent: user.themeAccent, font: user.themeFont })}
         />
       </main>
       <SiteFooter />

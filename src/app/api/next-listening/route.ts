@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
 import { getOrCreateWatchlist } from "@/lib/nextListening";
 import { appendListItem } from "@/lib/lists";
+import { findStoredEpisodeId } from "@/lib/storedEpisode";
 
 /**
  * Add a show or episode to the user's Next listening.
@@ -56,21 +57,24 @@ export async function DELETE(request: Request) {
 
   // No ensure* here: you cannot have added something whose rows were never
   // created, so a missing row just means there is nothing to remove.
-  const podcast = await db.podcast.findUnique({ where: { externalId: String(externalId) }, select: { id: true } });
-  if (!podcast) return NextResponse.json({ ok: true, added: false });
+  // Wrapped like POST: a database blip used to escape as an unhandled 500.
+  try {
+    const podcast = await db.podcast.findUnique({ where: { externalId: String(externalId) }, select: { id: true } });
+    if (!podcast) return NextResponse.json({ ok: true, added: false });
 
-  // Every watchlist the user owns, not the first one found. If a race ever made
-  // two, removing from just one left the item showing, after reporting success.
-  const inWatchlist = { userId: user.id, isWatchlist: true };
+    // Every watchlist the user owns, not the first one found. If a race ever made
+    // two, removing from just one left the item showing, after reporting success.
+    const inWatchlist = { userId: user.id, isWatchlist: true };
 
-  if (episodeKey) {
-    const episodes = await db.episode.findMany({ where: { podcastId: podcast.id }, select: { id: true, externalId: true } });
-    const { episodeKeyFromGuid } = await import("@/lib/episodeKey");
-    const match = episodes.find((e) => e.externalId && episodeKeyFromGuid(e.externalId) === String(episodeKey));
-    if (match) await db.listItem.deleteMany({ where: { list: inWatchlist, episodeId: match.id } });
-  } else {
-    await db.listItem.deleteMany({ where: { list: inWatchlist, podcastId: podcast.id } });
+    if (episodeKey) {
+      const episodeId = await findStoredEpisodeId(podcast.id, String(episodeKey));
+      if (episodeId) await db.listItem.deleteMany({ where: { list: inWatchlist, episodeId } });
+    } else {
+      await db.listItem.deleteMany({ where: { list: inWatchlist, podcastId: podcast.id } });
+    }
+
+    return NextResponse.json({ ok: true, added: false });
+  } catch {
+    return NextResponse.json({ error: "Could not remove that." }, { status: 502 });
   }
-
-  return NextResponse.json({ ok: true, added: false });
 }

@@ -94,6 +94,7 @@
 .srOnly:checked + .amountBox {
   background: var(--btn-primary-blue);
   border-color: var(--btn-primary-blue);
+  color: var(--theme-on-accent, inherit);
   font-weight: 600;
 }
 /* Keyboard focus must stay visible even though the input itself is hidden. */
@@ -162,7 +163,9 @@
 }
 .donateButton {
   background: var(--btn-primary-blue);
-  color: var(--text);
+  /* Dark text by default (Sasha's); a personal theme supplies its own
+     readable colour via --theme-on-accent. */
+  color: var(--theme-on-accent, var(--text));
   border: none;
   border-radius: 5px;
   padding: 12px 40px;

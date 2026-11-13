@@ -1,0 +1,256 @@
+/* Settings → Theme. Everything here reads the live theme variables, so the
+   editor itself previews whatever is being picked. */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.intro {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.groupTitle {
+  font-size: 22px;
+  font-weight: 400;
+}
+.hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* Colour swatches */
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.swatch {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s;
+}
+.swatch:hover {
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: var(--shadow-md);
+}
+.swatch.selected {
+  box-shadow: 0 0 0 3px var(--text), var(--shadow-md);
+}
+.swatchDefaultMark {
+  font-size: 18px;
+  color: rgba(17, 17, 17, 0.55);
+  line-height: 1;
+}
+.swatchCustom {
+  background: conic-gradient(#ff5c5c, #ffd25c, #5cff8a, #5cc8ff, #9b7bff, #ff5cd6, #ff5c5c);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.colorInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+.swatchCustom:has(.colorInput:focus-visible) {
+  outline: 2px solid var(--btn-primary-blue);
+  outline-offset: 2px;
+}
+
+/* Font cards */
+.fonts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+}
+.fontCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 8px 12px;
+  background: var(--surface);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  color: var(--text);
+  transition: transform 0.15s var(--ease), box-shadow 0.15s, border-color 0.15s;
+}
+.fontCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.fontCard.selected {
+  border-color: var(--btn-primary-blue);
+  background: #fff;
+}
+.fontSample {
+  font-size: 30px;
+  line-height: 1.1;
+}
+.fontName {
+  font-size: 13px;
+}
+
+/* Preview card: a miniature of the site in the current choices. */
+.preview {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  /* Opaque page colour: --bg is translucent and would double up here. */
+  background: var(--page-bg-alt);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+.previewNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--accent-blue);
+  font-family: var(--font-display), Georgia, serif;
+}
+.previewLogo {
+  font-size: 18px;
+}
+.previewPill {
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--btn-nav-blue);
+}
+.previewBody {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.previewTitle {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+}
+.previewText {
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: 14px;
+}
+.previewLink {
+  color: var(--link-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.previewButtons {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.previewPrimary,
+.previewCard {
+  font-size: 13px;
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+}
+.previewPrimary {
+  background: var(--btn-primary-blue);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+.previewCard {
+  background: var(--accent-blue);
+}
+
+/* Status + actions */
+.status {
+  text-align: center;
+  font-size: 14px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+}
+.status.success {
+  background: rgba(40, 186, 96, 0.12);
+  color: #1d7a42;
+}
+.status.error {
+  background: rgba(255, 0, 0, 0.08);
+  color: #b00000;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.save,
+.reset {
+  font-family: inherit;
+  font-size: 15px;
+  padding: 10px 26px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s, opacity 0.15s;
+}
+.save {
+  background: var(--btn-primary-blue);
+  color: var(--on-accent);
+  border: none;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--btn-primary-blue) 40%, transparent);
+}
+.reset {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid #ccc;
+}
+.save:hover:not(:disabled),
+.reset:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.save:disabled,
+.reset:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .swatch {
+    width: 40px;
+    height: 40px;
+  }
+  .fonts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

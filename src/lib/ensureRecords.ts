@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { lookupPodcast, fetchPodcastFeed } from "./podcastApi";
+import { lookupPodcast, fetchPodcastFeed, FeedFetchError } from "./podcastApi";
 import { getPodcastDetail } from "./podcastDetail";
 import { episodeKeyFromGuid, showScopedGuid } from "./episodeKey";
 
@@ -83,11 +83,24 @@ export async function ensureEpisode(podcastExternalId: string, episodeKey: strin
   // Deliberately NOT via getPodcastDetail: that slices to the four episodes the
   // "Recent episodes" strip shows, so logging or rating anything older would
   // silently fail. The feed is fetched whole and searched by key.
-  const podcast = await lookupPodcast(podcastExternalId).catch(() => null);
+  //
+  // Only a *definitive* "no" becomes null. Until 2026-11-09 both calls had
+  // `.catch(() => null)`, so an iTunes or feed-host hiccup made every route say
+  // "That episode could not be found in the show's feed" (404) about an episode
+  // that exists. Now an outage throws, and every caller's try/catch answers 502
+  // "Could not save…", which invites the retry that will work. Same split as
+  // `loadEpisodeDetail`: lookupPodcast returns null for "no such show" and
+  // throws when iTunes fails; a 4xx from the feed host is final.
+  const podcast = await lookupPodcast(podcastExternalId);
   if (!podcast?.feedUrl) return null;
 
-  const feed = await fetchPodcastFeed(podcast.feedUrl).catch(() => null);
-  if (!feed) return null;
+  let feed;
+  try {
+    feed = await fetchPodcastFeed(podcast.feedUrl);
+  } catch (error) {
+    if (error instanceof FeedFetchError && error.permanent) return null;
+    throw error;
+  }
 
   const match = feed.episodes.find((e) => episodeKeyFromGuid(e.guid) === episodeKey);
   // Episode.publishedAt is required, and an episode with no date in its feed

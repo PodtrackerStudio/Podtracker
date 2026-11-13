@@ -139,10 +139,16 @@ export async function POST(request: Request) {
       // A repeat signup on an unconfirmed account lands here too — Supabase
       // returns the existing user rather than erroring, so the id collides.
       if ((error as { code?: string })?.code === "P2002") {
-        const target = (error as { meta?: { target?: string[] | string } })?.meta?.target;
-        const fields = Array.isArray(target) ? target.join(",") : String(target ?? "");
+        // Asked of the database rather than read off the error: with Prisma 7's
+        // driver adapters the clashing fields are no longer at `meta.target`,
+        // so a username race fell through to "an account with that email
+        // already exists", for an email with no account.
+        const usernameTaken = await db.user
+          .findUnique({ where: { username: cleanUsername }, select: { id: true } })
+          .then(Boolean)
+          .catch(() => false);
 
-        if (fields.includes("username")) {
+        if (usernameTaken) {
           return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
         }
         // Email or primary key: the account already exists. Say so without

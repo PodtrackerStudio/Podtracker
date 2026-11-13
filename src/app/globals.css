@@ -26,6 +26,9 @@
   --accent-blue: #c3dbff;
   --btn-primary-blue: #7bbaff;
   --btn-nav-blue: #9ccbff;
+  /* Text on an accent-coloured button. A personal theme with a pale accent
+     flips this to near-black (src/lib/theme.ts). */
+  --on-accent: #fff;
 
   /* ── Feel tokens (design refresh, 2026-11-06) ──
      The colours and fonts above are Sasha's and unchanged. These only settle
@@ -159,7 +162,7 @@ nav.site-nav {
 }
 .nav-search:focus-within {
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(123, 186, 255, 0.45);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--btn-primary-blue) 45%, transparent);
 }
 .nav-search input {
   border: none;
@@ -315,7 +318,7 @@ nav.site-nav {
 .nav-log-btn:hover {
   background: var(--btn-nav-blue);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(123, 186, 255, 0.45);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--btn-primary-blue) 45%, transparent);
 }
 
 /* ── FOOTER (shared across every page) ── */

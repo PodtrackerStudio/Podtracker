@@ -7,9 +7,15 @@
   reload, which read as covers randomly disappearing. A local file cannot fail.
 
   Deliberately blank and grey rather than a fake cover. It uses only existing
-  design tokens — --page-bg-alt (#e7e7e7) and --didnt-finish (#999999) — and
-  invents nothing, because a placeholder that looks like real artwork hides the
-  fact that the data behind it is not real yet.
+  design tokens, page-bg-alt (#e7e7e7) and didnt-finish (#999999), and invents
+  nothing, because a placeholder that looks like real artwork hides the fact
+  that the data behind it is not real yet.
+
+  DO NOT write those token names with their usual leading double dash here.
+  This is an XML comment, and a double hyphen inside one is illegal: it makes
+  the whole file fail to parse, so every browser renders it as a broken image
+  at 0x0. That is exactly what happened between 2026-10-19 and 2026-11-11 —
+  the comment documenting the tokens is what broke the artwork it documents.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" role="img" aria-label="Placeholder artwork">
   <rect width="300" height="300" fill="#e7e7e7"/>

@@ -169,6 +169,272 @@ and `/signup`.
   `main` in before merging out.
 
 
+### 2026-11-11 — `placeholder-cover.svg` was invalid XML and rendered nowhere
+
+- **Branch:** `main`
+- **Requested by:** nobody — found while checking whether `/user/sasha` was fit
+  to record a demo video against. Sasha had asked for a shot list.
+- **Status:** Complete.
+
+**What was wrong**
+
+The file has been **invalid XML since it was added on 2026-10-19**:
+
+```
+error on line 10 at column 21: Comment must not contain '--' (double-hyphen)
+```
+
+Its header comment explained which design tokens the artwork uses and wrote
+them the normal way, as `--page-bg-alt` and `--didnt-finish`. A double hyphen
+inside an XML comment is illegal, so the parse fails, so every browser renders
+the file at 0×0 as a broken image. **The comment documenting the artwork is
+what broke the artwork.**
+
+**Why it went unnoticed for three weeks**
+
+Everything that is usually checked looked fine. The file exists, the request
+returns **HTTP 200**, and the `Content-Type` is **`image/svg+xml`**. `curl`
+reports nothing wrong, and so does the network tab. The only visible symptom
+is in the DOM: `naturalWidth === 0` with `complete === true`, which means the
+browser fetched it and then failed to decode it.
+
+**Blast radius**
+
+37 references across 13 files use it as the fallback whenever real artwork is
+missing — the podcast and episode pages, Explore, every profile sub-page,
+favourites, creator pages, and the demo profile. So a missing cover has been
+showing as a broken-image icon site-wide rather than the neutral grey
+placeholder that was intended. On `/user/sasha` that was the three listening
+cards and all three next-listening thumbnails.
+
+**The fix**
+
+Token names written without their leading dashes, plus a note in the file
+saying why they must stay that way, so the next person documenting them does
+not reintroduce it.
+
+**Verified**
+
+- The file parses; **all six SVGs in `public/` parse** (the other five were
+  already fine).
+- `/user/sasha` renders 19 images with **none broken**, where six were before.
+- Production build successful.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/terms/page.tsx` | Modified — §8 expanded, §§13/15/16 added, renumbering, date bumped to 8 November 2026, summary bullet, page comment |
+| `docs/privacy-policy-review.md` | Modified — new §2b on the four clauses, and the intro now says where each document's wording came from |
+
+**Also, later the same day — the processors are named in Privacy §4**
+
+Sasha asked whether the summary blocks were all necessary. They are not: the
+privacy policy had **three** layers — the plain-English box, Termly's "Summary
+of key points", and thirteen per-section "In Short" lines. He chose to keep
+Termly's, so nothing was cut.
+
+The audit did turn up a real inconsistency, and that was fixed. The summary
+says "four companies help run the site" while §4 listed **seven** categories of
+third party. Not a contradiction — Vercel covers three of those categories and
+Supabase two — but it reads as one. §4 now keeps Termly's category list and
+adds a table naming Vercel, Supabase, Resend and Stripe, what each does, and a
+link to each one's privacy notice. The URLs were checked rather than recalled:
+Vercel's canonical page is `vercel.com/privacy`, not the `/legal/privacy-policy`
+path that an archived PDF points at.
+
+Naming them is also consistent with the document's own §11, which already gives
+Minnesota and Oregon residents the right to request a list of specific third
+parties. **That table is the most stale-prone thing in either document** — it
+has to change whenever the stack does.
+
+**Follow-ups**
+
+- **Register the DMCA designated agent.** Cheapest protection available for a
+  site made entirely of user-posted content, and it is not in place.
+- Decide the arbitration question with the reviewer.
+- Keep Privacy §4's processor table in step with the real stack. Adding a
+  service without updating it makes the policy false.
+- Everything still outstanding from the two entries below, in particular
+  `SUPABASE_SERVICE_ROLE_KEY` in Vercel before this branch can merge.
+
+### 2026-11-11 — Hundred Users analytics, kept off the auth pages
+
+- **Branch:** `main`
+- **Requested by:** sashaknyshjr@gmail.com — trialled hundredusers.com, liked
+  it, asked for their tag in the `<head>` of every page plus a `signup`
+  conversion event. Explicitly: don't add other analytics, don't change
+  anything else.
+- **Status:** **Added, deployed, then REMOVED the same day at Sasha's request**
+  — he dropped the subscription. The entry is kept rather than deleted because
+  it was live on production for a few hours, and because the auth-token
+  finding below is worth keeping whatever analytics gets added next. See
+  "Removed again" at the end.
+
+**What changed**
+
+- `src/components/HundredUsersAnalytics.tsx` (new) — `next/script` with
+  `strategy="afterInteractive"`, key `hu_8fbd67513003`, **and a guard that
+  returns `null` on `/auth/*`**.
+- `src/app/layout.tsx` — renders it once, below `SiteAnalytics`.
+- `src/app/signup/SignupForm.tsx` — `window.hu?.("signup")` immediately after
+  `/api/auth/signup` returns ok, plus a `declare global` so a typo in the event
+  name is a compile error rather than a silent miss.
+
+**The one place the request could not be followed literally**
+
+"Every page" would have included `/auth/confirm`, and that is a **rendered
+page, not a server redirect** — it shows a "Click below to finish signing in"
+button, so the browser sits on:
+
+```
+/auth/confirm?token_hash=<live token>&type=signup&next=/home
+```
+
+with the full layout mounted. That token is a working sign-in credential for
+an hour. Page-view analytics almost universally record `location.href`, so the
+tag would have copied live credentials into a third party's database.
+
+This is not hypothetical: `SiteAnalytics`'s `beforeSend` exists for exactly
+this reason and strips `/auth/*` query strings before Vercel sees them. The
+Hundred Users tag takes a key and nothing else, so there is no hook to strip
+with — the only control is not loading it. Hence the wrapper. The cost is that
+`/auth/*` page views go uncounted; those are transient steps nobody browses,
+and `robots.txt` already excludes them.
+
+`/auth/callback` is a route handler and never runs client JS, so it was never
+at risk. The guard is a `startsWith("/auth/")` prefix match anyway, so anything
+added under `/auth` later is covered without anyone remembering.
+
+**Verified in a browser, not by inspection**
+
+- Tag present exactly once on `/`, `/explore`, `/terms`, `/signup`, with
+  `data-key="hu_8fbd67513003"`.
+- **Absent on `/auth/confirm?token_hash=…`, with no fetch attempted.**
+- Still exactly one tag after a client-side navigation — not two.
+- `signup` fires exactly once on a successful signup (API stubbed), and
+  **nothing fires when signup fails** with a 409.
+- `npx tsc --noEmit` clean, production build successful.
+
+**Note on the vendor.** Sasha asked first whether hundredusers.com was
+legitimate. It could not be verified from here — the domain is outside this
+session's allowed network list, and a web search found no independent reviews
+of it at all. That is not evidence of anything bad, but nobody has vetted them,
+which is part of why the auth-page guard matters more than it would for a
+known vendor.
+
+**Removed again, same day**
+
+Sasha cancelled the subscription and asked for it taken out. Removed in commit
+below: `HundredUsersAnalytics.tsx` deleted, the import and element gone from
+`layout.tsx`, the `window.hu` call and its `declare global` gone from
+`SignupForm.tsx`.
+
+`git diff` against the commit before it went in reports **no change at all** to
+either file, so this is a clean removal rather than an approximate one.
+Confirmed in a browser as well as in the source: no script tag, `window.hu`
+undefined, and **zero requests to hundredusers.com** across `/`, `/explore`
+and `/signup`. The key appears nowhere in a fresh `.next` build.
+
+He said "I removed the thing" before this, meaning the subscription — the code
+was still live on production at that point and still fetching their script on
+every page load. Worth remembering that cancelling a SaaS and removing its tag
+are two separate jobs.
+
+**Two things worth keeping from this**
+
+1. **`/auth/confirm` is a rendered page, not a redirect**, and its URL carries
+   a live sign-in token. Any future analytics, heatmap, session-replay or error
+   tracker must either strip `/auth/*` query strings or not load there.
+   Session replay would be worse than page-view analytics: it would capture the
+   token *and* the form. `SiteAnalytics` already handles this for Vercel;
+   anything new has to handle it too.
+2. The `HundredUsersAnalytics.tsx` wrapper is a working pattern for exactly
+   that, recoverable from git history if a third-party tag is ever added again.
+
+**Follow-ups**
+
+- **None outstanding.** The earlier follow-up saying Privacy §4 and §5 on
+  `legal-pages` needed a fifth processor added is **void** — there is no fifth
+  processor again. Those sections are correct as written: four companies,
+  two tracking technologies. Do not add a row for a service that no longer
+  exists.
+
+### 2026-11-09 — Backend review: fixes for abuse, error handling and paging
+
+- **Branch:** `backend-fixes`
+- **Requested by:** Phillip: "review all of the backend code for podtracker and fix any issues or vulnerabilities"
+- **Status:** Complete for the items below; two findings deliberately not taken (see Why).
+
+**What changed**
+
+- **`/api/health/db` could take the site down on demand.** It is public and opened a fresh database connection per request, outside the app's pool, against a pooler with 15 session slots. Now at most one probe per instance every 30s, shared by concurrent callers, and the response says `cachedForSeconds`.
+- **Comments:** they can no longer be posted on a private Next listening list (same rule as `/api/likes`). There is a per-account limit of `COMMENT_LIMIT` (8/min, then a 2-minute block, in memory per instance like the other limits).
+- **`ensureEpisode`:** an iTunes or feed-host outage now throws, so routes answer 502 "Could not save…" (retryable) instead of 404 "not in the show's feed". Only definitive answers return null: no such show, or a permanent 4xx feed.
+- **Episode paging:** `sort=oldest` with an offset past the end returned the newest episodes (negative `slice` end). It now returns an empty page.
+- **Signup:** decides between a username clash and an email clash by querying the username, rather than reading `meta.target`, which Prisma 7 driver adapters no longer populate.
+- **Email sync in `getCurrentUser`:** after a failed sync (e.g. P2002), it backs off for an hour per user instead of retrying on every request.
+- **Feed parsing:** the last-resort guid is now deterministic (enclosure URL, then date). The old `crypto.randomUUID()` re-rolled every parse and killed the episode's link hourly. The earlier fallbacks keep their order, because stored rows depend on it.
+- **`findStoredEpisodeId`** (`src/lib/storedEpisode.ts`) replaces four hand-copied key→row lookups (rate GET, next-listening DELETE, viewerState, ratingSummary). next-listening DELETE also gained the try/catch POST already had, and lost a pointless dynamic import.
+
+**Checked and fine, no change**
+
+Every write route checks login and ownership. List items, Next listening, log, favourites, follow and likes all scope by `user.id`. The avatar endpoint allows PNG/JPEG/WebP/GIF only (no SVG) with `nosniff`. Discord interactions verify the Ed25519 signature. Password reset requires a Supabase recovery session. Auth routes are rate-limited.
+
+**Why**
+
+Tested locally:
+- the paging past the end returns `[]`;
+- three concurrent health requests share one `checkedAt`;
+- signed-out comment and next-listening calls are still 401;
+- show, episode, review and profile pages all 200.
+
+tsc, eslint and `next build` pass. The signup fix wasn't exercised against the database, because the session's permissions blocked a probe write.
+
+Not taken:
+1. **Parallel resolution in list creation.** Parallel iTunes lookups are what broke Explore on 2026-08-27, and concurrent `ensurePodcast` upserts can race.
+2. **Writing episodes that only Apple search can resolve.** This is a real gap: the episode page can show them via `recoverEpisodeFromSearch`, but Rate, Log and List 404. It needs the title hint threaded through four components and five routes, plus a search-based `ensurePodcast`, so it is a feature-sized change of its own.
+
+**Follow-ups**
+
+- The search-only episodes above.
+- `/api/search` is public and fans out to iTunes, which rate-limits per IP. A per-IP limit there would protect the shared quota.
+- Rate limits are in memory per serverless instance, so they are a speed bump, not a wall. A shared store (e.g. Upstash Redis) would make them real.
+
+### 2026-11-09 — Personal themes: each person picks their own colours and font
+
+- **Branch:** `personal-theme`, fast-forwarded onto `main`
+- **Requested by:** Phillip: "make a feature where a person can customize the colors and fonts of the website but make it personal to them, give it an accent and a main color". He chose *only the person themselves sees it, site-wide* (not visitors to their profile), and *saved to the account* (not a cookie).
+- **Status:** Complete. Real save is untested while signed in (see Follow-ups).
+
+**What changed**
+
+- **Database:** migration `20261107000000_add_user_theme` adds nullable `User.themeMain`, `themeAccent` and `themeFont`. It was applied to Supabase on 2026-11-07, before the code shipped. That was safe because the old code ignores unknown columns. Null means Sasha's default.
+- **`src/lib/theme.ts`:** presets, font pairs, validation (`cleanHex` accepts only `#rrggbb`; `cleanFont` is a whitelist) and `themeVars`/`themeCss`, which turn a theme into overrides of the existing CSS variables.
+  - Main colour sets `--accent-blue`, `--btn-nav-blue`, `--bg`, `--page-bg-alt` and `--border`, all as `color-mix` tints.
+  - Accent sets `--btn-primary-blue`, `--on-accent`, `--theme-on-accent` (black or white by luminance) and `--link-hover`.
+  - Font overrides `--font-display` and, for some pairs, `--font-body`. `--font-rating` (Londrina) is never overridden.
+- **Applying it:** `getCurrentUser` now also selects the three theme fields. `SiteNav` writes `<style id="personal-theme">html:root{…}</style>` for a signed-in person with a theme. The nav already runs on every page with a signed-in user, so this adds no queries and doesn't make any static route dynamic. Pages without the nav (login/signup) show the default theme, which is fine since nobody is signed in there.
+- **Fonts:** DM Sans, Nunito, Fraunces, Space Mono, plus a second handle on PT Serif (`--font-pt-serif`, for the Classic sample card), all loaded with `preload: false`, so a browser only downloads the ones a page uses.
+- **Settings → Theme tab** (`ThemeEditor.tsx`, `theme.module.css`): swatches, a custom `<input type="color">`, font cards, and a live preview. The preview works by setting inline vars on `<html>`, which are removed on unmount so an unsaved preview never sticks. It also has a mini preview card, Save and "Reset to original". Saving goes through `PUT /api/account/theme`, which returns 401 when signed out and 400 for invalid colours or fonts.
+- **Hard-coded colours routed through the variables** so themes reach them: white text on accent buttons → `var(--on-accent)` (status, landing, auth, comments, profile `.btnEdit`). Blue `rgba(…)` glows and shadows → `color-mix` of the variable. Input focus borders → `color-mix`. Donate button text → `var(--theme-on-accent, var(--text))`. The default theme renders the same as before.
+
+**Why**
+
+Overriding the variables the site is already built on means no component knows themes exist, and Sasha's design stays the default for everyone who hasn't chosen otherwise. Main colours are stored as vivid bases and used as tints, so any colour a person picks still leaves dark text readable on the nav and cards.
+
+Checked with screenshots: the editor (default, Mint/Orange/Friendly, Lavender/Ink/Editorial on a phone) and a show page and profile with a Peach/Purple/Modern theme injected. That surfaced outlined buttons vanishing on tinted backgrounds, which was fixed by tinting `--border`. tsc, eslint and `next build` pass.
+
+**How to reverse**
+
+- Per person: Settings → Theme → "Reset to original".
+- The feature: `git revert` the feature commit. The columns can stay, since they're harmless. To drop them as well, add a migration with `ALTER TABLE "User" DROP COLUMN "themeMain", DROP COLUMN "themeAccent", DROP COLUMN "themeFont";`, which deletes everyone's saved choices.
+
+**Follow-ups**
+
+- A real signed-in save wasn't exercised by Claude, because it can't sign in as a user. Phillip should try it once on the live site.
+- Sasha hasn't seen this yet. The default look is unchanged, but he may have opinions on the presets and fonts.
+
 ### 2026-11-08 — Four clauses added to the Terms, instead of regenerating them
 
 - **Branch:** `legal-pages`
@@ -237,45 +503,6 @@ you're agreeing to" should not omit the one new obligation on the reader.
 **Verified:** `npx tsc --noEmit` clean; production build successful; `/terms`
 renders with sections numbered 1–16 with no gaps or duplicates; the regenerated
 PDF contains every new clause.
-
-**Files touched**
-
-| File | Change |
-| --- | --- |
-| `src/app/terms/page.tsx` | Modified — §8 expanded, §§13/15/16 added, renumbering, date bumped to 8 November 2026, summary bullet, page comment |
-| `docs/privacy-policy-review.md` | Modified — new §2b on the four clauses, and the intro now says where each document's wording came from |
-
-**Also, later the same day — the processors are named in Privacy §4**
-
-Sasha asked whether the summary blocks were all necessary. They are not: the
-privacy policy had **three** layers — the plain-English box, Termly's "Summary
-of key points", and thirteen per-section "In Short" lines. He chose to keep
-Termly's, so nothing was cut.
-
-The audit did turn up a real inconsistency, and that was fixed. The summary
-says "four companies help run the site" while §4 listed **seven** categories of
-third party. Not a contradiction — Vercel covers three of those categories and
-Supabase two — but it reads as one. §4 now keeps Termly's category list and
-adds a table naming Vercel, Supabase, Resend and Stripe, what each does, and a
-link to each one's privacy notice. The URLs were checked rather than recalled:
-Vercel's canonical page is `vercel.com/privacy`, not the `/legal/privacy-policy`
-path that an archived PDF points at.
-
-Naming them is also consistent with the document's own §11, which already gives
-Minnesota and Oregon residents the right to request a list of specific third
-parties. **That table is the most stale-prone thing in either document** — it
-has to change whenever the stack does.
-
-**Follow-ups**
-
-- **Register the DMCA designated agent.** Cheapest protection available for a
-  site made entirely of user-posted content, and it is not in place.
-- Decide the arbitration question with the reviewer.
-- Keep Privacy §4's processor table in step with the real stack. Adding a
-  service without updating it makes the policy false.
-- Everything still outstanding from the two entries below, in particular
-  `SUPABASE_SERVICE_ROLE_KEY` in Vercel before this branch can merge.
-
 ### 2026-11-07 — Self-serve account deletion
 
 - **Branch:** `legal-pages` (same branch as the legal documents — it closes the
@@ -484,6 +711,16 @@ its DPA applies and the Hobby non-commercial and AI-training clauses do not.
   `agreedToTerms !== true`, but nothing is recorded.
 - **Phillip has still not been told** his terms page was reverted on
   2026-11-04, restored here, and edited since. Noted in the review doc too.
+| `public/placeholder-cover.svg` | Modified — removed the `--` sequences from the header comment |
+
+**Follow-ups**
+
+- Worth knowing for next time: a 200 response with the right content type does
+  not mean an SVG renders. If artwork looks broken, check `naturalWidth` in the
+  DOM rather than the network tab.
+- This entry was written after the fix was already committed in `6e0374f`,
+  because the Stop hook caught the missing log entry. The fix itself is
+  unchanged; only this record was late.
 
 ### 2026-11-07 — Design refresh: softer, more relaxed, more community-feeling
 
@@ -8017,6 +8254,66 @@ no-creator resolution all confirmed, and no nested `<a>` in the rendered output.
   land on that same placeholder. Same fix as above.
 - `bombcast` and `the-op` have recorded hosts in `FollowingGrid` but no registry
   entries; they degrade correctly to no strip.
+### 2026-08-18 — Following page shows the real empty state
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — ship the right-hand Figma frame.
+- **Status:** Complete.
+
+**This closes a gap flagged in an earlier entry.** `/following` rendered a
+hardcoded `FollowingGrid` of eight shows, so the "No Favorites…" state Sasha had
+designed *could never appear no matter what a user did*. Gating on a flag would
+have been wrong — this isn't community data, it's the viewer's own list, and a
+brand-new user will have an empty one even after launch.
+
+So the page now reads real data: `db.favorite.count()` for the signed-in user.
+Zero renders the empty state; anything else renders the grid. It reports zero
+today because nothing can create a favourite until the write layer lands, and it
+will start filling in on its own afterwards with no change here.
+
+- `/following` now **requires a login** — "Your shows!" is inherently personal.
+  Logged out it 307s to `/login`.
+- `FollowingGrid` is kept for the populated branch, still on mock data.
+- **"Add Favorites" points at `/explore`** as an interim. Sasha is designing a
+  find-shows popup to replace it; a button that did nothing seemed worse than one
+  that reaches somewhere real. Swap the `href` when the popup exists.
+
+**Verified:** logged out → HTTP 307. Signed in → heading "Your shows!", "No
+Favorites...", "Add Favorites" with the plus icon, both in PT Serif Caption, and
+no trace of the eight mock shows. `tsc --noEmit` and `eslint` clean.
+
+### 2026-08-18 — Explore stops after Popular episodes (no-users design)
+
+- **Branch:** `main`
+- **Requested by:** sashak@podtracker.studio — the Explore page still showed the
+  full with-users layout; he wants the right-hand Figma frame for now.
+- **Status:** Complete.
+
+**What changed**
+
+`Trending users`, `Popular lists` and `Curated lists` are now behind
+`HAS_COMMUNITY_DATA`, along with the dividers that separated them. The page runs
+hero → Top podcasts of today → Popular episodes → footer.
+
+All three rank things that cannot exist without a user base — follower counts,
+user-made lists, top-rated shows — so they are gated rather than fed placeholder
+data. Flipping the shared flag restores all three at once, in order.
+
+**What they contain, for whoever turns them back on**
+
+- **Trending users** — circular avatars with name and follower count, "See more
+  →". Names and follower counts are Roboto, the deliberate exception to this
+  page's PT Serif Caption.
+- **Popular lists** — author avatar and name, list title, 3-up cover filmstrip
+  with a `+N` badge.
+- **Curated lists** — three wide cards, title overlaid in white: Top rated shows,
+  Top rated episodes, Most popular shows.
+
+**Verified:** headings render exactly `Discover more podcasts!` → `Top podcasts
+of today` → `Popular episodes`; all three gated sections absent; footer intact;
+exactly one divider, so no trailing separators are left behind. `tsc --noEmit`
+and `eslint` clean.
+
 ### 2026-08-17 — Podcast page defaults to the no-users design; Listens/Likes are real
 
 - **Branch:** `main`
@@ -8161,66 +8458,6 @@ Caption, zero ratings displayed. HTTP 200, `tsc --noEmit` clean.
 - At viewports narrower than ~960px the page scrolls horizontally, driven by the
   nav rather than this page. Pre-existing and site-wide — the app has no
   responsive breakpoints at all, which phillipn also flagged on 08-16.
-
-### 2026-08-18 — Following page shows the real empty state
-
-- **Branch:** `main`
-- **Requested by:** sashak@podtracker.studio — ship the right-hand Figma frame.
-- **Status:** Complete.
-
-**This closes a gap flagged in an earlier entry.** `/following` rendered a
-hardcoded `FollowingGrid` of eight shows, so the "No Favorites…" state Sasha had
-designed *could never appear no matter what a user did*. Gating on a flag would
-have been wrong — this isn't community data, it's the viewer's own list, and a
-brand-new user will have an empty one even after launch.
-
-So the page now reads real data: `db.favorite.count()` for the signed-in user.
-Zero renders the empty state; anything else renders the grid. It reports zero
-today because nothing can create a favourite until the write layer lands, and it
-will start filling in on its own afterwards with no change here.
-
-- `/following` now **requires a login** — "Your shows!" is inherently personal.
-  Logged out it 307s to `/login`.
-- `FollowingGrid` is kept for the populated branch, still on mock data.
-- **"Add Favorites" points at `/explore`** as an interim. Sasha is designing a
-  find-shows popup to replace it; a button that did nothing seemed worse than one
-  that reaches somewhere real. Swap the `href` when the popup exists.
-
-**Verified:** logged out → HTTP 307. Signed in → heading "Your shows!", "No
-Favorites...", "Add Favorites" with the plus icon, both in PT Serif Caption, and
-no trace of the eight mock shows. `tsc --noEmit` and `eslint` clean.
-
-### 2026-08-18 — Explore stops after Popular episodes (no-users design)
-
-- **Branch:** `main`
-- **Requested by:** sashak@podtracker.studio — the Explore page still showed the
-  full with-users layout; he wants the right-hand Figma frame for now.
-- **Status:** Complete.
-
-**What changed**
-
-`Trending users`, `Popular lists` and `Curated lists` are now behind
-`HAS_COMMUNITY_DATA`, along with the dividers that separated them. The page runs
-hero → Top podcasts of today → Popular episodes → footer.
-
-All three rank things that cannot exist without a user base — follower counts,
-user-made lists, top-rated shows — so they are gated rather than fed placeholder
-data. Flipping the shared flag restores all three at once, in order.
-
-**What they contain, for whoever turns them back on**
-
-- **Trending users** — circular avatars with name and follower count, "See more
-  →". Names and follower counts are Roboto, the deliberate exception to this
-  page's PT Serif Caption.
-- **Popular lists** — author avatar and name, list title, 3-up cover filmstrip
-  with a `+N` badge.
-- **Curated lists** — three wide cards, title overlaid in white: Top rated shows,
-  Top rated episodes, Most popular shows.
-
-**Verified:** headings render exactly `Discover more podcasts!` → `Top podcasts
-of today` → `Popular episodes`; all three gated sections absent; footer intact;
-exactly one divider, so no trailing separators are left behind. `tsc --noEmit`
-and `eslint` clean.
 
 ### 2026-08-17 — Account Settings: the Authentication tab is real
 
