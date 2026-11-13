@@ -71,6 +71,80 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-13 — Terms and Privacy Policy published
+
+- **Branch:** `legal-pages` merged into `main`
+- **Requested by:** sashaknyshjr@gmail.com — "include both the terms and
+  conditions and private policy in the site as is. Upload them back (make sure
+  you link it in the sign up page)."
+- **Status:** Live.
+
+**The gate is satisfied, which is why this could merge**
+
+`legal-pages` existed from 2026-11-04 for one reason: `main` auto-deploys, and
+an unreviewed legal document should not be public. The review happened — Sasha's
+brother read both documents and produced a memo with Harvey — and every
+actionable finding was fixed on 2026-11-12. Sasha then asked for them to go up
+as they stand.
+
+**The merge**
+
+`main` had moved seven commits ahead (personal themes, backend review fixes,
+the Hundred Users analytics add and removal, the `placeholder-cover.svg` fix).
+`main` was merged into `legal-pages` first, so conflicts were resolved on the
+branch rather than on production.
+
+- `SettingsForm.tsx` auto-merged correctly. Main's new Theme tab and this
+  branch's Delete account section do not overlap, and the delete section is
+  still inside the auth tab after main restructured the tab conditional from
+  two branches to three. Checked by reading the JSX, not assumed.
+- `docs/change-log.md` conflicted because both branches added entries at the
+  top. Resolved by keeping every entry from both sides and re-sorting
+  newest-first: 123 entries, none dropped, same-day ordering preserved from
+  each branch.
+
+**What is now live**
+
+- `/terms` — 16 sections, last updated 8 November 2026.
+- `/privacy` — 15 sections, last updated 7 November 2026.
+- Both linked from the footer, both in `sitemap.xml`, and both linked from the
+  signup checkbox, which now reads "I agree to" rather than "I have read".
+
+**Verified before and after merging:** `npx tsc --noEmit` clean; production
+build successful; `/`, `/terms`, `/privacy`, `/signup` and `/explore` all 200;
+the consent label links to both documents; the footer carries both; the sitemap
+lists both; `placeholder-cover.svg` still parses after the merge.
+
+**Published with known gaps, all accepted by Sasha**
+
+These are no longer pre-launch blockers. They are live-site items:
+
+- **No LLC.** He is personally liable for the site. Deferred to ~1,000 users.
+- **No DMCA agent registered**, so no §512(c) safe harbour. He has no postal
+  address to register with and deferred getting one (a mailbox service is
+  roughly $20–30/month; the registration itself is $6 every three years).
+  Protection is not retroactive, so it will only cover infringement occurring
+  after he files. Exposure today is low — no users, no uploads.
+- **Privacy §14's postal address is city-level** ("Ann Arbor, MI 48105").
+  Thin rather than wrong: GDPR asks for contact details, which the email
+  satisfies, and CCPA's thresholds do not reach this site.
+- **Terms §§8, 13, 15 and 16 were drafted by Claude** and have still not been
+  read closely by a person. The review memo says so explicitly. Live anyway.
+
+**Follow-ups**
+
+- **`SUPABASE_SERVICE_ROLE_KEY` is still the one thing that makes a published
+  document inaccurate.** Terms §10 and Privacy §9 both say you can delete your
+  account from your settings. Without that key in Vercel the endpoint returns
+  503 and tells the person to email instead — a graceful failure with a working
+  fallback, but the documents now overstate the site until it is set. This is
+  the highest-priority item on the list and takes two minutes.
+- Register the DMCA agent once an address exists.
+- Complete the postal address in Privacy §14.
+- Have a person read Terms §§8, 13, 15 and 16.
+- "Click to accept" for material Terms changes is still not built.
+
+
 ### 2026-11-12 — Legal review came back; every false statement fixed
 
 - **Branch:** `legal-pages`

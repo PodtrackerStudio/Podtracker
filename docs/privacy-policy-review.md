@@ -1,9 +1,28 @@
 # Privacy Policy and Terms: notes for review
 
-**Status: both documents are on the `legal-pages` branch and are NOT public.**
-`main` deploys automatically, so neither page can be merged until the review is
-done. The Terms page was deliberately pulled from `main` on 2026-11-04 for this
-reason.
+**Status: PUBLISHED 2026-11-13.** Both documents are live at
+`podtracker.studio/terms` and `/privacy`, linked from the footer, the sitemap
+and the signup checkbox.
+
+They were held back on the `legal-pages` branch from 2026-11-04 so they would
+not go public unreviewed. That review happened — Sasha's brother read both and
+produced a memo with Harvey — and everything actionable from it was fixed on
+2026-11-12 before the merge. Sasha then asked for them to go up as they stand.
+
+**What that means for this file:** it is no longer a gate, it is the record of
+how these documents got to where they are, and of what is still outstanding.
+The "still open" items below are now live-site items, not pre-launch ones.
+
+**Known and accepted at publication:**
+
+- **No LLC.** Sasha is personally liable; he has deferred this to ~1,000 users.
+- **No DMCA agent registered**, so there is no §512(c) safe harbour yet. He has
+  no postal address to register with and has deferred getting one. The
+  protection is not retroactive, so it will only ever cover infringement
+  occurring after he files.
+- **The postal address in Privacy §14 is city-level only.**
+- **Terms §§8, 13, 15 and 16 were drafted by Claude** and still have not been
+  read closely by a person. The memo says so explicitly. They are live anyway.
 
 This file exists for the person reviewing them — Sasha's brother, a law
 student. It is in four parts:
