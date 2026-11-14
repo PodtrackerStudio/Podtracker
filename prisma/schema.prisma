@@ -68,6 +68,13 @@ model User {
   followedBy Follow[] @relation("following")
   following  Follow[] @relation("follower")
 
+  // Notifications this person receives, and the ones their own actions caused
+  // for somebody else. Both cascade, so deleting an account removes the
+  // notifications it sent as well as the ones it received — otherwise a
+  // deleted user would leave "X followed you" rows pointing at nobody.
+  notifications       Notification[] @relation("notificationRecipient")
+  notificationsCaused Notification[] @relation("notificationActor")
+
   @@index([username])
 }
 
@@ -126,9 +133,9 @@ model Genre {
 }
 
 model Person {
-  id         String   @id @default(cuid())
-  externalId String?  @unique // Podcast Index person id, if known
-  slug       String   @unique // URL slug for /person/[slug], e.g. "joe-rogan"
+  id         String  @id @default(cuid())
+  externalId String? @unique // Podcast Index person id, if known
+  slug       String  @unique // URL slug for /person/[slug], e.g. "joe-rogan"
   name       String
   avatarUrl  String?
   bio        String? // long-form bio shown on the person profile page
@@ -138,27 +145,27 @@ model Person {
 }
 
 model Podcast {
-  id                String   @id @default(cuid())
-  externalId        String?  @unique // Podcast Index feed id
-  title             String
-  author            String
-  description       String
-  coverUrl          String?
-  bannerUrl         String?
-  startYear         Int?
-  spotifyUrl        String?
-  youtubeUrl        String?
-  applePodcastsUrl  String?
-  createdAt         DateTime @default(now())
+  id               String   @id @default(cuid())
+  externalId       String?  @unique // Podcast Index feed id
+  title            String
+  author           String
+  description      String
+  coverUrl         String?
+  bannerUrl        String?
+  startYear        Int?
+  spotifyUrl       String?
+  youtubeUrl       String?
+  applePodcastsUrl String?
+  createdAt        DateTime @default(now())
 
-  genres    Genre[]
-  episodes  Episode[]
-  people    PodcastPerson[]
-  ratings   PodcastRating[]
-  logEntries LogEntry[]
-  followers PodcastFollow[]
+  genres      Genre[]
+  episodes    Episode[]
+  people      PodcastPerson[]
+  ratings     PodcastRating[]
+  logEntries  LogEntry[]
+  followers   PodcastFollow[]
   favoritedBy Favorite[]
-  listItems ListItem[]
+  listItems   ListItem[]
 
   @@index([title])
 }
@@ -175,9 +182,9 @@ model PodcastPerson {
 }
 
 model Episode {
-  id               String    @id @default(cuid())
+  id               String   @id @default(cuid())
   podcastId        String
-  externalId       String?   @unique // Podcast Index episode id
+  externalId       String?  @unique // Podcast Index episode id
   episodeNumber    Int?
   title            String
   description      String
@@ -189,7 +196,7 @@ model Episode {
   spotifyUrl       String? // falls back to Podcast.spotifyUrl if null
   youtubeUrl       String?
   applePodcastsUrl String?
-  createdAt        DateTime  @default(now())
+  createdAt        DateTime @default(now())
 
   podcast    Podcast         @relation(fields: [podcastId], references: [id], onDelete: Cascade)
   people     EpisodePerson[]
@@ -253,7 +260,7 @@ model EpisodeRating {
 // enforced in the application layer.
 
 model LogEntry {
-  id           String   @id @default(cuid())
+  id           String      @id @default(cuid())
   userId       String
   podcastId    String?
   episodeId    String?
@@ -268,11 +275,11 @@ model LogEntry {
   // Averages and distribution bars read the CURRENT rating, never this — else
   // someone who relistens and logs three times would count three times.
   tier         RatingTier?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime    @default(now())
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  podcast Podcast? @relation(fields: [podcastId], references: [id], onDelete: Cascade)
-  episode Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  podcast  Podcast?  @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+  episode  Episode?  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
   comments Comment[]
   likes    Like[]
 
@@ -296,7 +303,7 @@ model List {
   isWatchlist Boolean  @default(false)
   createdAt   DateTime @default(now())
 
-  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   items    ListItem[]
   comments Comment[]
   likes    Like[]
@@ -366,4 +373,46 @@ model Like {
   @@unique([userId, listId])
   @@index([logEntryId])
   @@index([listId])
+}
+
+/**
+ * What a notification is about. Stored rather than derived, because the text
+ * must not change under the reader: if "X followed you" quietly became "you
+ * and X are friends" the moment they followed back, the record of what
+ * actually happened would be lost.
+ */
+enum NotificationType {
+  /**
+   * Someone followed you, and you do not follow them.
+   */
+  FOLLOW
+  /**
+   * Someone followed you back, or you followed them back — you are now friends.
+   */
+  FRIEND
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  /**
+   * Who sees this.
+   */
+  userId    String
+  /**
+   * Who caused it. Never the same as userId — you are not told about yourself.
+   */
+  actorId   String
+  type      NotificationType
+  /**
+   * Null until opened. The nav badge counts these.
+   */
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user  User @relation("notificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor User @relation("notificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  // The two queries that exist: the list, newest first, and the unread badge.
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }

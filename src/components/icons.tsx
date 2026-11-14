@@ -160,3 +160,18 @@ export function TikTokIcon({ size = 18 }: { size?: number }) {
     </svg>
   );
 }
+
+/**
+ * The notification bell in the nav, from Sasha's "Frame 21" (2026-11-14).
+ *
+ * Solid rather than outlined: the frame draws a filled bell, and at 20px an
+ * outline reads as grey mush next to the serif wordmark beside it.
+ */
+export function BellIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2a1.25 1.25 0 0 1 1.25 1.25v.52A6.25 6.25 0 0 1 18.25 10v3.4l1.46 2.62A1 1 0 0 1 18.84 17.5H5.16a1 1 0 0 1-.87-1.48L5.75 13.4V10a6.25 6.25 0 0 1 5-6.23v-.52A1.25 1.25 0 0 1 12 2Z" />
+      <path d="M9.5 19h5a2.5 2.5 0 0 1-5 0Z" />
+    </svg>
+  );
+}

@@ -558,3 +558,55 @@ a.distRow:hover .distName {
     justify-content: flex-start;
   }
 }
+
+/* ── FOLLOW / FRIENDS BUTTON ──
+   From Sasha's "Profile page 4" frame (2026-11-14): one slot in the left
+   column, under the follower counts, cycling through three states. Pills, not
+   the 4px-radius rectangle `.btnEdit` uses — the frame draws them fully
+   rounded and wider than the edit button.
+
+   Colours are existing tokens, not new ones: the two blue states are
+   --btn-primary-blue, the same blue as every primary button on the site, and
+   Friends is --recommend, the green already used for that rating tier. The
+   frame's green reads as the same colour. */
+.btnFollowUser,
+.btnFollowingUser,
+.btnFriends {
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 9px 26px;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--on-accent);
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.btnFollowUser,
+.btnFollowingUser {
+  background: var(--btn-primary-blue);
+}
+/* Mutual. The colour change is the whole signal that something happened, so it
+   is the one state that does not look like the others. */
+.btnFriends {
+  background: var(--recommend);
+}
+.btnFollowUser:hover,
+.btnFollowingUser:hover,
+.btnFriends:hover {
+  opacity: 0.85;
+}
+/* Without this the :hover above wins and a disabled button brightens when you
+   point at it, which reads as working. Same fix as the signup and settings
+   buttons. */
+.btnFollowUser:disabled,
+.btnFollowingUser:disabled,
+.btnFriends:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btnFollowUser:disabled:hover,
+.btnFollowingUser:disabled:hover,
+.btnFriends:disabled:hover {
+  opacity: 0.5;
+}

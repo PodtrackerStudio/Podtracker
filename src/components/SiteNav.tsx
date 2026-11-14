@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { PlusIcon } from "./icons";
+import { PlusIcon, BellIcon } from "./icons";
 import { SearchBox } from "./SearchBox";
 import { LogoutButton } from "./LogoutButton";
 import { NavMenu } from "./NavMenu";
 import { getCurrentUser } from "@/lib/auth";
 import { cleanTheme, themeCss } from "@/lib/theme";
+import { getUnreadNotificationCount } from "@/lib/notifications";
 
 type SiteNavProps = {
   active?: "home" | "profile" | "explore";
@@ -19,6 +20,19 @@ export async function SiteNav({ active }: SiteNavProps) {
   const css = user
     ? themeCss(cleanTheme({ main: user.themeMain, accent: user.themeAccent, font: user.themeFont }))
     : "";
+
+  // One extra count on every signed-in page render. It is indexed on
+  // (userId, readAt) so it is cheap, but it must never be the thing that
+  // breaks the nav: a database blip should cost the badge, not the whole
+  // site's navigation on every page.
+  let unreadCount = 0;
+  if (user) {
+    try {
+      unreadCount = await getUnreadNotificationCount(user.id);
+    } catch (error) {
+      console.error("[nav] could not read the notification count:", error);
+    }
+  }
 
   return (
     <>
@@ -52,6 +66,27 @@ export async function SiteNav({ active }: SiteNavProps) {
             <Link href="/log" className="nav-log-btn">
               <PlusIcon size={14} />
               Log podcast
+            </Link>
+            {/* The bell sits immediately after "+ Log podcast" at the far
+                right, which is where Sasha's Frame 21 puts it. The count is
+                read on the server with the rest of the nav, so it is as fresh
+                as the page around it — there is no polling. It therefore only
+                updates on navigation, which for a site this size is the right
+                trade. */}
+            <Link
+              href="/notifications"
+              className="nav-bell"
+              aria-label={
+                unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"
+              }
+            >
+              <BellIcon size={22} />
+              {unreadCount > 0 && (
+                /* The frame shows a bare red number tucked at the top right of
+                   the bell, not a filled circle. Capped at 9+ so a long run of
+                   unread notifications cannot push the nav around. */
+                <span className="nav-bell-count">{unreadCount > 9 ? "9+" : unreadCount}</span>
+              )}
             </Link>
             <LogoutButton />
             <Link href="/donate">Donate</Link>

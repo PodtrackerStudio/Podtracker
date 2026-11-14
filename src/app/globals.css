@@ -706,3 +706,36 @@ footer.site-footer {
 button:not(:disabled):active {
   transform: scale(0.97);
 }
+
+/* ── NOTIFICATION BELL ──
+   From Sasha's Frame 21 (2026-11-14): a filled bell at the far right of the
+   nav, immediately after "+ Log podcast", with a small red count tucked at its
+   top right. The frame draws a bare number, not a filled badge circle. */
+.nav-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text);
+  /* Nav links are styled by `.nav-links a`, which gives them the serif face and
+     an underline on hover. Neither suits an icon. */
+  text-decoration: none;
+  line-height: 0;
+}
+.nav-bell:hover {
+  opacity: 0.75;
+  text-decoration: none;
+}
+.nav-bell-count {
+  position: absolute;
+  top: -4px;
+  /* Sits just off the bell's right edge, as drawn. */
+  left: 100%;
+  margin-left: -2px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--dont);
+  /* The number must not widen the nav when it goes from 1 to 9+. */
+  white-space: nowrap;
+}

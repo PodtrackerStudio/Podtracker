@@ -71,6 +71,111 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-14 — Follow people, friends, and notifications
+
+- **Branch:** `main`
+- **Requested by:** Sasha — "I'm deciding to build the follow/friends feature
+  right now and I now want to create a notifications part as well, so whenever
+  someone follows another, they get a notification… Make sure friends is only
+  when two people follow each other, and the friends button is at the same spot
+  where following would be." Supplied two Figma zips.
+- **Status:** Complete. One deliberate gap, below.
+
+**The two frames disagreed, and his sentence resolved it**
+
+He sent "Profile page 3" and "Profile page 4". Their nav frames are identical;
+their profile frames are not:
+
+| Frame | Button states | Model |
+| --- | --- | --- |
+| Profile page 3 | `+ Friend request` / `Requested` / `Friends` | Facebook: request, then accept |
+| Profile page 4 | `+ Follow` / `Following` / `Friends` | Twitter: follow freely, mutual becomes friends |
+
+"Friends is only when two people follow each other" is the second, so **Profile
+page 4 was built** and page 3 treated as an alternative he explored. He was told
+which was picked and why.
+
+**Friends are derived, never stored**
+
+There is no friends table and no accept step. Two people are friends when each
+follows the other, which is a query over `Follow`. A friends row would be a
+second source of truth that can disagree with the follows underneath it — a
+friendship surviving a vanished follow. `src/lib/userFollow.ts` holds
+`getFollowState` (one round trip, both directions) and `getFollowCounts`.
+
+**Notification type is fixed when it happens, not derived when read**
+
+`NotificationType` is `FOLLOW` or `FRIEND`, chosen inside the same transaction
+as the follow and never recomputed. Deriving it at read time would mean "X
+followed you" silently became "you're friends now" the day you followed back,
+rewriting the record of what actually happened. The test asserts the original
+`FOLLOW` is still `FOLLOW` after the follow-back.
+
+**What was built**
+
+| File | What |
+| --- | --- |
+| `prisma/schema.prisma` | `NotificationType` enum, `Notification` model, two relations on `User` |
+| `migrations/20261114202756_add_notifications` | Both foreign keys `ON DELETE CASCADE`, so account deletion still works |
+| `src/lib/userFollow.ts` | `getFollowState`, `getFollowCounts` |
+| `src/lib/notifications.ts` | Unread count, list, mark-all-read |
+| `src/app/api/user/follow/route.ts` | POST/DELETE. **Not** `/api/follow`, which follows a *show* |
+| `src/components/UserFollowButton.tsx` | The three states, optimistic |
+| `src/components/SiteNav.tsx` + `icons.tsx` + `globals.css` | Bell with unread badge, far right after "+ Log podcast", per Frame 21 |
+| `src/app/notifications/` | The page the bell opens |
+| `src/app/robots.ts` | `/notifications` disallowed, like `/settings` |
+
+**Decisions worth knowing**
+
+- **Following twice writes one notification**, not two. The POST checks for an
+  existing follow inside the transaction. A double click or a stale button
+  cannot spam somebody.
+- **Unfollowing leaves the notification.** The follow genuinely happened, and
+  deleting the record would let someone poke at a person's notifications and
+  then erase the evidence.
+- **Unfollowing from either side breaks the friendship**, for both. Tested.
+- **The badge count is read with the rest of the nav**, server-side, with no
+  polling — so it updates on navigation. Wrapped in try/catch: a database blip
+  should cost the badge, not the navigation on every page.
+- **Capped at "9+"** so a long run of unread cannot push the nav around.
+- **`/notifications` has no Figma frame.** Sasha designed the bell and said so.
+  A bell linking nowhere is useless, so the page is deliberately plain and every
+  value is lifted from a page that does have a frame — the column and heading
+  from Settings, the unread tint from `--accent-blue`. Replace it wholesale when
+  a frame exists.
+- **Genres was not added back to the nav**, though both frames show it. It was
+  deliberately cut from MVP and the frames are a known divergence.
+
+**Verified against a real Postgres, not by inspection**
+
+38 assertions, all passing: the state machine from both directions; counts after
+each step; one notification per follow and none to yourself; repeat-follow
+writing nothing; `FRIEND` on the follow-back while the earlier `FOLLOW` stays
+`FOLLOW`; unfollow breaking the friendship both ways while notifications
+survive; a third person not contaminating the pair; the unread badge clearing on
+read; and deleting an account taking the notifications it *caused* as well as
+the ones it received.
+
+Also: `tsc` clean, production build successful, and the three button states
+rendered and screenshotted — `#7bbaff` for both blue states, `#28ba60` for
+Friends, all fully rounded, matching the frame. The bell renders at the far
+right with the red count and no horizontal overflow.
+
+**Follow-ups**
+
+- **The "Your Friends" row on the profile is still demo-only.** It renders from
+  `demoFriends` in the `sasha` branch and does not exist on a real profile. The
+  frames supplied do not cover it, and there is a design question first: the
+  heading says "Your Friends", which does not work when looking at someone
+  else. Ask before building.
+- Notifications exist only for follows. Likes, comments and list activity would
+  all plausibly want them.
+- No email for notifications, and no preference to turn them off. Fine at this
+  size; both become necessary if volume grows.
+- The badge only refreshes on navigation. Correct for now; polling or a
+  websocket is a real cost for little gain at this scale.
+
+
 ### 2026-11-14 — Deletion wording made true in both states
 
 - **Branch:** `main`

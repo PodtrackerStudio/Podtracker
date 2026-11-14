@@ -13,6 +13,8 @@ import styles from "./profile.module.css";
 import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
 import { avatarSrc } from "@/lib/avatar";
 import { PUBLIC_PROFILE_SELECT } from "@/lib/profileUser";
+import { getFollowState } from "@/lib/userFollow";
+import { UserFollowButton } from "@/components/UserFollowButton";
 
 // A seeded demo account kept around to show what a populated profile looks
 // like — real signups won't have activity until rating/review persistence
@@ -326,6 +328,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   const isOwnProfile = viewer?.id === profileUser.id;
 
+  // How the viewer relates to this person, for the Follow / Following /
+  // Friends button. Signed out, or on your own profile, there is no button and
+  // no reason to ask.
+  const followState = isOwnProfile ? "none" : await getFollowState(viewer?.id ?? null, profileUser.id);
+
   // Retried as one unit: these seven run together, so if the pool had no
   // connection to give, they all failed for the same reason and re-running the
   // batch is what fixes it. See lib/dbRetry.ts.
@@ -403,6 +410,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 <strong>{friendsCount}</strong> friends
               </span>
             </div>
+            {/* The frame puts this in the left column under the counts, which
+                is where "Edit profile" sits on your own profile — except that
+                one is under the avatar, in the centre column. Only shown to a
+                signed-in viewer looking at somebody else: there is nothing
+                useful it could say otherwise. */}
+            {!isOwnProfile && viewer && (
+              <UserFollowButton
+                styles={styles}
+                username={profileUser.username}
+                initialState={followState}
+              />
+            )}
           </div>
 
           <div className={styles.profileCenter}>
