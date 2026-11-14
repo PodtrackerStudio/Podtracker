@@ -71,6 +71,70 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-14 — Deletion wording made true in both states
+
+- **Branch:** `main`
+- **Requested by:** Sasha — indirectly. He went to fetch
+  `SUPABASE_SERVICE_ROLE_KEY`, found he does not have access to it, and said he
+  would wait for Phillip. That leaves the live documents overstating the site
+  for an open-ended period, which was the one outcome worth avoiding.
+- **Status:** Complete and deployed.
+
+**The problem**
+
+`DELETE /api/account` needs the service-role key, which is not set in Vercel.
+Without it the route refuses with a 503 and tells the person to email instead —
+a deliberate, graceful failure, but it means Terms §10 and Privacy §9 have been
+promising self-serve deletion since the documents went public on 2026-11-13,
+and clicking the button does not deliver it.
+
+**The fix, and why it is not a revert**
+
+The obvious move was to put the wording back to "email us", as it read between
+2026-11-04 and 2026-11-07. That was rejected: it would need flipping again the
+moment Phillip sets the key, and whoever sets the key will not think to go and
+edit two legal documents.
+
+Instead both places now name **both** routes — the button and the email —
+which is true whether or not the key is set:
+
+> You can have your account deleted at any time — use the **Delete account**
+> button in your settings, or email us and we'll do it. Either way your
+> profile, ratings, reviews, lists and diary entries go with it.
+
+Privacy §12 changed from "If you delete your account" to "When your account is
+deleted", which is route-agnostic for the same reason.
+
+**Deliberately not done: making the text conditional on
+`isSupabaseAdminConfigured`.** It was tempting — the documents would then be
+self-healing. It was rejected because a legal document should be a fixed
+published text. Two people loading `/terms` on the same day should not see
+different terms because of an environment variable, and the "Last updated" date
+would stop tracking the words on the page.
+
+`LAST_UPDATED` on both documents moved to 14 November 2026. The substance is
+unchanged — you could always get your account deleted — but the text changed,
+and published text changing without its date moving is worse than a date that
+moves often.
+
+**When Phillip sets the key:** nothing in either document needs editing. The
+button simply starts working and the sentence is still accurate. The comment at
+Terms §10 says this, and says not to "tidy" it back to a single route.
+
+**Verified:** `npx tsc --noEmit` clean; production build successful; both pages
+render the new wording and show 14 November 2026. The server was confirmed to
+have bound cleanly before anything was read from it, after yesterday's episode
+with a stale `next-server` serving an old build.
+
+**Follow-ups**
+
+- **Phillip: set `SUPABASE_SERVICE_ROLE_KEY` in Vercel** (Supabase → Project
+  Settings → API → `service_role`). Sasha does not have access to it. Until
+  then account deletion runs through email, which works but depends on somebody
+  reading the inbox.
+- Everything else is unchanged from the entries below.
+
+
 ### 2026-11-13 — Minimum age 16 to 13, and the owner's email taken out of this file
 
 - **Branch:** `main`

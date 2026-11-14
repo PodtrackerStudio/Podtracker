@@ -100,7 +100,7 @@ export const metadata: Metadata = {
  * The date below must be bumped whenever this changes materially.
  */
 
-const LAST_UPDATED = "13 November 2026";
+const LAST_UPDATED = "14 November 2026";
 
 export default function PrivacyPage() {
   return (
@@ -901,13 +901,12 @@ export default function PrivacyPage() {
             account.
           </li>
           <li>
-            {/* Correction 7 was reversed on 2026-11-07, hours after it was
-                made: DELETE /api/account now exists, so the generated text's
-                claim that you can terminate your account yourself is true
-                again. Terms §10 was restored in the same change. */}
-            Delete your account from <Link href="/settings">Settings → Authentication → Delete
-            account</Link>. We ask for your password and your username first, because this cannot
-            be undone.
+            {/* Names both routes so it stays true whether or not
+                SUPABASE_SERVICE_ROLE_KEY is set in production. See the longer
+                note at Terms §10. 2026-11-14. */}
+            Delete your account — use the <Link href="/settings">Delete account</Link> button in
+            Settings → Authentication, which asks for your password and your username first
+            because it cannot be undone, or email us and we will do it for you.
           </li>
         </ul>
         <p>
@@ -1288,7 +1287,7 @@ export default function PrivacyPage() {
         </p>
         <p>Your email address is never shown publicly.</p>
         <p>
-          If you delete your account, we remove this content from Podtracker. We cannot remove
+          When your account is deleted, we remove this content from Podtracker. We cannot remove
           copies that search engines or other services may already have cached or stored.
         </p>
 

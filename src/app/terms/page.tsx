@@ -66,7 +66,7 @@ export const metadata: Metadata = {
  * change materially.
  */
 
-const LAST_UPDATED = "13 November 2026";
+const LAST_UPDATED = "14 November 2026";
 
 export default function TermsPage() {
   return (
@@ -282,14 +282,24 @@ export default function TermsPage() {
           <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a> and we will.
         </p>
         <p>
-          {/* Restored 2026-11-07, when DELETE /api/account was built. Between
-              2026-11-04 and then this said to email us, because there was no
-              self-serve deletion and a written promise we could not keep was
-              worse than no promise. */}
-          You can delete your account at any time from{" "}
-          <Link href="/settings">your settings</Link>. Your profile, ratings, reviews, lists and
-          diary entries go with it, immediately. If anything goes wrong, email us and we&apos;ll
-          finish it off.
+          {/* Worded 2026-11-14 to be true whether or not deletion is switched
+              on in production, rather than flipping between "from settings"
+              and "email us" as the deployment changes.
+
+              WHY: `DELETE /api/account` needs SUPABASE_SERVICE_ROLE_KEY, which
+              is not set in Vercel — Sasha does not have access to it and is
+              waiting on Phillip. Until it is set, the button refuses with a
+              503 and tells the person to email. So "you can delete from your
+              settings", which this said from 2026-11-07, overstated the site
+              the moment these documents went public on 2026-11-13.
+
+              Naming both routes means this sentence needs no edit when the key
+              lands — it just quietly becomes the button that works rather than
+              the email. Do not "tidy" it back to a single route. */}
+          You can have your account deleted at any time — use the{" "}
+          <Link href="/settings">Delete account</Link> button in your settings, or email us and
+          we&apos;ll do it. Either way your profile, ratings, reviews, lists and diary entries go
+          with it.
         </p>
 
         <h2>11. The site is provided as it is</h2>
