@@ -41,59 +41,84 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "You can't follow yourself." }, { status: 400 });
   }
 
+  // Read before writing: whether they already follow back decides which kind
+  // of notification this is, and whether the viewer already follows decides
+  // whether anything happens at all.
+  let theyFollowBack = false;
+  let alreadyFollowing = false;
   try {
-    const state = await db.$transaction(async (tx) => {
-      // Does the target already follow the viewer? Read inside the transaction,
-      // because it decides which notification gets written and the answer must
-      // not change underneath us.
-      const theyFollowBack = await tx.follow.findUnique({
-        where: { followerId_followingId: { followerId: target.id, followingId: viewer.id } },
-        select: { followerId: true },
-      });
-
-      // Was the viewer already following? If so this is a no-op repeat — a
-      // double click, or a stale button — and must not write a second
-      // notification.
-      const alreadyFollowing = await tx.follow.findUnique({
-        where: { followerId_followingId: { followerId: viewer.id, followingId: target.id } },
-        select: { followerId: true },
-      });
-
-      if (!alreadyFollowing) {
-        await tx.follow.create({
-          data: { followerId: viewer.id, followingId: target.id },
-        });
-
-        // The type is fixed at the moment it happens and never recomputed. If
-        // this were derived at read time, "X followed you" would silently turn
-        // into "you are now friends" the day you followed back, rewriting what
-        // the notification originally reported.
-        await tx.notification.create({
-          data: {
-            userId: target.id,
-            actorId: viewer.id,
-            type: theyFollowBack ? "FRIEND" : "FOLLOW",
-          },
-        });
-      }
-
-      return theyFollowBack ? ("friends" as const) : ("following" as const);
+    const edges = await db.follow.findMany({
+      where: {
+        OR: [
+          { followerId: viewer.id, followingId: target.id },
+          { followerId: target.id, followingId: viewer.id },
+        ],
+      },
+      select: { followerId: true },
     });
-
-    return stateResponse(state);
+    alreadyFollowing = edges.some((e) => e.followerId === viewer.id);
+    theyFollowBack = edges.some((e) => e.followerId === target.id);
   } catch (error) {
-    // P2002 is the unique constraint on (followerId, followingId): two clicks
-    // raced and the other one won. The desired end state is reached either
-    // way, so report where things actually stand rather than an error.
-    if ((error as { code?: string })?.code === "P2002") {
-      return stateResponse(await getFollowState(viewer.id, target.id));
-    }
-    console.error("[user-follow] follow failed:", error);
+    console.error("[user-follow] could not read follow state:", error);
     return NextResponse.json(
       { error: "Could not do that just now. Please try again." },
       { status: 503 },
     );
   }
+
+  const state: FollowState = theyFollowBack ? "friends" : "following";
+
+  // ── The follow itself. This is what the person actually asked for. ──
+  if (!alreadyFollowing) {
+    try {
+      await db.follow.create({ data: { followerId: viewer.id, followingId: target.id } });
+    } catch (error) {
+      // P2002 is the unique constraint on (followerId, followingId): two
+      // clicks raced and the other won. The end state is the one that was
+      // wanted, so report it rather than an error.
+      if ((error as { code?: string })?.code !== "P2002") {
+        console.error("[user-follow] follow failed:", error);
+        return NextResponse.json(
+          { error: "Could not do that just now. Please try again." },
+          { status: 503 },
+        );
+      }
+    }
+
+    // ── The notification. Deliberately NOT in a transaction with the follow. ──
+    //
+    // It was, until 2026-11-14, on the reasoning that a follow should never
+    // exist without its notification. That had the priority backwards and it
+    // broke the feature in production: the `Notification` table did not exist
+    // there yet — migrations are applied by hand on this project, not by the
+    // build — so every insert failed, took the whole transaction down with it,
+    // and the follow button silently did nothing.
+    //
+    // Following is the thing the person clicked. A notification is a courtesy
+    // to somebody else. If the courtesy fails, the click must still work.
+    //
+    // The type is fixed here and never recomputed: derived at read time,
+    // "X followed you" would silently become "you're friends now" the day you
+    // followed back, rewriting what actually happened.
+    try {
+      await db.notification.create({
+        data: {
+          userId: target.id,
+          actorId: viewer.id,
+          type: theyFollowBack ? "FRIEND" : "FOLLOW",
+        },
+      });
+    } catch (error) {
+      console.error(
+        "[user-follow] the follow succeeded but its notification did not. " +
+          "If this is P2021 (table does not exist), the notifications migration " +
+          "has not been applied to this database:",
+        error,
+      );
+    }
+  }
+
+  return stateResponse(state);
 }
 
 export async function DELETE(request: Request) {
