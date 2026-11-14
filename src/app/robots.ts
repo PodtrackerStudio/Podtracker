@@ -15,8 +15,8 @@ import { staticSiteOrigin } from "@/lib/siteUrl";
  *
  * - `/api/` returns JSON, never a page.
  * - `/auth/callback` is a one-time code exchange that errors when replayed.
- * - `/settings`, `/notifications`, `/log` and the password-reset pages are
- *   signed-in-only, so a crawler sees a redirect or an empty shell.
+ * - `/settings`, `/log` and the password-reset pages are signed-in-only, so a
+ *   crawler sees a redirect or an empty shell.
  * - `/episode/find` resolves a title to an episode and redirects. Indexing it
  *   would fill results with a URL that is really a lookup.
  * - `/genres` is deliberately unlinked and not part of the MVP.
@@ -35,7 +35,6 @@ export default function robots(): MetadataRoute.Robots {
         "/api/",
         "/auth/",
         "/settings",
-        "/notifications",
         "/log",
         "/forgot-password",
         "/reset-password",

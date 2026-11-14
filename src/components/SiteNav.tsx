@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { PlusIcon, BellIcon } from "./icons";
+import { PlusIcon } from "./icons";
 import { SearchBox } from "./SearchBox";
 import { LogoutButton } from "./LogoutButton";
 import { NavMenu } from "./NavMenu";
+import { NotificationBell } from "./NotificationBell";
 import { getCurrentUser } from "@/lib/auth";
 import { cleanTheme, themeCss } from "@/lib/theme";
 import { getUnreadNotificationCount } from "@/lib/notifications";
@@ -67,27 +68,10 @@ export async function SiteNav({ active }: SiteNavProps) {
               <PlusIcon size={14} />
               Log podcast
             </Link>
-            {/* The bell sits immediately after "+ Log podcast" at the far
-                right, which is where Sasha's Frame 21 puts it. The count is
-                read on the server with the rest of the nav, so it is as fresh
-                as the page around it — there is no polling. It therefore only
-                updates on navigation, which for a site this size is the right
-                trade. */}
-            <Link
-              href="/notifications"
-              className="nav-bell"
-              aria-label={
-                unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"
-              }
-            >
-              <BellIcon size={22} />
-              {unreadCount > 0 && (
-                /* The frame shows a bare red number tucked at the top right of
-                   the bell, not a filled circle. Capped at 9+ so a long run of
-                   unread notifications cannot push the nav around. */
-                <span className="nav-bell-count">{unreadCount > 9 ? "9+" : unreadCount}</span>
-              )}
-            </Link>
+            {/* Frame 21 puts the bell at the far right, after "+ Log
+                podcast". The count is read here on the server so it shows
+                without a click; the list loads only when the popup opens. */}
+            <NotificationBell initialUnread={unreadCount} />
             <LogoutButton />
             <Link href="/donate">Donate</Link>
           </>

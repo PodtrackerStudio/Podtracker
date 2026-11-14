@@ -419,6 +419,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               <UserFollowButton
                 styles={styles}
                 username={profileUser.username}
+                displayName={profileUser.displayName}
                 initialState={followState}
               />
             )}

@@ -1,0 +1,88 @@
+/* Unfollow confirmation.
+
+   No Figma frame — Sasha asked for "a message that asks if they're sure"
+   (2026-11-14) without drawing one. Nothing here is invented: the backdrop is
+   copied from `addPodcastsPopup.module.css`, the card uses the same white
+   surface, radius and shadow as `.authWrap` on the auth pages, and the
+   destructive button is the red one from the delete-account section in
+   Settings. Replace it if a frame turns up. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 28px 28px 22px;
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 400;
+  margin: 0 0 10px;
+}
+
+.body {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin: 0 0 22px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Cancel is the safe choice, so it is the quiet one — but still obviously
+   clickable. Same treatment as the Cancel beside Delete account. */
+.cancel {
+  background: none;
+  border: none;
+  padding: 10px 8px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.cancel:hover {
+  color: var(--text);
+}
+
+.confirm {
+  background: var(--dont);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 10px 24px;
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.confirm:hover {
+  opacity: 0.85;
+}
+.confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Without this the :hover above wins and a disabled button brightens when you
+   point at it, which reads as working. */
+.confirm:disabled:hover {
+  opacity: 0.5;
+}

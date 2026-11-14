@@ -1,0 +1,130 @@
+/* The nav bell and its popup.
+
+   The bell and its red count are from Sasha's Frame 21 (2026-11-14). The popup
+   is not drawn anywhere — he asked for "just a simple white popup" — so it is
+   exactly that, with no invention: white surface, the site's large radius and
+   medium shadow, and the same avatar size as the profile's friends row. */
+.wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text);
+  line-height: 0;
+}
+.bell:hover {
+  opacity: 0.75;
+}
+
+.count {
+  position: absolute;
+  top: -4px;
+  /* Just off the bell's right edge, as drawn. */
+  left: 100%;
+  margin-left: -2px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--dont);
+  /* Must not widen the nav when it goes from 1 to 9+. */
+  white-space: nowrap;
+}
+
+.popup {
+  position: absolute;
+  top: calc(100% + 14px);
+  /* Anchored to the bell's right edge, because the bell is the last thing in
+     the nav — opening leftwards is the only direction with room. */
+  right: 0;
+  z-index: 300;
+  width: 300px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 8px;
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+}
+
+.empty {
+  margin: 0;
+  padding: 22px 14px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  border-radius: 8px;
+}
+.row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Unread. The site's content-box blue, so "new" reads as the same highlight
+   used elsewhere rather than a colour that means nothing on its own. */
+.unreadRow {
+  background: var(--accent-blue);
+}
+.unreadRow:hover {
+  background: var(--accent-blue);
+  filter: brightness(0.97);
+}
+
+.rowLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+.rowLink:hover {
+  text-decoration: none;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block;
+}
+
+.text {
+  font-size: 14px;
+  line-height: 1.35;
+  /* A long display name must wrap rather than push the popup wider. */
+  min-width: 0;
+}
+
+.name {
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .popup {
+    width: min(300px, calc(100vw - 32px));
+    /* On a narrow screen the bell is close to the edge, so pin the popup to
+       the viewport rather than letting it hang off. */
+    right: -8px;
+  }
+}

@@ -105,11 +105,11 @@ friendship surviving a vanished follow. `src/lib/userFollow.ts` holds
 
 **Notification type is fixed when it happens, not derived when read**
 
-`NotificationType` is `FOLLOW` or `FRIEND`, chosen inside the same transaction
-as the follow and never recomputed. Deriving it at read time would mean "X
-followed you" silently became "you're friends now" the day you followed back,
-rewriting the record of what actually happened. The test asserts the original
-`FOLLOW` is still `FOLLOW` after the follow-back.
+`NotificationType` is `FOLLOW` or `FRIEND`, chosen when the follow is written
+and never recomputed. Deriving it at read time would mean "X followed you"
+silently became "you're friends now" the day you followed back, rewriting the
+record of what actually happened. The test asserts the original `FOLLOW` is
+still `FOLLOW` after the follow-back.
 
 **What was built**
 
@@ -121,14 +121,14 @@ rewriting the record of what actually happened. The test asserts the original
 | `src/lib/notifications.ts` | Unread count, list, mark-all-read |
 | `src/app/api/user/follow/route.ts` | POST/DELETE. **Not** `/api/follow`, which follows a *show* |
 | `src/components/UserFollowButton.tsx` | The three states, optimistic |
-| `src/components/SiteNav.tsx` + `icons.tsx` + `globals.css` | Bell with unread badge, far right after "+ Log podcast", per Frame 21 |
-| `src/app/notifications/` | The page the bell opens |
-| `src/app/robots.ts` | `/notifications` disallowed, like `/settings` |
+| `src/components/SiteNav.tsx` + `icons.tsx` | Bell with unread badge, far right after "+ Log podcast", per Frame 21 |
+| `src/components/NotificationBell.tsx` + `.module.css` | The popup the bell opens |
+| `src/app/api/notifications/route.ts` | The list, fetched when the popup opens |
 
 **Decisions worth knowing**
 
 - **Following twice writes one notification**, not two. The POST checks for an
-  existing follow inside the transaction. A double click or a stale button
+  existing follow before writing anything. A double click or a stale button
   cannot spam somebody.
 - **Unfollowing leaves the notification.** The follow genuinely happened, and
   deleting the record would let someone poke at a person's notifications and
@@ -138,11 +138,6 @@ rewriting the record of what actually happened. The test asserts the original
   polling — so it updates on navigation. Wrapped in try/catch: a database blip
   should cost the badge, not the navigation on every page.
 - **Capped at "9+"** so a long run of unread cannot push the nav around.
-- **`/notifications` has no Figma frame.** Sasha designed the bell and said so.
-  A bell linking nowhere is useless, so the page is deliberately plain and every
-  value is lifted from a page that does have a frame — the column and heading
-  from Settings, the unread tint from `--accent-blue`. Replace it wholesale when
-  a frame exists.
 - **Genres was not added back to the nav**, though both frames show it. It was
   deliberately cut from MVP and the frames are a known divergence.
 
@@ -161,8 +156,80 @@ rendered and screenshotted — `#7bbaff` for both blue states, `#28ba60` for
 Friends, all fully rounded, matching the frame. The bell renders at the far
 right with the red count and no horizontal overflow.
 
+---
+
+**Later the same day: the follow button did nothing in production**
+
+Sasha reported it and guessed friends was too complex and should come out. It
+was not the cause, and it stayed.
+
+The cause was mine. The follow and its notification were written in one
+`$transaction`, on the reasoning that a follow should never exist without its
+notification. **That is the wrong priority, and it is also a trap on this
+project specifically**: `build` is `next build` and nothing else — nothing runs
+`prisma migrate deploy` on Vercel, so migrations are applied by hand. The
+`Notification` table did not exist in production. Every insert failed, took the
+follow down with it, and the optimistic button reverted with no error anyone
+could see. Locally the table existed, so the feature tested perfectly.
+
+The fix is to decouple them. The follow is written on its own; the notification
+follows in its own `try`, and a failure is logged with a line naming the missing
+migration as the likely cause. Following is what the person clicked; a
+notification is a courtesy to somebody else, and the courtesy failing must not
+cost the click. Everything the transaction was protecting still holds —
+following twice still writes one notification, because the existing follow is
+read first.
+
+**The lesson worth keeping:** on this project, anything behind a new migration
+has to degrade rather than fail, because there is a window — however short —
+where the code is deployed and the table is not. Both of the new read paths were
+already written that way; the write path was not.
+
+**The notifications page became a popup**
+
+Sasha: "I dont think theres a point design a whole new page for the bell, rather
+create a generic popup… Just a simple white popup." So `src/app/notifications/`
+is deleted, along with its `robots.ts` entry and the now-dead `nav-bell` rules
+in `globals.css`.
+
+The count still comes from the server with the rest of the nav, because it has
+to be visible without clicking. The list does not — it is fetched when the popup
+opens, since nobody needs twenty notifications attached to every render of every
+page. Opening clears the badge, and each row's unread flag is captured before
+the marking happens, so the popup you just opened still shows which ones were
+new. `/api/notifications` returns an empty list rather than an error if the
+table is missing — same reasoning as above.
+
+Nothing was invented: white surface, the site's existing `--radius-lg` and
+`--shadow-md`, the unread tint from `--accent-blue`, the avatar size from the
+profile's friends row.
+
+**Unfollowing now asks first**
+
+Sasha: "if you press on the button when you already follow, create a message
+that asks if they're sure they want to unfollow". A small modal — "Unfollow
+Carol Example?" — with Cancel focused, Escape and backdrop-click to dismiss.
+
+Following stays optimistic; unfollowing is not, because it now has a
+confirmation step and nothing is gained by pretending it already happened. The
+backdrop is the one from `addPodcastsPopup`, the card from `.authWrap`, and the
+red confirm button from delete-account.
+
+Re-verified in a browser against stubbed routes: follow sends the POST and shows
+"Following" with no dialog; clicking "Friends" opens the dialog and sends
+nothing; Cancel sends nothing; Confirm sends the DELETE and returns the button
+to "+ Follow". The bell shows "No new notifications" when empty on a white
+`rgb(255, 255, 255)` surface, lists "Alice Example followed you" / "Bob Example
+followed you back" when not, clears its badge, and closes on click-away.
+
 **Follow-ups**
 
+- **The notifications migration has not been applied to production.** Follows
+  work without it, but nothing is recorded, so the bell stays empty for
+  everyone. One command against the direct (non-pooler) connection string:
+  `DATABASE_URL="<direct>" npx prisma migrate deploy`. Until it runs, the
+  server log carries the "follow succeeded but its notification did not" line
+  on every follow.
 - **The "Your Friends" row on the profile is still demo-only.** It renders from
   `demoFriends` in the `sasha` branch and does not exist on a real profile. The
   frames supplied do not cover it, and there is a design question first: the
