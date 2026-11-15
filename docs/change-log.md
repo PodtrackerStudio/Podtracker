@@ -256,6 +256,36 @@ sentence that sounded like good news. Each was defensible alone. Together they
 made a completely broken feature indistinguishable from a working one, and no
 amount of looking at the site would ever have revealed it.
 
+**Layer three: it was then applied to the wrong database entirely**
+
+With the execution-policy problem solved, `migrate.bat` ran and reported total
+success — `All migrations have been successfully applied`, the table confirmed
+present by the check script immediately after. It was a complete success
+against **Neon**, which this project abandoned on 2026-09-11:
+
+```
+Datasource "db": PostgreSQL database "neondb" at "ep-shy-smoke-...aws.neon.tech"
+```
+
+The tell was in the same output and nearly missed: *"Nobody follows anybody
+yet"*, on a site where people demonstrably follow each other. Also that it
+applied `20261107000000_add_user_theme` as well — that database had not been
+touched since before 7 November.
+
+**Why a stale `.env` breaks migrations while the site keeps working.** Two
+tools read two different files. Next.js prefers `.env.local` over `.env`, so
+the app can be reaching Supabase. The Prisma CLI goes through
+`prisma.config.ts`, which does `import "dotenv/config"` — that loads `.env` and
+nothing else. So `migrate deploy` can be reaching somewhere else entirely, and
+the only symptom is a migration that succeeds against a database nobody reads.
+
+`npm run check:env` now reports which file each tool uses, which database each
+names, and whether they agree — hosts only, never passwords, so its output is
+safe to paste anywhere. It knows Neon is dead, knows the session pooler must be
+on 5432 rather than 6543, and exits non-zero on anything wrong. **`migrate.bat`
+runs it first and refuses to migrate if it fails**, because a migration against
+the wrong database is worse than one that errors: it reports success.
+
 Two further things came out of testing with a real second person, neither of
 them a code fault:
 
@@ -337,11 +367,17 @@ change, `tsc` clean. Commit `a1d0249`.
   the unapplied migration above. **The next step is `migrate.bat` on his
   machine, which has not been run yet.** Nothing is known to work until it
   reports the table exists and a real follow produces a real notification.
-- **Which database `.env` points at is unverified.** It has been asserted here
-  to be production, but nobody has checked. If it is a local database, applying
-  the migration there will fix nothing on the live site, and the check script
-  will happily report success while production stays broken. Worth confirming
-  the host before trusting a green result.
+- **Sasha's local `.env` points at the dead Neon database.** Confirmed
+  2026-11-15 from `migrate deploy`'s own output. It needs rewriting from the
+  Supabase dashboard's Connect > ORM block via `npm run env:from-clipboard`,
+  which exists for this and handles the unguessable pooler shard number. Until
+  then every migration he runs lands on a database nothing reads. Unknown
+  whether he also has a `.env.local` holding the correct Supabase string —
+  `npm run check:env` answers that in one line.
+- **It follows that local development has been running against Neon too**, at
+  least wherever the app reads `.env` rather than a `.env.local`. Anything
+  logged, rated or reviewed locally since 11 September went somewhere the live
+  site cannot see. Not investigated.
 - No email for notifications, and no preference to turn them off. Fine at this
   size; both become necessary if volume grows.
 - The badge only refreshes on navigation. Correct for now; polling or a
