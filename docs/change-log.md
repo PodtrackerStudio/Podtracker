@@ -222,10 +222,42 @@ to "+ Follow". The bell shows "No new notifications" when empty on a white
 `rgb(255, 255, 255)` surface, lists "Alice Example followed you" / "Bob Example
 followed you back" when not, clears its badge, and closes on click-away.
 
-**2026-11-15: applied in production, and what testing it exposed**
+**2026-11-15: the migration never ran, and two layers hid that**
 
-The migration ran and the bell works. Two things came out of testing it with a
-real second person, neither of them a code fault:
+Recorded earlier in this entry as applied. It was not, and the correction is
+the point of this section.
+
+**Layer one: PowerShell refuses to run npm and npx.** Sasha is on Windows with
+the default execution policy, which blocks `npm.ps1` and `npx.ps1`
+— `cannot be loaded because running scripts is disabled on this system`. So
+`npx prisma migrate deploy` died before it reached the database. The project
+already contained the evidence that this is normal for his setup: `run-dev.bat`
+exists precisely to work around it, and nobody here connected the two.
+
+**Layer two: the site looks identical either way.** The code is deliberately
+written to survive a missing `Notification` table — the follow still works, and
+`/api/notifications` answered a failed read with an empty list. That renders as
+"No new notifications", which cannot be told apart from genuinely having none.
+So the bell looked healthy, that was taken as proof the migration had applied,
+and the feature was declared working. It had never worked once.
+
+**Both are now fixed.** `/api/notifications` returns `error: true` on a failed
+read and the popup says it could not load them, so an outage reads as an outage
+instead of as a claim about somebody's account. And `migrate.bat` applies the
+migration in a shell that is not subject to the execution policy, then runs
+`check-notifications` straight afterwards so the result is reported rather than
+assumed.
+
+**The lesson is not "add a .bat".** It is that degrading gracefully and
+reporting honestly are different things, and this feature did the first while
+skipping the second at every level: the follow swallowed its notification
+failure, the API swallowed its read failure, and the popup turned both into a
+sentence that sounded like good news. Each was defensible alone. Together they
+made a completely broken feature indistinguishable from a working one, and no
+amount of looking at the site would ever have revealed it.
+
+Two further things came out of testing with a real second person, neither of
+them a code fault:
 
 - **The migration does not backfill.** Follows made before it ran went through
   a database with no `Notification` table, so nothing was recorded and nothing
@@ -277,14 +309,18 @@ change, `tsc` clean. Commit `a1d0249`.
 
 **Follow-ups**
 
-- ~~**The notifications migration has not been applied to production.**~~
-  **Applied 2026-11-15** by Sasha, with a plain `npx prisma migrate deploy` from
-  the project folder. Worth recording for the next migration: no separate
-  connection string was needed. The advice given first — use the direct,
-  non-pooler string — was wrong for this project. `DATABASE_URL` is already the
-  Supabase **session** pooler on 5432, which handles DDL and advisory locks
-  fine; only transaction mode on 6543 would not. `prisma.config.ts` loads `.env`
-  itself, so there is nothing to pass.
+- **The notifications migration is STILL NOT APPLIED.** This entry briefly
+  recorded it as applied on 2026-11-15. That was wrong and is corrected below —
+  the command never reached the database. Confirmed by
+  `npm run check:notifications`, which reports the table missing. Until it is
+  applied, every follow works and no notification is ever recorded.
+
+  For whoever applies it: no separate connection string is needed. The advice
+  given first — use the direct, non-pooler string — was wrong for this project.
+  `DATABASE_URL` is already the Supabase **session** pooler on 5432, which
+  handles DDL and advisory locks fine; only transaction mode on 6543 would not.
+  `prisma.config.ts` loads `.env` itself, so there is nothing to pass. On
+  Windows, run `migrate.bat` rather than the npx command — see below.
 - **The "Your Friends" row on the profile is still demo-only.** It renders from
   `demoFriends` in the `sasha` branch and does not exist on a real profile. The
   frames supplied do not cover it, and there is a design question first: the
@@ -292,14 +328,20 @@ change, `tsc` clean. Commit `a1d0249`.
   else. Ask before building.
 - Notifications exist only for follows. Likes, comments and list activity would
   all plausibly want them.
-- **Nothing confirms end to end that a notification reaches another person,
-  and one real attempt has now failed.** The 38 assertions run against the
-  database and the browser checks ran against stubbed routes, so both halves
-  are proven and the join between them is not. On 2026-11-15 Sasha unfollowed
-  and refollowed somebody and they reported receiving nothing. That was first
-  misread here as only the unfollow having been done — it was not, he did both.
-  **Unresolved at hand-off.** `npm run check:notifications` is the next step and
-  exists for exactly this; it had not been run against the real database yet.
+- **No notification has ever been delivered to anybody. Unresolved at
+  hand-off.** The 38 assertions run against the database and the browser checks
+  ran against stubbed routes, so both halves are proven and the join between
+  them has never once worked. Sasha unfollowed and refollowed somebody on
+  2026-11-15 and they got nothing; that was first misread here as him having
+  done only the unfollow, which was wrong — he did both, and the real cause was
+  the unapplied migration above. **The next step is `migrate.bat` on his
+  machine, which has not been run yet.** Nothing is known to work until it
+  reports the table exists and a real follow produces a real notification.
+- **Which database `.env` points at is unverified.** It has been asserted here
+  to be production, but nobody has checked. If it is a local database, applying
+  the migration there will fix nothing on the live site, and the check script
+  will happily report success while production stays broken. Worth confirming
+  the host before trusting a green result.
 - No email for notifications, and no preference to turn them off. Fine at this
   size; both become necessary if volume grows.
 - The badge only refreshes on navigation. Correct for now; polling or a
