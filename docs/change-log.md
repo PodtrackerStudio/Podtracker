@@ -286,6 +286,20 @@ on 5432 rather than 6543, and exits non-zero on anything wrong. **`migrate.bat`
 runs it first and refuses to migrate if it fails**, because a migration against
 the wrong database is worse than one that errors: it reports success.
 
+Run against Sasha's machine it found a single `.env`, naming Neon, and no
+`.env.local` at all — so the dev server has been reading Neon too, not just the
+CLI. Local development has been writing to an abandoned database since
+September.
+
+One correction inside this work: `check:env` first told the reader to fix a
+stale `.env` with `npm run env:from-clipboard`. That is wrong precisely when
+the message fires. The script carries over the password already in `.env`,
+which belongs to the database being migrated away from, so it yields a correct
+Supabase hostname with a Neon password — "password authentication failed",
+which this project has already lost days to once. It now points at Vercel's
+copy of `DATABASE_URL` instead, which is the string production uses and is
+known to work.
+
 Two further things came out of testing with a real second person, neither of
 them a code fault:
 
@@ -367,17 +381,22 @@ change, `tsc` clean. Commit `a1d0249`.
   the unapplied migration above. **The next step is `migrate.bat` on his
   machine, which has not been run yet.** Nothing is known to work until it
   reports the table exists and a real follow produces a real notification.
-- **Sasha's local `.env` points at the dead Neon database.** Confirmed
-  2026-11-15 from `migrate deploy`'s own output. It needs rewriting from the
-  Supabase dashboard's Connect > ORM block via `npm run env:from-clipboard`,
-  which exists for this and handles the unguessable pooler shard number. Until
-  then every migration he runs lands on a database nothing reads. Unknown
-  whether he also has a `.env.local` holding the correct Supabase string —
-  `npm run check:env` answers that in one line.
-- **It follows that local development has been running against Neon too**, at
-  least wherever the app reads `.env` rather than a `.env.local`. Anything
-  logged, rated or reviewed locally since 11 September went somewhere the live
-  site cannot see. Not investigated.
+- **Sasha's local `.env` points at the dead Neon database, and there is no
+  `.env.local`.** Confirmed 2026-11-15 by `npm run check:env`. So this is the
+  worse of the two cases: not just the Prisma CLI but **the local dev server
+  too** has been talking to Neon. Anything logged, rated or reviewed locally
+  since 11 September went to a database the live site cannot see. Not
+  investigated, and probably not worth recovering.
+- **The fix is to copy `DATABASE_URL` out of Vercel**, not to run
+  `env:from-clipboard`. That script carries over the password already in
+  `.env` — the Neon one — producing a correct Supabase hostname with the wrong
+  password, which Supavisor reports as "password authentication failed", the
+  exact error this project already lost days to. Vercel holds the string
+  production uses, password included. `check:env` now says this; it said the
+  wrong thing for one commit. **Not yet done at hand-off.**
+- **His `.env` may be missing the Supabase auth keys as well.** If it predates
+  the September move it will have none, which would mean local login is broken
+  too. `check:env` only inspects `DATABASE_URL`, so this is unverified.
 - No email for notifications, and no preference to turn them off. Fine at this
   size; both become necessary if volume grows.
 - The badge only refreshes on navigation. Correct for now; polling or a
