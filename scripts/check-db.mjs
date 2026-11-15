@@ -158,9 +158,13 @@ try {
     console.log("This database is reachable but the schema was never applied to it —");
     console.log("a brand-new Supabase project, or a different one from the one you");
     console.log("migrated. Expected right after the move from Neon.");
-    console.log("\nFIX: run the migrations against it, using the DIRECT (non-pooled)");
-    console.log("     string, which is what prisma migrate needs:");
-    console.log('     DATABASE_URL="<direct string>" npx prisma migrate deploy');
+    console.log("\nFIX: from the project folder, run the migrations against it:");
+    console.log("     npx prisma migrate deploy");
+    console.log("\n     No second connection string is needed. This used to say to");
+    console.log("     use the direct, non-pooled string; that is wrong here. The");
+    console.log("     DATABASE_URL in .env is already the SESSION pooler on 5432,");
+    console.log("     which handles DDL and advisory locks. Only transaction mode");
+    console.log("     on 6543 would not, and that breaks the app anyway.");
     process.exit(1);
   }
 

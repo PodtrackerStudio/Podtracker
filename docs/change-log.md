@@ -240,8 +240,37 @@ real second person, neither of them a code fault:
   absent notification read as the feature still being broken. The comment in
   `src/lib/notifications.ts` now says so explicitly.
 
-Also corrected in that file: two comments describing behaviour that no longer
-exists — one claiming the notification is written in the same transaction as
+**`npm run check:notifications`, because the write is silent when it fails**
+
+Decoupling the notification from the follow bought a working button at the cost
+of a silent failure: a notification that does not get written says so in the
+server log and nowhere a person would look. When Sasha refollowed somebody and
+they still got nothing, there was no way to tell a failed write from a failed
+read without guessing — and guessing is what happened first, wrongly.
+
+`scripts/check-notifications.mjs` answers the one question that splits the
+problem: **was the row ever written?** It reports whether the table and enum
+exist, lists the ten most recent notifications with actor, recipient, type and
+read state, and then cross-checks recent follows against them, marking any
+follow with no notification beside it. A missing row means the write failed and
+the server log has the reason; rows present mean the fault is in the reading.
+
+Raw SQL through `pg`, like `check:db`, so it does not depend on the generated
+Prisma client being current on whoever runs it, and it connects the same way
+the app does. It prints usernames and never email addresses — output from
+scripts like this gets pasted into chats.
+
+Verified against a scratch Postgres on both branches: a seeded database with
+three notifications and one deliberately missing one reported `MISSING` against
+exactly that follow and `ok` against the rest, and a database with no
+`Notification` table reported the unapplied migration and stopped there.
+
+**The bad migration advice was in `check:db` too**, telling anyone who hit it to
+use the direct non-pooled string. Corrected in place, with the reason, so the
+next person does not go looking for a connection string they do not need.
+
+Also corrected: two comments in `src/lib/notifications.ts` describing behaviour
+that no longer exists — one claiming the notification is written in the same transaction as
 the follow, which is precisely the thing that broke the button, and one
 referring to the deleted notifications page. Comments only, no behaviour
 change, `tsc` clean. Commit `a1d0249`.
@@ -263,14 +292,14 @@ change, `tsc` clean. Commit `a1d0249`.
   else. Ask before building.
 - Notifications exist only for follows. Likes, comments and list activity would
   all plausibly want them.
-- **Nothing confirms end to end that a notification reaches another person.**
-  The 38 assertions run against the database and the browser checks ran against
-  stubbed routes, so both halves are proven and the join between them is not.
-  As of 2026-11-15 the real-world test had not produced a confirmed delivery —
-  the one attempt failed because only the unfollow half was done. A small
-  script that prints `Notification` rows with actor and recipient was offered
-  as the way to tell "the row was never written" from "they are not seeing it";
-  it has not been written yet.
+- **Nothing confirms end to end that a notification reaches another person,
+  and one real attempt has now failed.** The 38 assertions run against the
+  database and the browser checks ran against stubbed routes, so both halves
+  are proven and the join between them is not. On 2026-11-15 Sasha unfollowed
+  and refollowed somebody and they reported receiving nothing. That was first
+  misread here as only the unfollow having been done — it was not, he did both.
+  **Unresolved at hand-off.** `npm run check:notifications` is the next step and
+  exists for exactly this; it had not been run against the real database yet.
 - No email for notifications, and no preference to turn them off. Fine at this
   size; both become necessary if volume grows.
 - The badge only refreshes on navigation. Correct for now; polling or a
