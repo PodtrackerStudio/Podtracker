@@ -222,14 +222,40 @@ to "+ Follow". The bell shows "No new notifications" when empty on a white
 `rgb(255, 255, 255)` surface, lists "Alice Example followed you" / "Bob Example
 followed you back" when not, clears its badge, and closes on click-away.
 
+**2026-11-15: applied in production, and what testing it exposed**
+
+The migration ran and the bell works. Two things came out of testing it with a
+real second person, neither of them a code fault:
+
+- **The migration does not backfill.** Follows made before it ran went through
+  a database with no `Notification` table, so nothing was recorded and nothing
+  appears now. Sasha was offered a backfill script that walks the existing
+  `Follow` rows and writes the notification each one would have made, with the
+  right `FOLLOW` / `FRIEND` type. He has not taken it up. Worth flagging if he
+  does: it would deliver a batch of notifications for follows that are days
+  old, all at once.
+- **Only following writes a notification. Unfollowing writes nothing.** That is
+  deliberate and documented, but a round of testing was lost to it: the advice
+  given was "unfollow and refollow", only the unfollow half was done, and the
+  absent notification read as the feature still being broken. The comment in
+  `src/lib/notifications.ts` now says so explicitly.
+
+Also corrected in that file: two comments describing behaviour that no longer
+exists — one claiming the notification is written in the same transaction as
+the follow, which is precisely the thing that broke the button, and one
+referring to the deleted notifications page. Comments only, no behaviour
+change, `tsc` clean. Commit `a1d0249`.
+
 **Follow-ups**
 
-- **The notifications migration has not been applied to production.** Follows
-  work without it, but nothing is recorded, so the bell stays empty for
-  everyone. One command against the direct (non-pooler) connection string:
-  `DATABASE_URL="<direct>" npx prisma migrate deploy`. Until it runs, the
-  server log carries the "follow succeeded but its notification did not" line
-  on every follow.
+- ~~**The notifications migration has not been applied to production.**~~
+  **Applied 2026-11-15** by Sasha, with a plain `npx prisma migrate deploy` from
+  the project folder. Worth recording for the next migration: no separate
+  connection string was needed. The advice given first — use the direct,
+  non-pooler string — was wrong for this project. `DATABASE_URL` is already the
+  Supabase **session** pooler on 5432, which handles DDL and advisory locks
+  fine; only transaction mode on 6543 would not. `prisma.config.ts` loads `.env`
+  itself, so there is nothing to pass.
 - **The "Your Friends" row on the profile is still demo-only.** It renders from
   `demoFriends` in the `sasha` branch and does not exist on a real profile. The
   frames supplied do not cover it, and there is a design question first: the
@@ -237,6 +263,14 @@ followed you back" when not, clears its badge, and closes on click-away.
   else. Ask before building.
 - Notifications exist only for follows. Likes, comments and list activity would
   all plausibly want them.
+- **Nothing confirms end to end that a notification reaches another person.**
+  The 38 assertions run against the database and the browser checks ran against
+  stubbed routes, so both halves are proven and the join between them is not.
+  As of 2026-11-15 the real-world test had not produced a confirmed delivery —
+  the one attempt failed because only the unfollow half was done. A small
+  script that prints `Notification` rows with actor and recipient was offered
+  as the way to tell "the row was never written" from "they are not seeing it";
+  it has not been written yet.
 - No email for notifications, and no preference to turn them off. Fine at this
   size; both become necessary if volume grows.
 - The badge only refreshes on navigation. Correct for now; polling or a
