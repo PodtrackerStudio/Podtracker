@@ -384,9 +384,15 @@ change, `tsc` clean. Commit `a1d0249`.
 - **Sasha's local `.env` points at the dead Neon database, and there is no
   `.env.local`.** Confirmed 2026-11-15 by `npm run check:env`. So this is the
   worse of the two cases: not just the Prisma CLI but **the local dev server
-  too** has been talking to Neon. Anything logged, rated or reviewed locally
-  since 11 September went to a database the live site cannot see. Not
-  investigated, and probably not worth recovering.
+  too** has been talking to Neon.
+
+  **No data was lost, and nothing needs recovering.** That was briefly written
+  here as though it might have been. Sasha works on the deployed site rather
+  than locally, so nothing was ever written to Neon — its `Follow` table is
+  empty and its `Notification` table had never been written to, which is what
+  the check script reported. His reviews are on Supabase, where they have
+  always been. The only cost of the stale `.env` is that migrations run from
+  his machine land nowhere.
 - **The fix is to copy `DATABASE_URL` out of Vercel**, not to run
   `env:from-clipboard`. That script carries over the password already in
   `.env` — the Neon one — producing a correct Supabase hostname with the wrong
