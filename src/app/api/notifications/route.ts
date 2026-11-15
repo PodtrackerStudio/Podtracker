@@ -44,13 +44,23 @@ export async function GET() {
     });
   } catch (error) {
     // Most likely cause on a database that has not had the notifications
-    // migration applied: the table does not exist. An empty list is a better
-    // answer than a broken popup — the bell then simply says there is nothing.
+    // migration applied: the table does not exist.
+    //
+    // This used to answer with an empty list, on the reasoning that a quiet
+    // bell beats a broken one. That was wrong, and it cost two days: an empty
+    // list renders as "No new notifications", which is indistinguishable from
+    // genuinely having none. The migration had not been applied to production,
+    // every write was failing, and the popup calmly reported that there was
+    // nothing to see. Nobody could tell the difference, including whoever
+    // built it.
+    //
+    // So say which it is. `error` makes the popup admit it could not read
+    // them, rather than assert something untrue about somebody's account.
     console.error(
       "[notifications] could not read the list. If this is P2021 (table does " +
         "not exist), the notifications migration has not been applied here:",
       error,
     );
-    return NextResponse.json({ notifications: [] });
+    return NextResponse.json({ notifications: [], error: true });
   }
 }

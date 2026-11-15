@@ -73,7 +73,16 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
     try {
       const res = await fetch("/api/notifications");
       const data = await res.json().catch(() => null);
-      setItems(Array.isArray(data?.notifications) ? data.notifications : []);
+      // `error` means the server could not read them — most likely the
+      // notifications migration has not been applied to that database. Saying
+      // "no new notifications" in that case is a lie that looks exactly like
+      // the truth, which is how a completely broken feature once passed for a
+      // working one. Admit it instead.
+      if (!data || data.error || !Array.isArray(data.notifications)) {
+        setFailed(true);
+        return;
+      }
+      setItems(data.notifications);
     } catch {
       setFailed(true);
     }
