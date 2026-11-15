@@ -291,14 +291,48 @@ Run against Sasha's machine it found a single `.env`, naming Neon, and no
 CLI. Local development has been writing to an abandoned database since
 September.
 
-One correction inside this work: `check:env` first told the reader to fix a
-stale `.env` with `npm run env:from-clipboard`. That is wrong precisely when
-the message fires. The script carries over the password already in `.env`,
-which belongs to the database being migrated away from, so it yields a correct
-Supabase hostname with a Neon password — "password authentication failed",
-which this project has already lost days to once. It now points at Vercel's
-copy of `DATABASE_URL` instead, which is the string production uses and is
-known to work.
+**Layer four: the connection string cannot be obtained at all**
+
+With Neon ruled out, the obvious fix was to take the real string from Vercel.
+It cannot be done. `vercel env ls` shows `DATABASE_URL` with type **Secret**,
+and sensitive variables on Vercel are write-only: the dashboard will not
+display one, `vercel env pull --environment=production` silently cannot supply
+one, and the copy button copies the variable's *name*. That last detail looked
+like a UI bug for an hour and is not one.
+
+The proof it had not supplied anything: after a successful
+`vercel env pull --environment=production`, `.env` still named Neon — the old
+line had simply survived, because nothing replaced it.
+
+**Which produced one genuinely bad hour of reasoning.** The pulled file naming
+Neon was read here as "Vercel's production variable *is* Neon, therefore the
+live site runs on Neon" — and from that, that Sasha's reviews must be in the
+Neon database after all. `npm run stats` against it reported **1 account and
+zero of everything else**, which was then read as Neon being dead after all.
+Both readings were inferences stacked on an unverified premise. What settled it
+was asking Sasha to open the live site and look: his reviews are there, and
+ratings affect shows. Production is Supabase, as the documentation said all
+along.
+
+**Three times in this one session a conclusion was drawn from a number instead
+of from a check**, and twice it was wrong: an empty `Follow` table read as "the
+database is unused" when following had simply never worked, and a pulled `.env`
+read as "this is what production uses" when the pull had failed to write
+anything. The reliable move each time turned out to be the cheap one — look at
+the actual site.
+
+**So migrations go through the SQL Editor.**
+`docs/apply-notifications-by-hand.sql` is the notifications migration verbatim,
+plus the `_prisma_migrations` row Prisma would have written, carrying the real
+SHA-256 of `migration.sql` so a later `migrate deploy` treats it as applied
+rather than trying to create the table again. Being logged into Supabase is the
+only credential it needs. **Not yet run at hand-off.**
+
+One further correction inside this work: `check:env` first told the reader to
+fix a stale `.env` with `npm run env:from-clipboard` (wrong — it carries the
+old database's password), then to copy the string out of Vercel (wrong — it
+cannot be read). It now states both dead ends plainly and points at the SQL
+Editor route instead.
 
 Two further things came out of testing with a real second person, neither of
 them a code fault:
@@ -393,13 +427,17 @@ change, `tsc` clean. Commit `a1d0249`.
   the check script reported. His reviews are on Supabase, where they have
   always been. The only cost of the stale `.env` is that migrations run from
   his machine land nowhere.
-- **The fix is to copy `DATABASE_URL` out of Vercel**, not to run
-  `env:from-clipboard`. That script carries over the password already in
-  `.env` — the Neon one — producing a correct Supabase hostname with the wrong
-  password, which Supavisor reports as "password authentication failed", the
-  exact error this project already lost days to. Vercel holds the string
-  production uses, password included. `check:env` now says this; it said the
-  wrong thing for one commit. **Not yet done at hand-off.**
+- **Nobody can currently obtain the production connection string, and both
+  obvious routes are dead ends.** Vercel stores `DATABASE_URL` as a **Secret**;
+  sensitive variables there are write-only, so the dashboard will not show one,
+  `vercel env pull` cannot retrieve one, and the copy button copies the
+  variable's *name*. Supabase's Connect > ORM panel gives the hostname but
+  prints `[YOUR-PASSWORD]`, and `env:from-clipboard` fills that from whatever
+  password `.env` already holds — the Neon one — yielding "password
+  authentication failed". Either ask whoever set the Vercel variable, or reset
+  the Supabase password and update Vercel in the same sitting, with the live
+  site down in between. **Unresolved at hand-off**, and `check:env` was briefly
+  wrong about this in two different directions before landing here.
 - **His `.env` may be missing the Supabase auth keys as well.** If it predates
   the September move it will have none, which would mean local login is broken
   too. `check:env` only inspects `DATABASE_URL`, so this is unverified.

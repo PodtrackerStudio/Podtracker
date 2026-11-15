@@ -151,16 +151,29 @@ if (target.provider === "NEON") {
   console.log("runs on Supabase, and its connection string lives in Vercel's");
   console.log("environment variables, not in this file.");
   console.log("");
-  console.log("FIX: copy the whole DATABASE_URL out of Vercel — the project's");
-  console.log("     Settings > Environment Variables — and paste it into .env,");
-  console.log("     replacing the line that is there. That string is the one");
-  console.log("     production uses, so it is known to work, password included.");
+  console.log("Getting the right string is harder than it should be, and both");
+  console.log("obvious routes are dead ends. Recorded here so nobody loses an");
+  console.log("evening rediscovering them:");
   console.log("");
-  console.log("     `npm run env:from-clipboard` rebuilds it from Supabase's");
-  console.log("     Connect > ORM block instead, but it carries over whatever");
-  console.log("     password .env already holds. That is the wrong password when");
-  console.log("     .env names a different database, as it does here, and the");
-  console.log("     failure reads as 'password authentication failed'.");
+  console.log("  * VERCEL holds the production string, but as a **Secret**.");
+  console.log("    Sensitive variables there are write-only: the dashboard will");
+  console.log("    not show one, `vercel env pull` cannot retrieve one, and the");
+  console.log("    copy button copies the variable's NAME. Not a UI quirk.");
+  console.log("  * SUPABASE's Connect > ORM panel gives the hostname but prints");
+  console.log("    [YOUR-PASSWORD] instead of the password. `env:from-clipboard`");
+  console.log("    fills that in from whatever password .env already holds —");
+  console.log("    the wrong database's, here — and the failure reads as");
+  console.log("    'password authentication failed'.");
+  console.log("");
+  console.log("FIX: ask whoever set DATABASE_URL in Vercel for the string, or");
+  console.log("     reset the database password in Supabase and update Vercel's");
+  console.log("     copy in the same sitting (the live site is down in between).");
+  console.log("");
+  console.log("     To apply a migration WITHOUT any of that, paste it into");
+  console.log("     Supabase's SQL Editor — being logged in is the only");
+  console.log("     credential needed. docs/apply-notifications-by-hand.sql is");
+  console.log("     a worked example, including the _prisma_migrations row that");
+  console.log("     keeps `migrate deploy` from re-running it later.");
   process.exit(1);
 }
 if (target.provider === "local") {
