@@ -151,10 +151,16 @@ if (target.provider === "NEON") {
   console.log("runs on Supabase, and its connection string lives in Vercel's");
   console.log("environment variables, not in this file.");
   console.log("");
-  console.log("FIX: get the Supabase string from the dashboard — Connect > ORM — and");
-  console.log("     run `npm run env:from-clipboard`, which writes .env from that");
-  console.log("     block. It exists because the pooler hostname carries a shard");
-  console.log("     number that cannot be guessed. Then re-run the migration.");
+  console.log("FIX: copy the whole DATABASE_URL out of Vercel — the project's");
+  console.log("     Settings > Environment Variables — and paste it into .env,");
+  console.log("     replacing the line that is there. That string is the one");
+  console.log("     production uses, so it is known to work, password included.");
+  console.log("");
+  console.log("     `npm run env:from-clipboard` rebuilds it from Supabase's");
+  console.log("     Connect > ORM block instead, but it carries over whatever");
+  console.log("     password .env already holds. That is the wrong password when");
+  console.log("     .env names a different database, as it does here, and the");
+  console.log("     failure reads as 'password authentication failed'.");
   process.exit(1);
 }
 if (target.provider === "local") {
