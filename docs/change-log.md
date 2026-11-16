@@ -71,6 +71,53 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-16 — Fazier launch badge on the landing page
+
+- **Branch:** `main`
+- **Requested by:** Sasha — "can you add this embedded code", with Fazier's
+  `<a><img>` snippet.
+- **Status:** Complete, but **not seen rendered** — see below.
+
+**What changed**
+
+| File | Change |
+| --- | --- |
+| `src/app/page.tsx` | Modified — the badge, under the hero's Create account / Login buttons |
+| `src/app/landing.module.css` | Modified — `.launchBadge`, placement only |
+
+Fazier's snippet converted to JSX. One change to it: `rel="noopener
+noreferrer"` on the link, which `target="_blank"` needs so the opened page
+cannot reach back through `window.opener`. The doubled slash in
+`/api/v1//public/` is Fazier's own and was kept verbatim.
+
+**Why there and not somewhere else**
+
+There is no Figma frame for a third-party launch badge and there never will
+be, so the usual "ask rather than invent" rule has nothing to defer to. It went
+under the hero buttons rather than beside them, so it does not read as a third
+call to action, and on the landing page specifically because that page only
+renders for logged-out visitors — which is exactly who a launch badge is for.
+Two lines to move if Sasha wants it elsewhere.
+
+**Not verified in a browser**
+
+`fazier.com` is not reachable from the session's network, so the badge could
+not be fetched and the page was never rendered with it in place. `tsc` and
+`eslint` are clean, which covers the code but says nothing about how it looks.
+No height is set on the image — Fazier's snippet gives only a width and
+guessing the aspect ratio would be worse than the small layout shift. Sasha was
+asked to look at the deployed page.
+
+**Follow-ups**
+
+- **Fazier sees every landing-page visitor's IP and user agent**, because the
+  badge is hot-linked from their server. The privacy policy names its
+  processors individually, so this arguably belongs in that table. Raised with
+  Sasha, not acted on. Self-hosting the SVG in `public/` would remove the
+  question entirely, and would also survive Fazier changing or removing the
+  file — but it would freeze the badge if theirs is dynamic, which could not be
+  checked from here.
+
 ### 2026-11-14 — Follow people, friends, and notifications
 
 - **Branch:** `main`

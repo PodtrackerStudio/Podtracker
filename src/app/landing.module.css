@@ -128,6 +128,16 @@
   gap: 14px;
   justify-content: center;
 }
+
+/* The Fazier launch badge under the hero buttons. The badge is a fixed-size
+   image from Fazier, so there is nothing here to style but its placement.
+   `line-height: 0` stops the anchor adding a descender gap under the image. */
+.launchBadge {
+  display: block;
+  width: max-content;
+  margin: 26px auto 0;
+  line-height: 0;
+}
 .btnPrimary {
   display: inline-block;
   text-decoration: none;

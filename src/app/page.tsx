@@ -37,6 +37,30 @@ export default async function LandingPage() {
             Login
           </Link>
         </div>
+        {/* Fazier launch badge, added 2026-11-16 for the launch. Sasha's
+            snippet converted to JSX; the only change is `rel` on the link,
+            which `target="_blank"` needs so the opened page cannot reach back
+            through `window.opener`.
+
+            The doubled slash in `/api/v1//public/` is theirs, kept verbatim —
+            do not "fix" it without checking the badge still loads.
+
+            Not from a Figma frame: there is no frame for a third-party launch
+            badge. It sits under the buttons rather than beside them so it does
+            not read as a third call to action. Easy to move. */}
+        <a
+          className={styles.launchBadge}
+          href="https://fazier.com/launches/www.podtracker.studio"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=light"
+            width={250}
+            alt="Podtracker featured on Fazier"
+          />
+        </a>
       </section>
 
       {/* POPULAR PODCASTS */}
