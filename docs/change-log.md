@@ -90,14 +90,17 @@ noreferrer"` on the link, which `target="_blank"` needs so the opened page
 cannot reach back through `window.opener`. The doubled slash in
 `/api/v1//public/` is Fazier's own and was kept verbatim.
 
-**Why there and not somewhere else**
+**Where it sits**
 
-There is no Figma frame for a third-party launch badge and there never will
-be, so the usual "ask rather than invent" rule has nothing to defer to. It went
-under the hero buttons rather than beside them, so it does not read as a third
-call to action, and on the landing page specifically because that page only
-renders for logged-out visitors — which is exactly who a launch badge is for.
-Two lines to move if Sasha wants it elsewhere.
+At the foot of the landing page, after the ratings and above the footer, at
+180px wide. It was first placed under the hero buttons at Fazier's own 250px;
+Sasha asked for it moved down and made smaller, so that is where it is. There
+is no Figma frame for a third-party launch badge and there never will be, so
+the usual "ask rather than invent" rule had nothing to defer to.
+
+The landing page specifically because that page only renders for logged-out
+visitors — which is exactly who a launch badge is for. Signed-in people are
+redirected to `/home` and never see it.
 
 **Not verified in a browser**
 

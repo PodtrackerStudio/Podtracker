@@ -129,13 +129,16 @@
   justify-content: center;
 }
 
-/* The Fazier launch badge under the hero buttons. The badge is a fixed-size
-   image from Fazier, so there is nothing here to style but its placement.
-   `line-height: 0` stops the anchor adding a descender gap under the image. */
+/* The Fazier launch badge, at the foot of the landing page between the ratings
+   and the footer. The badge is a fixed-size image from Fazier, so there is
+   nothing here to style but its placement. `line-height: 0` stops the anchor
+   adding a descender gap under the image. */
 .launchBadge {
   display: block;
   width: max-content;
-  margin: 26px auto 0;
+  /* Clear of the ratings above it, closer to the footer below, so it reads as
+     belonging to the bottom of the page rather than to the ratings section. */
+  margin: 8px auto 36px;
   line-height: 0;
 }
 .btnPrimary {
