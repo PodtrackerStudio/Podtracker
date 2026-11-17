@@ -85,8 +85,11 @@ rejected. This is the part that saves the most time later.
   greeting, a one-line lead, and **three stat pills** (shows followed / logged /
   reviews), each linking to the matching page. **+ Log podcast** and
   **Explore** buttons sit on the right; for an account that follows nothing,
-  Explore reads "Find shows to follow". The old subtitle just repeated the
-  section title below it; the lead now says something different in each state.
+  Explore reads "Find shows to follow".
+- **No subtitle under the greeting** (Phillip, follow-up: "get rid of those").
+  It repeated the section title below it. The one exception is an account that
+  follows nothing, which still gets "Follow a few shows and their new episodes
+  turn up here.", since there it tells you what to do.
 - **New episodes have visible captions:** title (2 lines), then show · date. Before,
   it was twelve unlabelled images whose names only appeared on hover, and never
   on a phone. The hover card is gone because the caption replaces it. Art is

@@ -74,13 +74,12 @@ export async function HomeFeed({ user }: { user: HomeUser }) {
 
         <div className={styles.heroBody}>
           <h1>Good to see you {name}!</h1>
-          <p className={styles.heroLead}>
-            {followsNothing
-              ? "Follow a few shows and their new episodes turn up here."
-              : newEpisodes.length > 0
-                ? "Here's what's new from the shows you follow."
-                : "Nothing new from your shows yet. Check back soon."}
-          </p>
+          {/* Only for an account that follows nothing, where it says what to
+              do. Otherwise the section title below already says it (Phillip,
+              2026-11-17: "get rid of those"). */}
+          {followsNothing && (
+            <p className={styles.heroLead}>Follow a few shows and their new episodes turn up here.</p>
+          )}
 
           {stats && (
             <div className={styles.heroStats}>
