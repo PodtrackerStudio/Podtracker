@@ -146,6 +146,12 @@ Three things to know before touching what is left:
   breaks the `$transaction` calls in `/api/log` and `/api/favorites`.
   **`npm run check:db` diagnoses all of this** and names the fix — run it before
   investigating a database problem by hand.
+- **Deleting a user in the Supabase dashboard now deletes their profile too**
+  (trigger `on_auth_user_deleted`, migration `20261117000000`). Before that it
+  removed only the login, leaving a profile nobody could log into whose email
+  then blocked signing up again ("An account with that email already exists").
+  Eight such profiles from before the fix remain — not ours to delete without
+  asking; see the 2026-11-17 change-log entry.
 - **Functions run in `cle1` (Cleveland), set in `vercel.json`,** to sit next to
   the Supabase database in `us-east-2` (Ohio). They used to run in `iad1`
   (Washington), so every database query and Supabase auth call crossed between

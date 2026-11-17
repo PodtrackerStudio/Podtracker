@@ -71,6 +71,78 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-17 — Deleted accounts kept their email: orphaned profiles, and a trigger so it stops
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "how do i delete users cause i dletyed one of my
+  accpunts but it still said that there are people with the same email".
+- **Status:** Complete. Eight orphaned profiles deliberately left — see below.
+
+**The cause**
+
+An account is two rows: Supabase's `auth.users` login and our `User` profile.
+Settings → Delete account removes both. **Deleting a user from the Supabase
+dashboard removed only the login.** The profile stayed, still holding
+`User.email @unique`, so signing up again went: Supabase creates a fresh login →
+our profile insert hits P2002 on email → "An account with that email already
+exists" — and the fresh login is left without a profile, orphaned the other way.
+
+Compared the two tables directly (`auth.users` is readable over `DATABASE_URL`;
+there is no `SUPABASE_SERVICE_ROLE_KEY` in Phillip's `.env`): **46 logins, 59
+profiles; 16 profiles with no login, 3 unconfirmed logins with no profile**
+(from failed re-signups on 2026-11-09 and today).
+
+**What was done**
+
+- **Deleted 8 orphaned profiles Phillip identified as his test accounts:**
+  `@foongouse`, `@a0iergn`, `@Phil`, `@sregsererg`, `@aiuerbgiuarg`,
+  `@foongous`, `@trpoyewj`, `@goose`. The delete matched only profiles that
+  still had no login. `@Phil` held 1 review and 1 rating, which cascaded with it.
+- **The 3 orphaned logins were left alone on purpose.** They are unconfirmed,
+  and a repeat signup with the same email gets the existing unconfirmed user
+  back from Supabase, whose profile insert now succeeds. They heal on use.
+- **Trigger `on_auth_user_deleted`** on `auth.users`
+  (`prisma/migrations/20261117000000_delete_profile_with_auth_user`): deleting a
+  login deletes the profile, and through cascades everything it owns.
+  `SECURITY DEFINER` with an empty `search_path`, because the delete runs as
+  Supabase's auth role. Guarded on `auth.users` existing, so Prisma's plain
+  shadow database for `migrate dev` skips it rather than failing — **that
+  guard was not exercised against a shadow database here.**
+- **Applied to production by hand** with `prisma db execute`, then recorded with
+  `prisma migrate resolve --applied`, deliberately **not** `migrate deploy`,
+  which would also have applied the outstanding notifications migration — not
+  what was asked, and its own decision.
+
+**Verification**
+
+Trigger present and enabled in `pg_trigger`. Tested inside a transaction that
+was then rolled back: inserted a throwaway login and profile, deleted the login,
+the profile went with it (1 → 0); nothing remained after the rollback.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `prisma/migrations/20261117000000_delete_profile_with_auth_user/migration.sql` | Added — the trigger |
+| `CLAUDE.md` | Modified — gotcha about dashboard deletion |
+
+**Follow-ups**
+
+- **8 orphaned profiles remain**, not Phillip's: `@J_`, `@Sasha (co-founder)`,
+  `@D`, `@qowirgnaoerg`, `@a;owrugb;iaurgb`, `@roy`, `@Jamie`, `@goose!`. None
+  can be logged into, all hold no logs, ratings or lists, and each blocks its
+  email from signing up again. Delete them if their owners agree; the trigger
+  does not touch rows that already exist.
+- **The notifications migration (`20261114202756`) is still not applied to
+  production** — `prisma migrate status` confirmed it today. Phillip's `.env`
+  reaches production Supabase directly, so `npx prisma migrate deploy` from his
+  machine would apply it; not done here because it was not asked for.
+- Whether `SUPABASE_SERVICE_ROLE_KEY` is set **on Vercel** was not checked (no
+  Vercel CLI). Without it, Settings → Delete account refuses and tells the
+  person to email — which may be how the dashboard route got used.
+
+---
+
 ### 2026-11-17 — SEO round three: a sitemap that actually lists the site, and ratings in search results
 
 - **Branch:** `main`
