@@ -18,7 +18,16 @@ export type TrendingEpisode = {
   href: string;
 };
 
-const CHARTS_BASE = "https://rss.applemarketingtools.com/api/v2";
+// Apple moved this host to rss.marketingtools.apple.com by 2026-11-17; the
+// old one now only answers 301. Fetch follows the redirect, but there is no
+// reason to pay the extra hop on every request.
+const CHARTS_BASE = "https://rss.marketingtools.apple.com/api/v2";
+
+// The new host is slow and flaky — measured 2026-11-17: 502s, a 26s response
+// and a 30s timeout within one minute. Without a cap a hung request holds the
+// page (or the sitemap) open until the function itself is killed. An aborted
+// fetch is not cached, so the next request simply tries again.
+const CHART_TIMEOUT_MS = 10_000;
 
 type ChartResult = {
   id: string;
@@ -111,7 +120,7 @@ async function computeTrendingEpisodes(
   // An error is not cached, so the next request simply tries again. The
   // exported wrapper catches it, which is what keeps a failing chart from
   // failing a Vercel build — a risk this page has already realised three times.
-  const res = await fetch(url, { next: { revalidate: 3600 } });
+  const res = await fetch(url, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(CHART_TIMEOUT_MS) });
   if (!res.ok) {
     throw new Error(`Apple's episode chart returned ${res.status} for ${url}`);
   }

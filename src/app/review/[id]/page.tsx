@@ -12,6 +12,9 @@ import { DeleteReviewButton } from "@/components/DeleteReviewButton";
 import styles from "./review.module.css";
 import { avatarSrc } from "@/lib/avatar";
 import { usernameToPath } from "@/lib/routeParams";
+import { JsonLd } from "@/components/JsonLd";
+import { staticSiteOrigin } from "@/lib/siteUrl";
+import { tierRatingSchema, type Tier } from "@/lib/ratingScale";
 
 /** RatingTier enum → the label and colour class the design uses. */
 const TIER_DISPLAY: Record<string, { label: string; className: string }> = {
@@ -147,8 +150,44 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
       ? `/podcast/${podcast.externalId}`
       : "#";
 
+  // A `Review` of the show or episode, so a search for "<title> review" can
+  // see this page is exactly that. Only when the subject has a real page to
+  // point at — `href` is "#" when the show has no iTunes id, and a review of
+  // nothing in particular is not worth marking up.
+  const origin = staticSiteOrigin();
+  const schema =
+    href === "#"
+      ? null
+      : {
+          "@context": "https://schema.org",
+          "@type": "Review",
+          url: `${origin}/review/${entry.id}`,
+          name: `${entry.user.displayName || entry.user.username}'s review of ${title}`,
+          reviewBody: entry.reviewText,
+          datePublished: entry.createdAt.toISOString(),
+          author: {
+            "@type": "Person",
+            name: entry.user.displayName || entry.user.username,
+            url: `${origin}/user/${usernameToPath(entry.user.username)}`,
+          },
+          itemReviewed: {
+            "@type": entry.episode ? "PodcastEpisode" : "PodcastSeries",
+            name: title,
+            url: `${origin}${href}`,
+            image: cover.startsWith("http") ? cover : undefined,
+            ...(entry.episode && podcast
+              ? { partOfSeries: { "@type": "PodcastSeries", name: podcast.title } }
+              : {}),
+          },
+          // Didn't finish carries no score, so it is left out rather than
+          // marked up as the worst rating.
+          reviewRating: tierRatingSchema(tier as Tier | null),
+          publisher: { "@type": "Organization", name: "Podtracker", url: origin },
+        };
+
   return (
     <>
+      {schema && <JsonLd data={schema} />}
       <SiteNav />
       <main className={styles.main}>
         <article className={styles.reviewHeader}>

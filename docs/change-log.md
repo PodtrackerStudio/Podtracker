@@ -71,6 +71,104 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-17 — SEO round three: a sitemap that actually lists the site, and ratings in search results
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "i need you to seo the website so it shows up
+  when people look stuf up".
+- **Status:** Complete in code. The highest-value remaining step is not code —
+  see Follow-ups.
+
+**What was found on the live site first**
+
+Two SEO passes (both 2026-09-10) had already done titles, descriptions,
+robots.txt, structured data and `noindex`. So this started by checking what
+production actually serves rather than redoing them. Titles, description and
+canonical were fine. **The sitemap was not: it listed 10 URLs** — the static
+pages only, none of the 100 shows it is meant to carry.
+
+Two causes, stacked:
+
+1. **Apple's chart failed during the build.** Apple has moved the host to
+   `rss.marketingtools.apple.com` (the old one only 301s), and the new one is
+   flaky: within one minute it answered 502, 502, a 26s response, and a 30s
+   timeout. The sitemap swallowed the failure and returned the static list.
+2. **Vercel then served that as a static file, forever.** `revalidate = 3600`
+   was set and `next build` reports the route as `1h` ISR, yet production
+   returned `accept-ranges`, an `etag` and a fixed `last-modified`, with
+   `age` over 24h and `lastmod` stamped at the deploy. The hourly refresh
+   never ran. Why Vercel treated it as static was not established — no Vercel
+   CLI or logs in this session — so the fix does not depend on it.
+
+**What changed**
+
+- **`src/app/sitemap.ts`** — rendered per request via `await connection()`.
+  Not `force-dynamic`: that would turn off the chart fetch's own one-hour cache
+  and call Apple on every hit. It now also lists **Podtracker's own pages**:
+  shows and episodes someone has rated, logged or followed, every review,
+  every list with items (not Next listening), and every profile with activity.
+  Each source fails soft. `lastModified` was dropped wherever it was a lie
+  ("now" on every url teaches Google to ignore the field) and kept only on
+  reviews, which are never edited. Locally: **179 URLs, 0.8s**, against 10 live.
+- **`AggregateRating`** on show and episode pages — the follow-up the
+  2026-09-10 entry held back because ratings were mock. They are real now
+  (since 2026-10-03). Built by `aggregateRatingSchema` in `ratingScale.ts`
+  from the same summary the page renders, on the site's own 1–4 scale
+  (`bestRating`/`worstRating` derived from `TIER_SCORE`). `ratingCount` is
+  `scored`, not `total`, since Didn't finish is not in the average. Absent
+  when nothing scoreable is rated.
+- **`Review`** markup on review pages, with `itemReviewed` the show or episode
+  and `reviewRating` the author's tier. Didn't finish is left out rather than
+  marked up as the worst score.
+- **Apple chart host** updated in `popularPodcasts.ts` and
+  `trendingEpisodes.ts`, plus a **10s timeout** on both fetches. Without it a
+  hung Apple request held Explore, home or the sitemap open until the function
+  was killed. An aborted fetch is not cached, so the next request retries.
+  CLAUDE.md's mention of the host updated to match.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/sitemap.ts` | Modified — per-request, database-backed entries, honest lastmod |
+| `src/lib/ratingScale.ts` | Modified — `aggregateRatingSchema`, `tierRatingSchema`, scale ends |
+| `src/app/podcast/[id]/page.tsx` | Modified — `aggregateRating` on `PodcastSeries` |
+| `src/app/podcast/[id]/episode/[epId]/page.tsx` | Modified — `aggregateRating` on `PodcastEpisode` |
+| `src/app/review/[id]/page.tsx` | Modified — `Review` JSON-LD |
+| `src/lib/popularPodcasts.ts` | Modified — new host, timeout |
+| `src/lib/trendingEpisodes.ts` | Modified — new host, timeout |
+| `CLAUDE.md` | Modified — Apple chart host |
+
+**Verification**
+
+`tsc` and `eslint` clean; `npm run build` exit 0 with `/sitemap.xml` now `ƒ`.
+Ran `next start` against the real database and requested **every one of the
+169 non-static sitemap URLs**: 168 × 200, 1 × 404. The 404 is
+`/podcast/6813710385`, a show Apple has removed (`lookup` returns
+`resultCount: 0`); it 404s on production too. Left in — Google drops a 404 from
+a sitemap without penalty, and checking Apple per show would make the sitemap
+slow. JSON-LD parsed on sample pages: rated shows and episodes carry their real
+average and count, an unrated show carries none, reviews carry the author's
+rating. Apple 502'd during the build here too, and the build was unaffected.
+
+**Follow-ups**
+
+- **Google Search Console is still the biggest lever, and still not done as far
+  as this repo knows.** Verify `podtracker.studio`, submit `/sitemap.xml`, and
+  use URL Inspection → Request indexing on the landing page. It also reports
+  whether Google accepts the new rating markup. Bing Webmaster Tools covers
+  Bing and DuckDuckGo. Needs whoever owns the domain's DNS.
+- **Check the deployed sitemap** returns ~180 URLs and a changing response, not
+  `accept-ranges`/`etag` — that confirms the static-file problem is gone.
+- **Google may decline the rating stars**: the page shows the average as a tier
+  label ("Recommend"), not the number the markup carries. That is a design
+  question for Sasha, not something to change unasked.
+- **A 1200×630 share image** is still outstanding from 2026-09-10 (needs Sasha).
+- Ranking for generic words like "podcast" is not achievable and was not
+  attempted — see the 2026-09-10 entries.
+
+---
+
 ### 2026-11-16 — Fazier launch badge on the landing page
 
 - **Branch:** `main`

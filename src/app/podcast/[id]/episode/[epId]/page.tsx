@@ -12,6 +12,7 @@ import { NextListeningButton } from "@/components/NextListeningButton";
 import { AddToListButton } from "@/components/AddToListButton";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import { getEpisodeRatingSummaryByKey } from "@/lib/ratingSummary";
+import { aggregateRatingSchema } from "@/lib/ratingScale";
 import { getViewerEpisodeState } from "@/lib/viewerState";
 import { tierFromScore } from "@/lib/ratingTier";
 import { getEpisodeDetail, recoverEpisodeFromSearch, type EpisodeDetail } from "@/lib/episodeDetail";
@@ -174,6 +175,8 @@ export default async function EpisodePage({
         name: episode.podcastTitle,
         url: `${origin}/podcast/${id}`,
       },
+      // Absent until someone has rated the episode; see aggregateRatingSchema.
+      aggregateRating: aggregateRatingSchema(ratings),
     },
     {
       "@context": "https://schema.org",

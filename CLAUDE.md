@@ -176,7 +176,7 @@ All of these are deliberate or already known. Fixing them unasked wastes a turn 
 
 ## Next steps Sasha has named
 
-- Popularity comes from **Apple's charts** (`rss.applemarketingtools.com`, no API
+- Popularity comes from **Apple's charts** (`rss.marketingtools.apple.com` — the old `rss.applemarketingtools.com` only 301s now — no API
   key) until Podtracker has its own signal — Sasha's marker is roughly 100 users,
   then it switches to popularity derived from follows, ratings and logs here.
   Spotify charts were the original plan and were dropped: credentials never

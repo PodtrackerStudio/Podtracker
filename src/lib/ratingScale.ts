@@ -134,3 +134,51 @@ export function summariseTierCounts(counts: Map<Tier, number> | Partial<Record<T
     distribution,
   };
 }
+
+/**
+ * The scale's ends, for structured data. Derived from `TIER_SCORE` so the
+ * markup can never describe a different scale from the one the averages use.
+ */
+const SCORES = Object.values(TIER_SCORE).filter((s): s is number => s !== null);
+export const BEST_SCORE = Math.max(...SCORES);
+export const WORST_SCORE = Math.min(...SCORES);
+
+/**
+ * schema.org `AggregateRating` for a show or episode — what lets a search
+ * result carry a rating line under the title.
+ *
+ * Built from the same summary the page renders, so the markup and the visible
+ * average cannot disagree. `ratingCount` is `scored`, not `total`: Didn't
+ * finish is in the bars but not the average, and the count has to describe
+ * the number it sits next to.
+ *
+ * **Undefined when nothing scoreable has been rated.** Google rejects an
+ * aggregate with no ratings behind it, and the page shows no average then
+ * either — this is gated on its own data, like everything else that came out
+ * from behind `HAS_COMMUNITY_DATA`.
+ */
+export function aggregateRatingSchema(summary: RatingSummary) {
+  if (summary.average === null || summary.scored === 0) return undefined;
+  return {
+    "@type": "AggregateRating",
+    ratingValue: summary.average,
+    ratingCount: summary.scored,
+    bestRating: BEST_SCORE,
+    worstRating: WORST_SCORE,
+  };
+}
+
+/**
+ * schema.org `Rating` for one person's tier, or undefined for Didn't finish —
+ * which is not a judgement of quality, so it is not marked up as one.
+ */
+export function tierRatingSchema(tier: Tier | null | undefined) {
+  const score = tier ? TIER_SCORE[tier] : null;
+  if (score === null || score === undefined) return undefined;
+  return {
+    "@type": "Rating",
+    ratingValue: score,
+    bestRating: BEST_SCORE,
+    worstRating: WORST_SCORE,
+  };
+}

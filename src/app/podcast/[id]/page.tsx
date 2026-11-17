@@ -14,6 +14,7 @@ import { staticSiteOrigin } from "@/lib/siteUrl";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { getPodcastRatingSummary } from "@/lib/ratingSummary";
+import { aggregateRatingSchema } from "@/lib/ratingScale";
 import { tierFromScore } from "@/lib/ratingTier";
 import { getViewerPodcastState } from "@/lib/viewerState";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
@@ -150,6 +151,10 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
           image: podcast.coverUrl || undefined,
           author: podcast.author ? { "@type": "Person", name: podcast.author } : undefined,
           genre: podcast.genres || undefined,
+          // Real ratings only — undefined, and so absent, until someone has
+          // rated the show. The 2026-09-10 SEO pass held this back because the
+          // numbers were mock then; they come from PodcastRating now.
+          aggregateRating: aggregateRatingSchema(ratings),
         },
         {
           "@context": "https://schema.org",

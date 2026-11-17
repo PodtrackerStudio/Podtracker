@@ -6,7 +6,16 @@ export type PopularPodcast = {
   artworkUrl: string;
 };
 
-const CHARTS_BASE = "https://rss.applemarketingtools.com/api/v2";
+// Apple moved this host to rss.marketingtools.apple.com by 2026-11-17; the
+// old one now only answers 301. Fetch follows the redirect, but there is no
+// reason to pay the extra hop on every request.
+const CHARTS_BASE = "https://rss.marketingtools.apple.com/api/v2";
+
+// The new host is slow and flaky — measured 2026-11-17: 502s, a 26s response
+// and a 30s timeout within one minute. Without a cap a hung request holds the
+// page (or the sitemap) open until the function itself is killed. An aborted
+// fetch is not cached, so the next request simply tries again.
+const CHART_TIMEOUT_MS = 10_000;
 
 /**
  * Apple's own podcast chart — real popularity, ranked by Apple, no API key.
@@ -29,7 +38,7 @@ export async function getPopularPodcasts(limit = 8, country = "us"): Promise<Pop
   const url = `${CHARTS_BASE}/${country}/podcasts/top/${fetchCount}/podcasts.json`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(CHART_TIMEOUT_MS) });
     if (!res.ok) return [];
 
     const data = (await res.json()) as {
