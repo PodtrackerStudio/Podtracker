@@ -71,6 +71,56 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-17 — Nav search: loading state, keyboard, "see all", clear, polish
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "make the search bar at the top better".
+- **Status:** Complete.
+
+**What changed**
+
+- **"Searching…" instead of a false "No matches."** The dropdown said "No
+  matches." for the 200ms debounce plus the round trip on every first query. A
+  new `useSearchResultsState` in `useSearchResults.ts` also returns `loading`,
+  derived from whether the stored results answer the current query. The
+  original `useSearchResults` now wraps it, so the other two search bars are
+  unchanged.
+- **Keyboard:** ↑/↓ move a highlight through results, Enter opens the highlighted
+  one (or the results page if none is highlighted), Escape closes. **`/` from
+  anywhere on the page focuses the search** unless you're typing in a field. A
+  small `/` key hint shows in the empty box on desktop. Combobox/listbox ARIA
+  roles were added.
+- **"See all results for "q" →"** row at the foot of the dropdown. `/search`
+  could only be reached by pressing Enter, which nothing on screen mentioned.
+- **Clear (×) button** while there's text. The placeholder now reads "Search
+  podcasts, people…".
+- **Look:** 38px tall, 260px wide (300px while focused), hairline border, still
+  `--page-bg-alt` when idle (opaque, per CLAUDE.md). Dropdown rows are rounded
+  with a blue-tinted highlight instead of rules between them; long titles
+  ellipsize.
+- **Below 1100px** the dropdown hangs from the whole nav bar with a 12px margin
+  each side. Anchored to the box, it ran off the left edge of a phone.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/SearchBox.tsx` | Modified — keyboard nav, `/` shortcut, clear, see-all row, loading text, ARIA |
+| `src/components/useSearchResults.ts` | Modified — `useSearchResultsState` with `loading`; old hook wraps it |
+| `src/app/globals.css` | Modified — search box, kbd hint, clear button, dropdown rows, see-all row, narrow-screen anchoring |
+
+**Why**
+
+Checked by driving it in headless Chrome at 1440px, 1000px and 390px: "/"
+focuses the box, "Searching…" shows then results, two ArrowDowns plus Enter
+landed on the second result's page. `tsc` clean; eslint clean on changed files.
+
+**Follow-ups**
+
+- Pre-existing, not touched: `eslint src/components` fails on
+  `NotificationBell.tsx:43` (setState in an effect). `/explore` is 2px wider
+  than a 1000px viewport, with or without this change.
+
 ### 2026-11-17 — Home page ("Good to see you …!") redesigned within the palette
 
 - **Branch:** `main`

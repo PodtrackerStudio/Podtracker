@@ -153,40 +153,97 @@ nav.site-nav {
 .nav-search {
   display: flex;
   align-items: center;
+  /* Opaque on purpose — see CLAUDE.md on --page-bg-alt. */
   background: var(--page-bg-alt);
+  border: 1px solid rgba(17, 17, 17, 0.06);
   border-radius: var(--radius-pill);
-  padding: 7px 14px;
-  gap: 6px;
-  width: 200px;
-  transition: box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+  padding: 0 8px 0 14px;
+  height: 38px;
+  gap: 8px;
+  width: 260px;
+  cursor: text;
+  transition: box-shadow 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease),
+    width 0.25s var(--ease);
 }
+.nav-search:hover {
+  border-color: rgba(17, 17, 17, 0.14);
+}
+/* Widens a little while in use, so a real query has room. */
 .nav-search:focus-within {
   background: #fff;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--btn-primary-blue) 45%, transparent);
+  border-color: transparent;
+  width: 300px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--btn-primary-blue) 45%, transparent), var(--shadow-sm);
 }
 .nav-search input {
   border: none;
   background: transparent;
   outline: none;
-  font-size: 13px;
+  font-size: 14px;
   width: 100%;
+  min-width: 0;
   color: var(--text);
   font-family: var(--font-body), Arial, Helvetica, sans-serif;
 }
-.nav-search svg {
-  width: 14px;
-  height: 14px;
+.nav-search input::placeholder {
+  color: #777;
+}
+.nav-search > svg {
+  width: 16px;
+  height: 16px;
   color: var(--text-muted);
   flex-shrink: 0;
+}
+.nav-search:focus-within > svg {
+  color: var(--text);
+}
+/* The "/" shortcut hint. Hidden once you're in the box — it's done its job. */
+.nav-search-kbd {
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+}
+.nav-search:focus-within .nav-search-kbd {
+  display: none;
+}
+.nav-search-clear {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(17, 17, 17, 0.08);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+.nav-search-clear:hover {
+  background: rgba(17, 17, 17, 0.16);
+  color: var(--text);
 }
 .nav-search-wrap {
   position: relative;
 }
 .search-dropdown {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   left: 0;
-  width: 320px;
+  width: 360px;
+  max-width: calc(100vw - 32px);
   background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -234,28 +291,70 @@ nav.site-nav {
   text-align: center;
 }
 
+.search-dropdown-list {
+  padding: 6px;
+}
+/* Rows with space around them rather than rules between them; the highlighted
+   one (mouse or arrow keys) is tinted in the nav's blue. */
 .search-dropdown-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 12px;
+  padding: 8px 10px;
   text-decoration: none;
   color: var(--text);
-  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
-.search-dropdown-item:last-child {
-  border-bottom: none;
-}
-.search-dropdown-item:hover {
-  background: #f4f4f4;
+.search-dropdown-item-active {
+  background: color-mix(in srgb, var(--accent-blue) 55%, transparent);
 }
 .search-dropdown-thumb {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: 6px;
   background: #ccc;
   flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.06);
+}
+.search-dropdown-text {
+  min-width: 0;
+}
+.search-dropdown-text .search-dropdown-title,
+.search-dropdown-text .search-dropdown-subtitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-dropdown-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-top: 1px solid var(--border);
+  background: #fafafa;
+}
+.search-dropdown-all strong {
+  color: var(--text);
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-dropdown-all span {
+  margin-left: auto;
+  transition: transform 0.15s var(--ease);
+}
+.search-dropdown-all:hover {
+  background: #f1f1f1;
+  color: var(--text);
+}
+.search-dropdown-all:hover span {
+  transform: translateX(3px);
 }
 /* A person, not cover art. Circular is how avatars read everywhere else on the
    site — Explore's trending users, review bylines, the profile header. */
@@ -686,10 +785,28 @@ footer.site-footer {
     min-width: 0;
     margin-left: auto;
   }
-  .nav-search {
+  .nav-search,
+  .nav-search:focus-within {
     width: 100%;
     max-width: 240px;
     margin-left: auto;
+  }
+  /* No "/" key worth advertising on a touch screen. */
+  .nav-search-kbd {
+    display: none;
+  }
+  /* The box is narrower than the dropdown here, so the dropdown hangs from
+     the whole bar (which is position: relative at this width) rather than from
+     the box, and spans it with a margin either side. */
+  .nav-search-wrap {
+    position: static;
+  }
+  .search-dropdown {
+    top: calc(100% - 4px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
   }
 
   .nav-burger {
