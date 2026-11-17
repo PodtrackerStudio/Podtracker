@@ -85,6 +85,23 @@ const juneWeeks = [
   [29, 30],
 ];
 
+/**
+ * A recent-log cover in the 16:10 slot. Covers are square, and `object-fit:
+ * cover` cut off the top and bottom of every one — show titles printed across
+ * the art were sliced in half. The whole cover is shown instead, and a blurred
+ * copy of it fills the sides, so the slot keeps its shape without letterboxing.
+ */
+function ListeningThumb({ src }: { src: string }) {
+  return (
+    <span className={styles.listeningThumb}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className={styles.listeningThumbBlur} src={src} alt="" aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className={styles.listeningThumbImg} src={src} alt="Episode" />
+    </span>
+  );
+}
+
 function ProfileSubnav({ username, isOwnProfile }: { username: string; isOwnProfile: boolean }) {
   return (
     <div className={styles.profileSubnav}>
@@ -186,9 +203,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <div className={styles.listeningGrid}>
               {demoListening.map((item) => (
                 <div key={item.id}>
-                  <Link href="/podcast/modern-wisdom/episode/1109">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className={styles.listeningThumb} src={item.img} alt="Episode" />
+                  <Link href="/podcast/modern-wisdom/episode/1109" className={styles.listeningLink}>
+                    <ListeningThumb src={item.img} />
                   </Link>
                   <div className={styles.listeningMeta}>
                     <span className={`${styles.ratingTag} ${styles[item.tier]}`}>{item.tierLabel}</span>
@@ -204,7 +220,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </section>
 
           <section className={styles.bottomGrid}>
-            <div>
+            <div className={styles.panel}>
               <h3 className={styles.bottomColTitle}>Ratings distribution</h3>
               {demoDistribution.map((d) => (
                 <div className={styles.distRow} key={d.tier}>
@@ -217,7 +233,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               ))}
             </div>
 
-            <div>
+            <div className={styles.panel}>
               <h3 className={styles.bottomColTitle}>Next listening</h3>
               <div className={styles.listGallery}>
                 {demoNextListening.map((src) => (
@@ -228,7 +244,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               </div>
             </div>
 
-            <div>
+            <div className={styles.panel}>
               <h3 className={styles.bottomColTitle}>Calendar</h3>
               <div className={styles.calendar}>
                 <div className={styles.calendarHeader}>
@@ -489,13 +505,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 return (
                   <div key={entry.id}>
                     {href ? (
-                      <Link href={href}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img className={styles.listeningThumb} src={cover} alt="Episode" />
+                      <Link href={href} className={styles.listeningLink}>
+                        <ListeningThumb src={cover} />
                       </Link>
                     ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img className={styles.listeningThumb} src={cover} alt="Episode" />
+                      <ListeningThumb src={cover} />
                     )}
                     <div className={styles.listeningMeta}>
                       {tierMeta && <span className={`${styles.ratingTag} ${styles[tierMeta.className]}`}>{tierMeta.label}</span>}
@@ -525,7 +539,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         {hasActivity && (
           <>
             <section className={styles.bottomGrid}>
-              <div>
+              <div className={styles.panel}>
                 <h3 className={styles.bottomColTitle}><Link href={`/user/${usernameToPath(username)}/ratings`} className={styles.distHeadingLink}>Ratings distribution</Link></h3>
                 {(
                   [
@@ -550,7 +564,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 })}
               </div>
 
-              <div>
+              <div className={styles.panel}>
                 {/* A plain list thumbnail, like any other list. The whole
                     gallery links through to the Next listening page — the
                     "Add podcasts…" bar and the All media menu live there, not
@@ -580,7 +594,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
               {/* The third column of `.bottomGrid`, which stood empty on a real
                   profile — the calendar existed only in the demo branch. */}
-              <div>
+              <div className={styles.panel}>
                 <h3 className={styles.bottomColTitle}>
                   <Link href={`/user/${usernameToPath(username)}/diary`} className={styles.distHeadingLink}>
                     Calendar

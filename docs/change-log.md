@@ -71,6 +71,56 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-17 — Profile page polish: whole covers, a header card, matching panels
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "make the personal profile look better, they look
+  kinda bad right now again".
+- **Status:** Complete. Not yet seen by Sasha.
+
+**What changed**
+
+- **Recent-log covers are no longer cropped.** Square cover art was forced into
+  the 16:10 slot with `object-fit: cover`, slicing printed titles in half
+  ("Secret Podcast", "The Rest Is History", "Zohran Mamdani"). A new
+  `ListeningThumb` keeps the 16:10 slot but shows the whole cover, with a blurred
+  copy of the same art filling the sides — the show page's cover-glow idea.
+- **The header is one card** (`--surface`, the calendar's existing card style).
+  Name, avatar and tabs used to float as three unrelated columns; the `hr`
+  under it is hidden because the card edge already separates it.
+- **Bottom row: all three columns are panels**, not just the calendar (whose own
+  card is switched off inside a panel). Aligned to the top, not stretched, so two
+  short panels aren't mostly empty.
+- **Smaller fixes:** rating labels under covers are tier-tinted pills (the landing
+  page's `color-mix` treatment); empty rating tracks are visible (`#ececec` was
+  near-invisible on the page grey); the Next listening strip shrinks to fit its
+  panel and its "+N" tile lost a stray link underline; calendar day cells are
+  square, so listened-day rings are circles of one size, not ovals; follower
+  numbers are larger with muted labels; tabs no longer jump 2px when active;
+  `Edit profile` is a pill like the follow buttons.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/user/[username]/page.tsx` | Modified — `ListeningThumb`, panel classes on the bottom columns (real and demo branches) |
+| `src/app/user/[username]/profile.module.css` | Modified — header card, cover frame, pills, panels, calendar cells, strip sizing, phone centring |
+
+**Why**
+
+No profile frames were on disk, so this follows the same rule as the earlier
+"feel" polish: corners, depth, alignment and cropping only. No new colours,
+no font changes, column layout unchanged. Checked with screenshots at 1440px
+(a full profile and a one-log profile) and at 390px via DevTools emulation:
+no horizontal overflow. `tsc` and eslint clean.
+
+**Follow-ups**
+
+- Sasha hasn't seen it. The header card and panels are containers the Figma
+  may not draw. Revert whichever parts he doesn't want.
+- Profile sub-pages (`profileSub.module.css`: reviews, lists, diary, favourites)
+  were not touched.
+
 ### 2026-11-17 — Deleted accounts kept their email: orphaned profiles, and a trigger so it stops
 
 - **Branch:** `main`
