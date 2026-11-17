@@ -56,6 +56,11 @@ Mechanically: `body` inherits Roboto, and `h1`/`h2`/`.display-font`/`nav.site-na
 
 Items: Podtracker · Home · Profile · Following · Explore · + Log podcast.
 
+Signed in, **Profile is a dropdown** (`ProfileMenu.tsx`, since 2026-11-17):
+Your profile · Settings · Donate · Logout. Logout and Donate used to sit in the
+bar on their own and crowded it. Below the 1100px breakpoint there is no
+dropdown; those links are ordinary rows at the end of the burger panel.
+
 **Genres was deliberately cut from MVP.** It's gone from both the logged-in and logged-out branches of `SiteNav`. The `/genres` route still exists but is intentionally unlinked — do not add the nav item back.
 
 Sasha's Figma nav frames still show Genres and a logo tile at the far left. Both are known divergences; the logo is on hold until he supplies a higher-quality original.

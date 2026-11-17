@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PlusIcon } from "./icons";
 import { SearchBox } from "./SearchBox";
-import { LogoutButton } from "./LogoutButton";
+import { ProfileMenu } from "./ProfileMenu";
 import { NavMenu } from "./NavMenu";
 import { NotificationBell } from "./NotificationBell";
 import { getCurrentUser } from "@/lib/auth";
@@ -55,9 +55,8 @@ export async function SiteNav({ active }: SiteNavProps) {
             <Link href="/home" className={active === "home" ? "active" : undefined}>
               Home
             </Link>
-            <Link href={`/user/${user.username}`} className={active === "profile" ? "active" : undefined}>
-              Profile
-            </Link>
+            {/* Your profile, Settings, Donate and Logout, behind one item. */}
+            <ProfileMenu username={user.username} active={active === "profile"} />
             <Link href="/following">Following</Link>
             <Link href="/explore" className={active === "explore" ? "active" : undefined}>
               Explore
@@ -72,8 +71,6 @@ export async function SiteNav({ active }: SiteNavProps) {
                 podcast". The count is read here on the server so it shows
                 without a click; the list loads only when the popup opens. */}
             <NotificationBell initialUnread={unreadCount} />
-            <LogoutButton />
-            <Link href="/donate">Donate</Link>
           </>
         ) : (
           <>

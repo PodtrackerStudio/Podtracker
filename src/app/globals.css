@@ -321,6 +321,89 @@ nav.site-nav {
   box-shadow: 0 4px 12px color-mix(in srgb, var(--btn-primary-blue) 45%, transparent);
 }
 
+/* ── PROFILE MENU ──
+   "Profile ▾" in the signed-in nav. The trigger matches the other nav links
+   (same pill hover and active state); the list matches the search dropdown
+   (white, --radius-md, --shadow-lg). Opaque on purpose, like the search pill:
+   it sits over page content. */
+.profile-menu {
+  position: relative;
+}
+.profile-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  padding: 6px 10px 6px 12px;
+  border-radius: var(--radius-pill);
+  transition: background 0.2s var(--ease);
+}
+.profile-menu-trigger svg {
+  transition: transform 0.2s var(--ease);
+}
+.profile-menu-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.profile-menu-trigger:hover,
+.profile-menu-trigger[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.5);
+}
+.profile-menu-trigger.active {
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.6);
+}
+.profile-menu-list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  flex-direction: column;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+}
+.profile-menu-list.open {
+  display: flex;
+}
+/* Specific enough to beat `.nav-links a`, which would otherwise give these the
+   bar's pill padding and hover. */
+.nav-links .profile-menu-list a,
+.profile-menu-logout {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+}
+.nav-links .profile-menu-list a:hover,
+.profile-menu-logout:hover {
+  background: color-mix(in srgb, var(--accent-blue) 45%, transparent);
+}
+/* Logout is the one item that ends something, so it sits apart. */
+.profile-menu-logout {
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
 /* ── FOOTER (shared across every page) ── */
 footer.site-footer {
   border-top: 1px solid var(--border);
@@ -633,16 +716,50 @@ footer.site-footer {
     display: flex;
   }
 
+  /* The burger panel is already a menu; the profile links join it as rows
+     rather than opening a second menu inside it. */
+  .profile-menu {
+    display: contents;
+  }
+  .profile-menu-trigger {
+    display: none;
+  }
+  .profile-menu-list,
+  .profile-menu-list.open {
+    display: contents;
+  }
+  /* Your profile keeps Profile's old place; Settings, Donate and Logout drop
+     to the end of the panel, Logout last. */
+  .nav-links .profile-menu-list a:not(:first-child) {
+    order: 1;
+  }
+  .nav-links .profile-menu-logout {
+    order: 2;
+  }
+
   /* Full-width rows: a tap target should span the panel, not just the word. */
   .nav-links a,
   .nav-links button {
     padding: 12px 4px;
     font-size: 17px;
     text-align: left;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);    /* The bar's pill rounding curved the ends of each divider. */
+    border-radius: 0;
   }
   .nav-links a:last-child,
   .nav-links button:last-child {
+    border-bottom: none;
+  }
+  .nav-links .profile-menu-list a,
+  .nav-links .profile-menu-logout {
+    padding: 12px 4px;
+    font-size: 17px;
+    margin: 0;
+    border-radius: 0;
+    border-top: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .nav-links .profile-menu-logout {
     border-bottom: none;
   }
 

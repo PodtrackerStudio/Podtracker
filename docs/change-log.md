@@ -71,6 +71,57 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-17 — Signed-in nav decluttered: Profile becomes a dropdown
+
+- **Branch:** `main`
+- **Requested by:** Phillip — sent a screenshot of the signed-in nav: "de clutter
+  this maybe make it a drop down".
+- **Status:** Complete. Not yet seen by Sasha.
+
+**What changed**
+
+- **`Profile` is now `Profile ▾`**, opening Your profile · Settings · Donate ·
+  Logout (new `src/components/ProfileMenu.tsx`). The bar goes from eight items
+  to six: Home, Profile ▾, Following, Explore, + Log podcast, bell.
+- **Settings is in the nav for the first time.** It was only reachable through
+  Edit profile.
+- Closes on outside click, Escape, or choosing an item. The trigger has the
+  other links' pill hover and active state; the list is styled like the search
+  dropdown (white, `--radius-md`, `--shadow-lg`).
+- **Phone (≤1100px):** no menu inside the burger menu. The trigger is hidden and
+  the four links render as ordinary panel rows via `display: contents`. Your
+  profile keeps Profile's old position; Settings, Donate and Logout move to the
+  end, Logout last.
+- `LogoutButton` takes an optional `className`; without one it renders as before.
+- Fixed in passing: the burger panel's row dividers curved at the ends because
+  the desktop pill `border-radius` leaked into the rows.
+- The logged-out nav is unchanged.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/ProfileMenu.tsx` | Added — the dropdown |
+| `src/components/SiteNav.tsx` | Modified — Profile link, Logout and Donate replaced by `ProfileMenu` |
+| `src/components/LogoutButton.tsx` | Modified — optional `className` |
+| `src/app/globals.css` | Modified — `.profile-menu*` styles, phone rows, divider radius |
+| `CLAUDE.md` | Modified — the nav section notes the dropdown |
+
+**Why**
+
+Profile was chosen as the trigger because everything moved into it belongs to
+your account. Following and + Log podcast stayed in the bar because they are
+primary items in CLAUDE.md's nav list. Checked with a temporary route that
+rendered the signed-in nav markup (deleted before committing, so no test
+account was needed), screenshotted with the menu open at 1440px and 1150px,
+and with the burger open at 390px. No horizontal overflow. `tsc` and eslint clean.
+
+**Follow-ups**
+
+- Sasha's nav frames show the flat row; tell him Profile is a menu now.
+- Not exercised with a real signed-in session: Logout was not clicked through
+  in a browser. Its handler is unchanged.
+
 ### 2026-11-17 — Profile page polish: whole covers, a header card, matching panels
 
 - **Branch:** `main`
