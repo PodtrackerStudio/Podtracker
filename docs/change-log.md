@@ -71,6 +71,64 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-17 — Home page ("Good to see you …!") redesigned within the palette
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "I also want the page that says nice to see you
+  phil look way better, like 10x better".
+- **Status:** Complete. Not yet seen by Sasha.
+
+**What changed**
+
+- **The greeting is a card** in the content-box blue (`--accent-blue`) with a soft
+  white corner glow. It shows the viewer's avatar (links to their profile), the
+  greeting, a one-line lead, and **three stat pills** (shows followed / logged /
+  reviews), each linking to the matching page. **+ Log podcast** and
+  **Explore** buttons sit on the right; for an account that follows nothing,
+  Explore reads "Find shows to follow". The old subtitle just repeated the
+  section title below it; the lead now says something different in each state.
+- **New episodes have visible captions:** title (2 lines), then show · date. Before,
+  it was twelve unlabelled images whose names only appeared on hover, and never
+  on a phone. The hover card is gone because the caption replaces it. Art is
+  shown whole over a blurred copy of itself (the profile's treatment), not
+  cropped to 16:9. Four columns instead of three, so 12 episodes fill 3 rows.
+- **Trending reviews are cards** (the profile's panel surface), with larger text,
+  tier pills, and a lift on hover. Review text is still Roboto. Show and episode
+  names are still not printed on the card (CLAUDE.md).
+- **Popular podcasts:** rounded, shadowed, lifting on hover.
+- Sections are separated by space instead of `hr` rules. `main` is 1080px wide
+  (was 960px). The phone layout was rewritten: the hero stacks and centres, and
+  episodes and podcasts go two-up.
+- **Structure:** `page.tsx` is now just the auth gate. The body moved to
+  `HomeFeed.tsx`, which takes the user as a prop. That made the populated page
+  checkable from a temporary route without signing in (deleted before
+  committing). The stats are three indexed counts; if they fail, the pills are
+  dropped and the page still renders.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/home/HomeFeed.tsx` | Added — the page body, greeting card, viewer stats |
+| `src/app/home/page.tsx` | Modified — auth gate + `HomeFeed` |
+| `src/app/home/home.module.css` | Modified — hero card, episode captions, review cards, podcast tiles, breakpoints |
+
+**Why**
+
+The page was all images and plain text. You couldn't tell what an episode was,
+and nothing on it was about the person signed in. Every colour is an existing
+token and the fonts are unchanged; the greeting subtitle stays Roboto italic
+as before. Checked with screenshots at 1440px (Sasha's account, 10 follows, and
+a follows-nothing account) and at 390px. No horizontal overflow. `tsc` and eslint
+clean. Logged-out `/home` still redirects to `/login`.
+
+**Follow-ups**
+
+- Sasha hasn't seen it. The greeting card, stat pills, hero buttons and episode
+  captions are additions his frames don't show. Raise them with him.
+- Not viewed in a real signed-in session; it was rendered through `HomeFeed`
+  directly with real account data.
+
 ### 2026-11-17 — Signed-in nav decluttered: Profile becomes a dropdown
 
 - **Branch:** `main`

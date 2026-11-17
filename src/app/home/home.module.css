@@ -1,13 +1,17 @@
 .main {
-  max-width: 960px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 0 24px 80px;
+}
+/* Sections are separated by space rather than the old rules between them. */
+.section {
+  margin-top: 64px;
 }
 .sectionTitle {
   font-size: 32px;
   font-weight: 400;
   text-align: center;
-  margin-bottom: 4px;
+  margin-bottom: 24px;
   letter-spacing: -0.5px;
 }
 .subsectionTitle {
@@ -17,46 +21,159 @@
   margin-bottom: 20px;
 }
 
+/* ── GREETING CARD ──
+   The content-box blue (--accent-blue), lifted with a soft white glow in one
+   corner — the landing page's hero glow, on a card. Avatar, greeting and the
+   viewer's own numbers on the left; the two things you'd do next on the right. */
 .hero {
-  padding: 52px 0 36px;
-  text-align: center;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 28px;
+  margin-top: 36px;
+  padding: 32px 36px;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 55%),
+    var(--accent-blue);
+  box-shadow: var(--shadow-md);
+}
+.heroAvatarLink {
+  display: block;
+  border-radius: 50%;
+  transition: transform 0.2s var(--ease);
+}
+.heroAvatarLink:hover {
+  transform: scale(1.04);
+}
+.heroAvatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  background: #ccc;
+  border: 3px solid #fff;
+  box-shadow: var(--shadow-md);
+}
+.heroBody {
+  min-width: 0;
 }
 .hero h1 {
-  font-size: 42px;
+  font-size: 40px;
   font-weight: 400;
+  line-height: 1.15;
   letter-spacing: -1px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
 }
-.hero p {
-  font-size: 18px;
+.heroLead {
+  font-size: 17px;
   color: var(--text-muted);
   font-style: italic;
+}
+.heroStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.heroStat {
+  font-size: 13px;
+  color: var(--text);
+  text-decoration: none;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.6);
+  transition: background 0.15s;
+}
+.heroStat:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+.heroStat strong {
+  font-weight: 700;
+}
+.heroActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+.heroPrimary,
+.heroSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-size: 15px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.15s;
+}
+.heroPrimary {
+  background: var(--btn-primary-blue);
+  color: var(--on-accent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--btn-primary-blue) 45%, transparent);
+}
+.heroPrimary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--btn-primary-blue) 55%, transparent);
+}
+.heroSecondary {
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--text);
+}
+.heroSecondary:hover {
+  background: #fff;
 }
 
 .episodeGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 28px 20px;
+}
+.episodeCard {
+  display: block;
+  min-width: 0;
+  color: var(--text);
+  text-decoration: none;
 }
 .episodeThumb {
   position: relative;
-  aspect-ratio: 16 / 9;
-  overflow: visible;
-  border-radius: 4px;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: var(--radius-md);
   background: #222;
-  cursor: pointer;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
-.episodeThumb img {
+.episodeCard:hover .episodeThumb {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+/* Scaled up so the blur's soft edge falls outside the rounded frame. */
+.episodeThumbBlur {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
-  border-radius: 4px;
-  transition: transform 0.2s ease;
+  filter: blur(22px) saturate(1.3);
+  transform: scale(1.25);
+  opacity: 0.9;
 }
-.episodeThumb:hover img {
-  transform: scale(1.02);
+.episodeThumbImg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .playOverlay {
   position: absolute;
@@ -66,11 +183,10 @@
   justify-content: center;
   opacity: 0;
   transition: opacity 0.2s;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.28);
   pointer-events: none;
 }
-.episodeThumb:hover .playOverlay {
+.episodeCard:hover .playOverlay {
   opacity: 1;
 }
 .playOverlay svg {
@@ -78,77 +194,25 @@
   height: 40px;
   color: white;
 }
-
-.hoverCard {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 200px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.13);
-  padding: 12px 14px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s ease;
-  z-index: 100;
+.episodeTitle {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.episodeThumb:hover .hoverCard {
-  opacity: 1;
+.episodeCard:hover .episodeTitle {
+  text-decoration: underline;
 }
-.episodeThumb:nth-child(3n) .hoverCard {
-  left: auto;
-  right: 0;
-  transform: none;
-}
-.episodeThumb:nth-child(3n + 1) .hoverCard {
-  left: 0;
-  transform: none;
-}
-.hoverCardTitle {
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 2px;
-  line-height: 1.3;
-  color: var(--text);
-}
-.hoverCardDate {
-  font-size: 11px;
+.episodeMeta {
+  font-size: 12px;
   color: var(--text-muted);
-  margin-bottom: 8px;
-}
-.hoverCardRating {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-.hoverCardScore {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text);
-}
-.hoverCardLabel {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.hoverCardLabel.highly {
-  color: var(--highly-recommend);
-}
-.hoverCardLabel.recommend {
-  color: var(--recommend);
-}
-.hoverCardLabel.ok {
-  color: var(--ok);
-}
-.hoverCardLabel.dont {
-  color: var(--dont);
-}
-.hoverCardLabel.didnt {
-  color: var(--didnt-finish);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nextPageRow {
@@ -172,33 +236,46 @@
 
 .reviewsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
+/* Each review on its own card, the profile's panel surface. */
 .reviewCard {
   display: grid;
-  grid-template-columns: 80px 1fr;
-  gap: 12px;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 16px;
   align-items: start;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s var(--ease), transform 0.2s var(--ease);
+}
+.reviewCard:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 .reviewThumb {
   width: 80px;
   aspect-ratio: 1 / 1;
-  object-fit: cover;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: #ccc;
   display: block;
+}
+.reviewBody {
+  min-width: 0;
 }
 .reviewHeader {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-bottom: 2px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-bottom: 6px;
 }
 .avatar {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   object-fit: cover;
   background: #bbb;
@@ -206,29 +283,42 @@
   flex-shrink: 0;
 }
 .reviewerName {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  overflow-wrap: anywhere;
 }
+.reviewerName:hover {
+  text-decoration: underline;
+}
+/* A pill tinted from the tier's own colour, as on the landing page. */
 .ratingTag {
-  font-size: 11px;
+  --tier: var(--text);
+  font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
+  color: var(--tier);
+  background: color-mix(in srgb, var(--tier) 13%, transparent);
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
 }
 .ratingTag.highly {
-  color: var(--highly-recommend);
+  --tier: var(--highly-recommend);
 }
 .ratingTag.recommend {
-  color: var(--recommend);
+  --tier: var(--recommend);
 }
 .ratingTag.ok {
-  color: var(--ok);
+  --tier: var(--ok);
 }
 .ratingTag.dont {
-  color: var(--dont);
+  --tier: var(--dont);
 }
 .ratingTag.didnt {
-  color: var(--didnt-finish);
+  --tier: var(--didnt-finish);
 }
 .episodeLabel {
   font-size: 12px;
@@ -238,19 +328,21 @@
   font-style: italic;
 }
 .reviewText {
-  font-size: 13px;
+  font-size: 14px;
   color: #333;
   line-height: 1.55;
   display: -webkit-box;
-  -webkit-line-clamp: 5;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .moreLink {
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
   color: var(--text-muted);
   text-decoration: none;
-  margin-top: 3px;
+  margin-top: 8px;
   display: inline-block;
 }
 .moreLink:hover {
@@ -332,29 +424,28 @@
   line-height: 1.3;
 }
 .podcastGrid {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 0 24px 64px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 .podcastCard {
   display: block;
   aspect-ratio: 1 / 1;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: #ccc;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.podcastCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 .podcastCard img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.15s;
-}
-.podcastCard:hover img {
-  transform: scale(1.03);
 }
 
 /* ── WHAT IS ── */
@@ -363,20 +454,78 @@
 /* The signed-in landing page, and it had no breakpoints at all. */
 @media (max-width: 900px) {
   .episodeGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .reviewsGrid,
   .popularListsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Actions drop under the greeting as a row. */
+  .hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .heroActions {
+    grid-column: 1 / -1;
+    flex-direction: row;
   }
 }
 
 @media (max-width: 560px) {
+  .main {
+    padding: 0 16px 56px;
+  }
+  .section {
+    margin-top: 48px;
+  }
+  .sectionTitle {
+    font-size: 26px;
+    margin-bottom: 18px;
+  }
+  /* Stacked and centred: avatar, greeting, numbers, then the two buttons. */
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+    gap: 16px;
+    margin-top: 20px;
+    padding: 28px 20px;
+  }
+  .heroAvatar {
+    width: 80px;
+    height: 80px;
+  }
+  .hero h1 {
+    font-size: 30px;
+  }
+  .heroLead {
+    font-size: 15px;
+  }
+  .heroStats {
+    justify-content: center;
+  }
+  .heroActions {
+    width: 100%;
+  }
+  .heroPrimary,
+  .heroSecondary {
+    flex: 1;
+    padding: 11px 12px;
+  }
   .episodeGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 12px;
+  }
+  .podcastGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
   /* An 80px cover column leaves the review text about 190px wide. */
   .reviewCard {
-    grid-template-columns: 60px 1fr;
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px;
+  }
+  .reviewThumb {
+    width: 60px;
   }
 }

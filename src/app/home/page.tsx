@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { MediaThumbCard } from "@/components/MediaThumbCard";
-import { PlayIcon } from "@/components/icons";
 import { getCurrentUser } from "@/lib/auth";
-import { getPopularPodcasts } from "@/lib/popularPodcasts";
-import { getFollowedEpisodes } from "@/lib/followedEpisodes";
-import { getTrendingReviews } from "@/lib/trendingReviews";
-import styles from "./home.module.css";
+import { HomeFeed } from "./HomeFeed";
 
 export const metadata: Metadata = {
   title: "Home",
@@ -51,117 +45,10 @@ export default async function HomePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  // In parallel: the feed parses podcast XML and is far and away the slowest of
-  // the three, so running it alongside the other two costs nothing extra.
-  const [newEpisodes, reviews, popularPodcasts] = await Promise.all([
-    getFollowedEpisodes(user.id),
-    // 8, not 3 (Sasha, 2026-10-22): show what has actually been written rather
-    // than a sample of it, because the site reads as empty otherwise. Nothing
-    // was being filtered out before — every review with text is eligible, and 3
-    // was simply the number asked for.
-    //
-    // Even on purpose: `.reviewsGrid` is two columns, so an odd cap guaranteed
-    // a half-empty last row no matter how many reviews existed. A ceiling
-    // rather than "all of them", so the section stays a section once there are
-    // hundreds.
-    getTrendingReviews(8),
-    getPopularPodcasts(),
-  ]);
-
   return (
     <>
       <SiteNav active="home" />
-
-      <main className={styles.main}>
-        <section className={styles.hero}>
-          <h1>Good to see you {user.displayName}!</h1>
-          <p>
-            {newEpisodes.length > 0
-              ? "New from the shows you follow"
-              : "Follow a few shows and their new episodes turn up here"}
-          </p>
-        </section>
-
-        {newEpisodes.length > 0 && (
-          <section>
-            <h2 className={styles.sectionTitle}>New from shows you follow</h2>
-            <div className={styles.episodeGrid}>
-              {newEpisodes.map((ep) => (
-                <Link className={styles.episodeThumb} href={ep.href} key={ep.key}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={ep.coverUrl} alt="" />
-                  <div className={styles.playOverlay}>
-                    <PlayIcon />
-                  </div>
-                  <div className={styles.hoverCard}>
-                    <div className={styles.hoverCardTitle}>{ep.title}</div>
-                    <div className={styles.hoverCardDate}>
-                      {ep.showTitle} · {ep.dateLabel}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {reviews.length > 0 && (
-          <>
-            <hr className="divider" />
-            <section>
-              <h2 className={styles.sectionTitle}>Trending reviews</h2>
-              <div className={styles.reviewsGrid}>
-                {reviews.map((r) => (
-                  <div className={styles.reviewCard} key={r.id}>
-                    {/* The artwork carries what was reviewed, in its hover
-                        popup. The show and episode name are deliberately not
-                        printed on a review card — see CLAUDE.md. */}
-                    <div className={styles.reviewThumb}>
-                      <MediaThumbCard
-                        href={r.subjectHref}
-                        cover={r.coverUrl}
-                        title={r.subjectTitle}
-                        subtitle={r.subjectSubtitle}
-                      />
-                    </div>
-                    <div>
-                      <div className={styles.reviewHeader}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img className={styles.avatar} src={r.authorAvatarUrl ?? "/default-avatar.webp"} alt="" />
-                        <Link href={`/user/${r.authorUsername}`} className={styles.reviewerName}>
-                          {r.authorName}
-                        </Link>
-                        {r.tierLabel && r.tierClass && (
-                          <span className={`${styles.ratingTag} ${styles[r.tierClass]}`}>{r.tierLabel}</span>
-                        )}
-                      </div>
-                      <p className={styles.reviewText}>{r.text}</p>
-                      <Link href={r.href} className={styles.moreLink}>
-                        MORE
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </>
-        )}
-
-        <hr className="divider" />
-
-        <section>
-          <h2 className={styles.sectionTitle}>Popular podcasts</h2>
-          <div className={styles.podcastGrid}>
-            {popularPodcasts.map((p) => (
-              <Link className={styles.podcastCard} href={`/podcast/${p.id}`} key={p.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.artworkUrl} alt={p.title} />
-              </Link>
-            ))}
-          </div>
-        </section>
-      </main>
-
+      <HomeFeed user={user} />
       <SiteFooter />
     </>
   );
