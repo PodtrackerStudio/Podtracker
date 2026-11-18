@@ -173,6 +173,33 @@ Three things to know before touching what is left:
   past 280s even cached. The full list passes `resolveEpisodeLinks: false` and
   links to shows. Don't "fix" it by raising `MAX_FEEDS`.
 
+## Page caching for signed-out visitors (since 2026-11-18)
+
+Signed-out visitors get **cached copies** of the public pages; signed-in people
+get the normal per-request pages. Read this before touching `src/proxy.ts`, the
+nav, or any page listed here.
+
+- `src/proxy.ts`: a GET with **no Supabase auth cookie and no query string** for
+  a path in `CACHEABLE` is rewritten to `/cached/…` (the browser URL does not
+  change). Any `sb-…-auth-token` cookie, valid or not, means no rewrite.
+- `src/app/cached/[...path]/page.tsx` renders the **real page components** under
+  `force-static` with `revalidate = 300`. `force-static` makes `cookies()` empty,
+  so `getCurrentUser()` is null and the page renders as signed-out. Pages are
+  built on first visit, never at build time (empty `generateStaticParams`).
+- Covered: `/`, `/explore`, `/explore/top-podcasts`, `/explore/trending-episodes`,
+  `/podcast/[id]`, `/podcast/[id]/episodes`, `/podcast/[id]/top-rated`,
+  `/podcast/[id]/episode/[epId]`.
+- **To add a page**, add it in both places (`CACHEABLE` and `resolve`). It must
+  look the same to every signed-out visitor and must not read `searchParams`.
+- **Consequences to keep in mind:** signed-out visitors can see ratings, reviews
+  and charts up to 5 minutes old. A page that renders a degraded state (a feed
+  that failed to load) keeps it for up to 5 minutes for them. If a covered page
+  starts showing something per-visitor without a cookie (a header, an IP-based
+  guess), it will be cached and shown to everyone — don't.
+- Test with `next build && next start`, not `next dev`: dev never caches. A
+  cached response has `x-nextjs-cache: HIT` and `cache-control: s-maxage=300`;
+  a signed-in one has `cache-control: private, no-store`.
+
 ## Security rules that are easy to break
 
 - **Every migration that creates a table must end with

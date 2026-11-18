@@ -71,6 +71,75 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-18 — Page caching for signed-out visitors
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "do the page caching" (audit item 13, left out
+  of the first round of fixes).
+- **Status:** Complete for eight public routes. Live verification is in **Why**.
+
+**What changed**
+
+- **Signed-out visitors get cached pages.** `src/proxy.ts` rewrites a GET with
+  no Supabase auth cookie and no query string, for a listed public path, to
+  `/cached/…`. The new `src/app/cached/[...path]/page.tsx` renders the real
+  page component under `force-static` (`cookies()` comes back empty, so the
+  page renders as signed-out) with `revalidate = 300`. Covered: `/`,
+  `/explore`, the two full chart lists, and the show, all-episodes, top-rated
+  and episode pages.
+- **Signed-in visitors are unchanged**: any auth cookie skips the rewrite.
+- **The proxy no longer calls Supabase at all for cookieless requests** — there
+  is no session to refresh. That applies to every route, not only cached ones.
+- `/cached/` is disallowed in `robots.txt`; canonical tags already point at the
+  real URLs.
+- CLAUDE.md has a new section describing the mechanism and its rules.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/cached/[...path]/page.tsx` | Added — dispatcher to the real pages, `force-static`, 5-minute revalidate |
+| `src/proxy.ts` | Modified — `hasAuthCookie`, `cachedTwin`, `CACHEABLE`; early return for signed-out requests |
+| `src/app/robots.ts` | Modified — disallow `/cached/` |
+| `CLAUDE.md` | Modified — "Page caching for signed-out visitors" |
+
+**Why**
+
+Every page was dynamic because `SiteNav` reads the session cookie. The
+framework's own answer is Cache Components, which changes rendering rules for
+all ~40 routes at once and needs the nav redesigned around a loading hole — too
+much to change on a live site with no tests. This gets the same result for the
+visitors who benefit most (first-time visitors and crawlers, who are all signed
+out) without modifying a single page: the proxy picks the copy, and
+`force-static` makes the existing components render their signed-out form.
+
+**A catch-all rather than one static file per route** so nothing is prerendered
+during a build — `/explore` reaching Apple during a build has failed a deploy
+before.
+
+Verified on a local production build (`next build && next start`):
+
+- Signed-out: first request `MISS` (0.4–1.0s), second `HIT` in ~3 ms, for `/`,
+  `/explore`, a show, top-podcasts, top-rated and an episode.
+- With an auth cookie: `cache-control: private, no-store`, rendered per request.
+- With a query string: not rewritten.
+- Unknown show: 404. `/cached/settings`: 404.
+- Real browser, signed-out: landing → show → Explore → episode → back, all via
+  client-side navigation, correct URLs and titles, no console errors.
+- Cached HTML has the right title, canonical and JSON-LD, and no `/cached`
+  links.
+
+@@LIVE@@
+
+**Follow-ups**
+
+- **Not exercised:** logging in immediately after browsing cached pages. The
+  login, signup and logout forms all call `router.refresh()`, which discards
+  the client's cached copies, but it was read in code rather than clicked.
+- Profiles, reviews and lists are not cached: they change with what their
+  owner does, and five-minute-old versions would look like lost edits.
+- Signed-out visitors see ratings and charts up to five minutes old.
+
 ### 2026-11-18 — Deeper latency audit (Lighthouse) and image weight cut
 
 - **Branch:** `main`

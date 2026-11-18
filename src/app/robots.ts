@@ -40,6 +40,9 @@ export default function robots(): MetadataRoute.Robots {
         "/reset-password",
         "/episode/find",
         "/genres",
+        // Internal cached copies of public pages (see app/cached). The real
+        // URLs are what should be indexed; each copy's canonical tag says so too.
+        "/cached/",
       ],
     },
     sitemap: `${origin}/sitemap.xml`,

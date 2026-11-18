@@ -48,9 +48,58 @@ function isCrossSiteWrite(request: NextRequest): boolean {
   return originHost !== host.split(",")[0].trim();
 }
 
+/**
+ * Public pages that are identical for every signed-out visitor, and so can be
+ * served from a cached copy. Must mirror `resolve` in
+ * `src/app/cached/[...path]/page.tsx` — read the note there first.
+ *
+ * Ids are restricted to plain characters so nothing odd is forwarded into the
+ * rewritten path.
+ */
+const SEGMENT = "[A-Za-z0-9_-]+";
+const CACHEABLE = new RegExp(
+  `^(?:/|/explore|/explore/top-podcasts|/explore/trending-episodes|/podcast/${SEGMENT}(?:/episodes|/top-rated|/episode/${SEGMENT})?)$`,
+);
+
+/** Supabase's session cookies: `sb-<project>-auth-token`, possibly chunked `.0`, `.1`. */
+function hasAuthCookie(request: NextRequest): boolean {
+  return request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+}
+
+/**
+ * Where to send a signed-out visitor for the cached copy of this page, or null
+ * if this request should render normally.
+ *
+ * Only a GET, only a listed page, and only with no query string of its own —
+ * a cached page cannot read one (the episode page's `?t=` hint, for example),
+ * so those requests take the normal route. `_rsc` is Next's own parameter on
+ * client-side navigations and does not count.
+ */
+function cachedTwin(request: NextRequest): URL | null {
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
+  const { pathname, searchParams } = request.nextUrl;
+  if (!CACHEABLE.test(pathname)) return null;
+  for (const key of searchParams.keys()) {
+    if (key !== "_rsc") return null;
+  }
+  const url = request.nextUrl.clone();
+  url.pathname = pathname === "/" ? "/cached/landing" : `/cached${pathname}`;
+  return url;
+}
+
 export async function proxy(request: NextRequest) {
   if (isCrossSiteWrite(request)) {
     return NextResponse.json({ error: "Cross-site request refused." }, { status: 403 });
+  }
+
+  // **Signed-out visitors.** No session cookie means there is no session to
+  // refresh, so the Supabase work below is skipped entirely — and if the page
+  // is one of the public ones, they get its cached copy instead of a fresh
+  // render. Someone with a cookie, valid or stale, always takes the normal
+  // path below, so a signed-in person can never be shown the signed-out copy.
+  if (!hasAuthCookie(request)) {
+    const twin = cachedTwin(request);
+    return twin ? NextResponse.rewrite(twin) : NextResponse.next();
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
