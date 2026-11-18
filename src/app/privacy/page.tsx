@@ -302,6 +302,14 @@ export default function PrivacyPage() {
           <li>bio</li>
           <li>external link</li>
           <li>ratings, reviews, lists, follows, and diary entries</li>
+          {/* Added 2026-11-17 with the /contact form. Worth listing separately
+              rather than folding into "contact data": the name and email there
+              are optional and unverified, and the message is free text that
+              may contain anything the sender chooses to put in it. */}
+          <li>
+            anything you choose to write to us through our contact form, including a name and email
+            address if you give them
+          </li>
           <li>usage data</li>
         </ul>
         <p>
@@ -810,8 +818,15 @@ export default function PrivacyPage() {
           information, you can make a complaint directly to us. This is in addition to the rights
           you have under the UK General Data Protection Regulation and the Data Protection Act 2018.
         </p>
+        {/* The feedback form was added 2026-11-17. Listed first because it is
+            the channel that cannot be lost to a spam filter — it is stored on
+            our side as well as delivered. The email address stays: a form is
+            no use to somebody who cannot reach the site. */}
         <p>How to contact us:</p>
         <ul>
+          <li>
+            <strong>Our contact form:</strong> <a href="/contact">podtracker.studio/contact</a>
+          </li>
           <li>
             <strong>Email:</strong>{" "}
             <a href="mailto:podtracker13@gmail.com">podtracker13@gmail.com</a>

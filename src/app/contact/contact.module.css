@@ -1,0 +1,138 @@
+/* The feedback form at /contact.
+
+   Sasha supplied a mock for this one (2026-11-17): centred heading "Give us
+   Feedback!", left-aligned labels above pale blue fields, and a blue pill
+   Submit underneath. Everything here follows that, using the documented
+   tokens — `--accent-blue` for the fields, `--btn-primary-blue` with
+   `--on-accent` for the button, `--radius-pill` for its shape. The column
+   width and heading scale are lifted from donate.module.css so this page sits
+   beside the site's other centred form page rather than inventing its own. */
+
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.heading {
+  font-size: 40px;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.intro {
+  text-align: center;
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.65;
+  max-width: 520px;
+  margin: 0 auto 36px;
+}
+
+.form {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.label {
+  display: block;
+  font-size: 17px;
+  margin-bottom: 8px;
+}
+
+/* The mock's fields are a flat fill with no border. Kept that way, with a
+   focus ring added — a borderless input with no focus state is invisible to
+   anyone navigating by keyboard. */
+.input,
+.textarea {
+  display: block;
+  width: 100%;
+  background: var(--accent-blue);
+  border: none;
+  border-radius: 4px;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 26px;
+}
+
+.input:focus-visible,
+.textarea:focus-visible {
+  outline: 2px solid var(--btn-primary-blue);
+  outline-offset: 2px;
+}
+
+.textarea {
+  min-height: 180px;
+  /* Vertical only: dragging it wider would break the column. */
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.submitRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.submit {
+  background: var(--btn-primary-blue);
+  color: var(--on-accent);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 12px 44px;
+  font-family: inherit;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.error {
+  color: var(--dont);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+
+.sent {
+  text-align: center;
+  font-size: 18px;
+  line-height: 1.7;
+  margin: 48px 0;
+}
+
+/* A button, not a link: it changes state on this page and goes nowhere. Styled
+   as a link because that is what it reads as. */
+.againLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The honeypot. `display: none` would be the obvious choice and is the wrong
+   one — the better bots skip hidden fields, so it has to be in the layout and
+   merely out of view. */
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+@media (max-width: 520px) {
+  .heading {
+    font-size: 32px;
+  }
+}

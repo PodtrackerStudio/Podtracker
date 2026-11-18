@@ -18,11 +18,15 @@ export function SiteFooter() {
             signed-in users to /home — so About Us was dead for anyone with an
             account. */}
         <Link href="/about">About Us</Link>
-        {/* A mailto, not a contact form — there's no mail-sending backend, and
-            a form that silently went nowhere would be worse than none. No
-            target: mailto hands off to the mail client, so a new tab would just
-            leave a blank one behind. */}
-        <a href="mailto:podtracker13@gmail.com">Contact us</a>
+        {/* Was a `mailto:` until 2026-11-17, on the reasoning that a form with
+            no backend going silently nowhere would be worse than none. The
+            form now has one — Discord plus a stored row — and reports failure
+            rather than thanking you for a message that vanished, so the
+            objection no longer holds.
+
+            One link, not two: a footer offering both "Contact us" and
+            "Feedback" makes people stop and wonder which one they want. */}
+        <Link href="/contact">Contact us</Link>
         {/* Also in the nav now, top right. Kept here too: the footer is where
             people look for a donate link on a page that isn't the home page. */}
         <Link href="/donate">Donate</Link>

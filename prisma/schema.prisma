@@ -74,8 +74,40 @@ model User {
   // deleted user would leave "X followed you" rows pointing at nobody.
   notifications       Notification[] @relation("notificationRecipient")
   notificationsCaused Notification[] @relation("notificationActor")
+  feedback            Feedback[]
 
   @@index([username])
+}
+
+/**
+ * A message sent through the feedback form at /contact.
+ *
+ * **Stored as well as delivered.** The form's primary delivery is a Discord
+ * webhook, because that is somewhere Sasha already is. A row here is the
+ * durable copy: the privacy policy tells people to contact us to exercise
+ * their rights, so a channel that can silently drop a message is a compliance
+ * problem, not just an annoyance.
+ *
+ * `name` and `email` are optional and are whatever the sender typed — they are
+ * not verified and must never be treated as identity. `userId` is the only
+ * trustworthy attribution, read from the session server-side, and it is null
+ * for anyone not signed in.
+ */
+model Feedback {
+  id      String  @id @default(cuid())
+  name    String?
+  email   String?
+  message String
+
+  // Null for signed-out senders. Cascade rather than SetNull because the
+  // privacy policy promises deletion removes personal data, and a feedback
+  // message holds whatever its author typed into it.
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 // The Session model lived here and is gone deliberately (2026-09-07). Sessions

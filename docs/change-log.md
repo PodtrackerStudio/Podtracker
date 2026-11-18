@@ -71,6 +71,108 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-17 — Feedback form at /contact
+
+- **Branch:** `main`
+- **Requested by:** Sasha — supplied a mock ("Give us Feedback!", Name / Email /
+  Message, blue pill Submit) and asked whether it should live on the landing and
+  home pages or as its own link. Then: "build it".
+- **Status:** Complete and verified. **Needs one environment variable set
+  before it delivers anything** — see Follow-ups.
+
+**A page, not a section — and it replaces the footer's `mailto:`**
+
+The footer's "Contact us" was `mailto:podtracker13@gmail.com`. That link does
+nothing at all for anyone without a desktop mail client configured, which is
+most people, and it published the address to every scraper. The form supersedes
+it; the footer keeps one link rather than gaining a second, because a footer
+offering both "Contact us" and "Feedback" makes people stop and choose.
+
+Not embedded on the landing page: it would compete with "Create account" for
+attention from people who have not used the site yet and so have nothing to say
+about it. Not on every page: a larger surface to keep free of spam.
+
+The old footer comment argued against a form on the grounds that there was no
+mail backend and one going silently nowhere would be worse than none. That
+objection is answered rather than ignored — see below.
+
+**Two delivery paths, and failure is reported**
+
+A Discord webhook (`DISCORD_FEEDBACK_WEBHOOK_URL`) because that is somewhere
+Sasha already is, and a `Feedback` row because the privacy policy points people
+here to exercise their rights and a channel that can silently drop a request is
+a compliance problem rather than an annoyance.
+
+**Either succeeding is a success; only when both fail does the route return
+503** — and then it says so and gives the email address, instead of thanking
+somebody for a message that went nowhere. This is deliberately the opposite of
+what notifications did three days ago, where a failed write was swallowed and
+the feature looked healthy while being completely broken.
+
+It therefore works with the migration unapplied, which matters because
+migrations currently cannot be applied to production at all.
+
+| File | Change |
+| --- | --- |
+| `prisma/schema.prisma` | `Feedback` model, `User.feedback` relation |
+| `migrations/20261117090000_add_feedback` | FK `ON DELETE CASCADE` |
+| `src/app/contact/page.tsx` + `ContactForm.tsx` + `.module.css` | The page |
+| `src/app/api/feedback/route.ts` | Rate limit, honeypot, validation, both deliveries |
+| `src/components/SiteFooter.tsx` | "Contact us" now points at `/contact` |
+| `src/app/privacy/page.tsx` | Form listed as a contact channel; free-text messages added to what is collected |
+| `docs/apply-feedback-by-hand.sql` | SQL-editor route, as for notifications |
+
+**Decisions worth knowing**
+
+- **Only the message is required.** Demanding contact details costs you exactly
+  the feedback from people who cannot be bothered to give them. Name and email
+  prefill for signed-in senders.
+- **The session decides who sent it, never the form.** `userId` is read
+  server-side; the typed name is unverified text and must never be rendered as
+  identity.
+- **`allowed_mentions: { parse: [] }` on the Discord post is not optional.**
+  Without it anyone could type `@everyone` into the box and ping the whole
+  server — attacker-controlled text posted by a trusted integration.
+- **Account deletion cascades to feedback.** The privacy policy promises
+  deletion removes personal data and a message holds whatever its author typed.
+  Signed-out messages are attached to nobody and survive.
+- **The honeypot is positioned off-screen, not `display: none`** — the better
+  bots skip hidden fields. A filled honeypot gets a 200, because a bot told it
+  failed retries with the field blank.
+
+**Verified**
+
+14 assertions against a real Postgres (storage, optional fields, a
+5000-character message, attribution, cascade on account deletion, and that a
+missing table rejects as P2021 rather than hanging). 32 in a browser against
+the real page with the API stubbed: the mock's colours (`#7bbaff` pill with
+white text, `#c3dbff` fields), submit disabled until there is a message, the
+honeypot off-screen and out of keyboard order, the payload actually sent,
+the thank-you state, "send another", a 400 showing the server's wording, **a
+503 not saying thanks**, and no horizontal overflow at 390px. `tsc`, `eslint`
+and a production build clean.
+
+Two test assertions were wrong and were fixed rather than the code: Playwright
+counts an off-screen element as visible, and `getByRole("alert")` also matches
+Next's route announcer.
+
+**Follow-ups**
+
+- **`DISCORD_FEEDBACK_WEBHOOK_URL` is not set in Vercel.** Until it is, and
+  until the migration is applied, the form correctly refuses and tells people
+  to email. Setting the webhook is something Sasha can do himself; the
+  migration still needs Supabase access he does not have.
+- **`docs/apply-feedback-by-hand.sql` has not been run.**
+- **Nothing reads the stored feedback yet.** No admin page, no script. Discord
+  is the reading surface for now; a `npm run feedback` listing would be the
+  obvious small addition.
+- **Next.js reports that this version has a known security vulnerability.** The
+  build prints it and exits 1 on the first run, then succeeds on a retry, so it
+  will not block Vercel but it is real. Not acted on — an upgrade is Sasha's
+  call, not something to slip into a feedback-form commit.
+
+---
+
 ### 2026-11-17 — Nav search: loading state, keyboard, "see all", clear, polish
 
 - **Branch:** `main`
