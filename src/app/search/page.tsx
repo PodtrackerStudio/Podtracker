@@ -45,7 +45,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                     ? `${styles.topResultCover} ${styles.topResultCoverUser}`
                     : styles.topResultCover
                 }
-                src={topResult.cover}
+                src={artworkAt(topResult.cover, 130)}
                 alt={topResult.type === "user" ? "" : topResult.title}
               />
               <div>

@@ -43,7 +43,11 @@ export async function SiteNav({ active }: SiteNavProps) {
           tile behind it. See the contrast note in globals.css. */}
       <Link className="nav-logo-tile" href="/" aria-label="Podtracker home">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="" />
+        {/* A 176px copy (2× the 88px tile) of the 561px original: 59 KB
+            became a fraction of that, on every page. Regenerate with
+            `sips -Z 176 public/logo.png --out public/logo-176.png` if the
+            logo changes. */}
+        <img src="/logo-176.png" alt="" width={88} height={88} />
       </Link>
       <Link className="nav-logo" href="/">
         Podtracker

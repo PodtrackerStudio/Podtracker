@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { RatingTierKey } from "@/lib/ratingTier";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
+import { artworkAt } from "@/lib/artwork";
 
 type Rating = { score: number; tier: RatingTierKey; tierLabel: string };
 
@@ -20,7 +21,7 @@ export function MediaThumbCard({
   return (
     <Link className="media-thumb" href={href}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img loading="lazy" decoding="async" className="media-thumb-cover" src={cover} alt={title} />
+      <img loading="lazy" decoding="async" className="media-thumb-cover" src={artworkAt(cover, 100)} alt={title} />
       <div className="media-thumb-popup">
         <div className="media-thumb-title">{title}</div>
         {subtitle && <div className="media-thumb-subtitle">{subtitle}</div>}

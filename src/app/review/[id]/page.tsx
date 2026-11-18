@@ -15,6 +15,7 @@ import { usernameToPath } from "@/lib/routeParams";
 import { JsonLd } from "@/components/JsonLd";
 import { staticSiteOrigin } from "@/lib/siteUrl";
 import { tierRatingSchema, type Tier } from "@/lib/ratingScale";
+import { artworkAt } from "@/lib/artwork";
 
 /** RatingTier enum → the label and colour class the design uses. */
 const TIER_DISPLAY: Record<string, { label: string; className: string }> = {
@@ -193,7 +194,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
         <article className={styles.reviewHeader}>
           <Link href={href}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={styles.cover} src={cover} alt={title} />
+            <img className={styles.cover} src={artworkAt(cover, 200)} alt={title} />
           </Link>
 
           <div>

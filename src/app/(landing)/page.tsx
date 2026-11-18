@@ -6,6 +6,7 @@ import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import { HeroIntro } from "../HeroIntro";
 import { WhatIsPodtracker } from "../WhatIsPodtracker";
 import styles from "../landing.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 const ratingTiers = [
   { name: "Highly recommend", color: "var(--highly-recommend)" },
@@ -43,10 +44,21 @@ export default async function LandingPage() {
       <section>
         <h2 className={styles.sectionTitle}>Popular podcasts</h2>
         <div className={styles.podcastGrid}>
-          {popularPodcasts.map((p) => (
+          {popularPodcasts.map((p, i) => (
             <Link className={styles.podcastCard} href={`/podcast/${p.id}`} key={p.id}>
+              {/* The first row is the largest thing on screen when the page
+                  opens — what Lighthouse times as "largest contentful paint".
+                  Lazy-loading it made the browser wait before even starting
+                  the download (7.3s on a slow phone). First row now, the rest
+                  when scrolled to. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img loading="lazy" decoding="async" src={p.artworkUrl} alt={p.title} />
+              <img
+                loading={i < 4 ? "eager" : "lazy"}
+                fetchPriority={i < 4 ? "high" : "auto"}
+                decoding="async"
+                src={artworkAt(p.artworkUrl, 260)}
+                alt={p.title}
+              />
             </Link>
           ))}
         </div>

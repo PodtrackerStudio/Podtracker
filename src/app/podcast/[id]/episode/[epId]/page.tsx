@@ -17,6 +17,7 @@ import { getViewerEpisodeState } from "@/lib/viewerState";
 import { tierFromScore } from "@/lib/ratingTier";
 import { getEpisodeDetail, recoverEpisodeFromSearch, type EpisodeDetail } from "@/lib/episodeDetail";
 import styles from "./episode.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 // The mock `community` block that used to sit here — a 3.8 average over 591
 // invented ratings — is gone as of 2026-10-03. Both numbers come from
@@ -204,9 +205,9 @@ export default async function EpisodePage({
             {/* Same art glow as the show page: a blurred copy behind the cover. */}
             <div className={styles.coverWrap}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className={styles.coverGlow} src={episode.coverUrl} alt="" aria-hidden="true" />
+              <img className={styles.coverGlow} src={artworkAt(episode.coverUrl, 300)} alt="" aria-hidden="true" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img loading="lazy" decoding="async" className={styles.episodeCover} src={episode.coverUrl} alt="Episode cover" />
+              <img loading="lazy" decoding="async" className={styles.episodeCover} src={artworkAt(episode.coverUrl, 300)} alt="Episode cover" />
             </div>
             {/* Same rule as the show page: visible once anyone has rated this
                 episode, absent entirely when nobody has. */}
@@ -353,7 +354,7 @@ export default async function EpisodePage({
                 <div className={styles.listGallery}>
                   {l.gallery.map((src) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img loading="lazy" decoding="async" className={styles.listGalleryImg} src={src} alt="" key={src} />
+                    <img loading="lazy" decoding="async" className={styles.listGalleryImg} src={artworkAt(src, 64)} alt="" key={src} />
                   ))}
                   <div className={styles.listGalleryMore}>+{l.more}</div>
                 </div>

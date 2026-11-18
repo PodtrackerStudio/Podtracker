@@ -10,6 +10,7 @@ import styles from "../profileSub.module.css";
 import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
 import { avatarSrc } from "@/lib/avatar";
 import { PUBLIC_PROFILE_SELECT } from "@/lib/profileUser";
+import { artworkAt } from "@/lib/artwork";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username: usernameParam } = await params;
@@ -84,7 +85,7 @@ export default async function DiaryPage({ params }: { params: Promise<{ username
               const body = (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img loading="lazy" decoding="async" className={styles.reviewThumb} src={cover} alt={title} />
+                  <img loading="lazy" decoding="async" className={styles.reviewThumb} src={artworkAt(cover, 80)} alt={title} />
                   <div className={styles.reviewBody}>
                     <div className={styles.reviewTitle}>{title}</div>
                     <div className={styles.reviewDate}>{entry.listenedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}</div>

@@ -20,10 +20,15 @@ const roboto = Roboto({
 });
 
 // Rating labels
+// `preload: false`: only rating labels use it, and most pages open without
+// one on screen. Preloaded, its two files competed with the page's main image
+// for a slow connection on every single page. Now it downloads when a label
+// actually needs it.
 const londrinaSolid = Londrina_Solid({
   weight: ["400", "900"],
   subsets: ["latin"],
   variable: "--font-rating",
+  preload: false,
 });
 
 // Personal-theme fonts (src/lib/theme.ts). `preload: false`: the @font-face

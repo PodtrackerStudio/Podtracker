@@ -19,6 +19,7 @@ import { tierFromScore } from "@/lib/ratingTier";
 import { getViewerPodcastState } from "@/lib/viewerState";
 import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import styles from "./podcast.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 // The mock `community` block that used to sit here — a 3.6 average over 1,083
 // invented ratings — is gone as of 2026-10-03. Both numbers come from
@@ -183,9 +184,9 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                 inside the cover's footprint (see the note above). */}
             <div className={styles.coverWrap}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className={styles.coverGlow} src={podcast.coverUrl} alt="" aria-hidden="true" />
+              <img className={styles.coverGlow} src={artworkAt(podcast.coverUrl, 300)} alt="" aria-hidden="true" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img loading="lazy" decoding="async" className={styles.podcastCover} src={podcast.coverUrl} alt={`${podcast.title} cover`} />
+              <img loading="lazy" decoding="async" className={styles.podcastCover} src={artworkAt(podcast.coverUrl, 300)} alt={`${podcast.title} cover`} />
             </div>
             {/* Shown as soon as one person has rated the show, not on the
                 global switch: an average over two people is real, just small.
@@ -337,7 +338,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
             {recentEpisodes.map((ep) => (
               <Link className={styles.episodeRow} href={`/podcast/${podcast.id}/episode/${ep.id}`} key={ep.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img loading="lazy" decoding="async" className={styles.episodeCover} src={ep.img} alt="Episode" />
+                <img loading="lazy" decoding="async" className={styles.episodeCover} src={artworkAt(ep.img, 60)} alt="Episode" />
                 <div className={styles.episodeInfo}>
                   <div className={styles.episodeTitle}>{ep.title}</div>
                   <div className={styles.episodeGuest}>{ep.guest}</div>
@@ -397,7 +398,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                 <div className={styles.listGallery}>
                   {l.gallery.map((src) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img loading="lazy" decoding="async" className={styles.listGalleryImg} src={src} alt="" key={src} />
+                    <img loading="lazy" decoding="async" className={styles.listGalleryImg} src={artworkAt(src, 64)} alt="" key={src} />
                   ))}
                   <div className={styles.listGalleryMore}>+{l.more}</div>
                 </div>

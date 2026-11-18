@@ -71,6 +71,66 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-18 — Deeper latency audit (Lighthouse) and image weight cut
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "increase the audit check for latency and increase
+  responsiveness".
+- **Status:** Complete. After-numbers on the live site are in **Why**.
+
+**What the deeper audit measured**
+
+The first audit timed the server (0.15–0.4s; fine). This one ran Lighthouse
+(mobile, throttled) against the live site, which measures what a phone sees.
+
+| Page | Score | Largest content shown | Page weight |
+| --- | --- | --- | --- |
+| Landing | 75 | 7.3s | 1,891 KB |
+| Explore | 97 | 2.6s | 1,690 KB |
+| Show | 91 | 3.3s | 593 KB |
+| Profile | 77 | 5.9s | 1,726 KB |
+
+**Images were 75–80% of every page** (1.3–1.5 MB). Covers were requested at
+600px in whatever format the publisher uploaded — one landing-page cover was a
+399 KB PNG. And yesterday's blanket `loading="lazy"` had been applied to the
+landing page's first row, which is its largest element, delaying it.
+
+**What changed**
+
+- **`artworkAt` now asks for WebP** from Apple (`…/300x300bb.webp`): the 399 KB
+  PNG is 22 KB at 600px and 9 KB at 300px. It also resizes **imgix** URLs
+  (Megaphone's episode art; 124 KB → 42 KB at 400px), skipping signed ones.
+- **Applied to every cover on the site** (22 files), each with its on-screen
+  size: landing, home, profile, show and episode pages, lists, diary, reviews,
+  search, following, the add/favourite pickers and `MediaThumbCard`.
+- **Landing page's first row loads eagerly with `fetchPriority="high"`**.
+- **Nav logo:** `public/logo-176.png` (13 KB) instead of the 561px original
+  (60 KB), on every page. The original is untouched.
+- **Londrina Solid is no longer preloaded** (`preload: false`). Only rating
+  labels use it; its two files were competing with each page's main image.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/artwork.ts` | Rewritten — WebP, imgix, size steps |
+| 22 page/component files | Modified — `artworkAt(url, size)` on cover `<img>`s |
+| `src/app/(landing)/page.tsx` | Modified — first row eager + high priority |
+| `src/components/SiteNav.tsx`, `public/logo-176.png` | Modified / Added — small logo |
+| `src/app/layout.tsx` | Modified — rating font not preloaded |
+
+**Why**
+
+@@LH_AFTER@@
+
+**Follow-ups**
+
+- Episode art on hosts other than Apple and imgix is still full size.
+- `/explore/top-podcasts` shows 100 covers at ~28 KB each; lazy loading means
+  only the visible ones download.
+- `/home` and other signed-in pages cannot be run through Lighthouse without a
+  login; Speed Insights (enabled separately) is what will show those.
+
 ### 2026-11-18 — Vercel Speed Insights connected
 
 - **Branch:** `main`

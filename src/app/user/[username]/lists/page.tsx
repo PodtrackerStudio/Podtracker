@@ -10,6 +10,7 @@ import styles from "../profileSub.module.css";
 import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
 import { avatarSrc } from "@/lib/avatar";
 import { PUBLIC_PROFILE_SELECT } from "@/lib/profileUser";
+import { artworkAt } from "@/lib/artwork";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username: usernameParam } = await params;
@@ -79,7 +80,7 @@ export default async function ListsPage({ params }: { params: Promise<{ username
                       const cover = item.podcast?.coverUrl ?? item.episode?.coverUrl ?? item.episode?.podcast?.coverUrl ?? "/placeholder-cover.svg";
                       return (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img loading="lazy" decoding="async" className={styles.listRowGalleryImg} src={cover} alt="" key={item.id} />
+                        <img loading="lazy" decoding="async" className={styles.listRowGalleryImg} src={artworkAt(cover, 80)} alt="" key={item.id} />
                       );
                     })}
                   </div>

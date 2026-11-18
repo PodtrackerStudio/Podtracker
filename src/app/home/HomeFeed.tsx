@@ -10,6 +10,7 @@ import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import { getFollowedEpisodes } from "@/lib/followedEpisodes";
 import { getTrendingReviews } from "@/lib/trendingReviews";
 import styles from "./home.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 type HomeUser = { id: string; username: string; displayName: string };
 
@@ -162,7 +163,7 @@ export async function HomeFeed({ user }: { user: HomeUser }) {
           {popularPodcasts.map((p) => (
             <Link className={styles.podcastCard} href={`/podcast/${p.id}`} key={p.id}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img loading="lazy" decoding="async" src={p.artworkUrl} alt={p.title} />
+              <img loading="lazy" decoding="async" src={artworkAt(p.artworkUrl, 260)} alt={p.title} />
             </Link>
           ))}
         </div>
@@ -187,9 +188,9 @@ async function NewEpisodes({ userId }: { userId: string }) {
                   the same treatment as the profile's recent logs. */}
               <div className={styles.episodeThumb}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img loading="lazy" decoding="async" className={styles.episodeThumbBlur} src={ep.coverUrl} alt="" aria-hidden />
+                <img loading="lazy" decoding="async" className={styles.episodeThumbBlur} src={artworkAt(ep.coverUrl, 260)} alt="" aria-hidden />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img loading="lazy" decoding="async" className={styles.episodeThumbImg} src={ep.coverUrl} alt="" />
+                <img loading="lazy" decoding="async" className={styles.episodeThumbImg} src={artworkAt(ep.coverUrl, 260)} alt="" />
                 <div className={styles.playOverlay}>
                   <PlayIcon />
                 </div>

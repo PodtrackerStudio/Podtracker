@@ -4,6 +4,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import styles from "./topPodcasts.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 export const metadata: Metadata = {
   title: "Top podcasts today",
@@ -33,7 +34,7 @@ export default async function TopPodcastsPage() {
             {podcasts.map((p) => (
               <Link className={styles.card} href={`/podcast/${p.id}`} key={p.id} title={p.title}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img loading="lazy" decoding="async" src={p.artworkUrl} alt={p.title} />
+                <img loading="lazy" decoding="async" src={artworkAt(p.artworkUrl, 250)} alt={p.title} />
               </Link>
             ))}
           </div>

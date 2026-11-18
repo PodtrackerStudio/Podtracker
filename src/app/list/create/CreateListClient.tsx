@@ -6,6 +6,7 @@ import { subtitleForSearchItem, type SearchItem, type SearchScope } from "@/lib/
 import { useSearchResults } from "@/components/useSearchResults";
 import { TrashIcon } from "@/components/icons";
 import styles from "./createList.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 /**
  * One row of the list being built. `externalId` is the show's iTunes id either
@@ -170,7 +171,7 @@ export function CreateListClient() {
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img loading="lazy" decoding="async" className={styles.addDropdownThumb} src={item.cover} alt="" />
+                  <img loading="lazy" decoding="async" className={styles.addDropdownThumb} src={artworkAt(item.cover, 60)} alt="" />
                   <div>
                     <div>{item.title}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{subtitleForSearchItem(item)}</div>

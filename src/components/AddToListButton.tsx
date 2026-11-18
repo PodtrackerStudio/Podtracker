@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { PlusIcon } from "./icons";
 import styles from "./addToList.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 type PickerList = {
   id: string;
@@ -163,7 +164,7 @@ export function AddToListButton({
               <span className={styles.gallery}>
                 {list.covers.map((cover, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img loading="lazy" decoding="async" className={styles.galleryImg} src={cover} alt="" key={`${cover}-${i}`} />
+                  <img loading="lazy" decoding="async" className={styles.galleryImg} src={artworkAt(cover, 50)} alt="" key={`${cover}-${i}`} />
                 ))}
                 {list.itemCount > list.covers.length && (
                   <span className={styles.galleryMore}>+{list.itemCount - list.covers.length}</span>

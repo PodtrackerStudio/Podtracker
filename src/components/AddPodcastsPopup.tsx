@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckIcon } from "./icons";
 import styles from "./addPodcastsPopup.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 /**
  * The "Add podcasts" picker. Sasha's design is a full-bleed panel: a heading
@@ -107,7 +108,7 @@ export function AddPodcastsPopup({
                 aria-pressed={isAdded}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img loading="lazy" decoding="async" src={show.artworkUrl} alt={show.title} />
+                <img loading="lazy" decoding="async" src={artworkAt(show.artworkUrl, 110)} alt={show.title} />
                 {isAdded && (
                   <span className={styles.addedBadge} aria-hidden="true">
                     <CheckIcon size={22} />

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "../app/user/[username]/profileSub.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 export function FavoriteCard({ podcastId, title, cover, canRemove }: { podcastId: string; title: string; cover: string | null; canRemove: boolean }) {
   const router = useRouter();
@@ -21,7 +22,7 @@ export function FavoriteCard({ podcastId, title, cover, canRemove }: { podcastId
     <Link className={styles.card} href={`/podcast/${podcastId}`}>
       <div style={{ position: "relative" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className={styles.cover} src={cover ?? "/placeholder-cover.svg"} alt={title} />
+        <img className={styles.cover} src={artworkAt(cover, 200) || "/placeholder-cover.svg"} alt={title} />
         {canRemove && (
           <button
             onClick={remove}

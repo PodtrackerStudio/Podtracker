@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { EpisodeListEntry, EpisodeSort } from "@/lib/episodeDetail";
 import { EPISODE_PAGE_SIZE as PAGE_SIZE } from "@/lib/episodePaging";
 import styles from "../episodeListing.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 
 /**
@@ -100,7 +101,7 @@ export function EpisodeListClient({
             // appended, so the id alone could repeat.
             <Link className={styles.episodeRow} href={`/podcast/${podcastId}/episode/${ep.id}`} key={`${ep.id}:${i}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img loading="lazy" decoding="async" className={styles.episodeThumb} src={ep.img} alt="" />
+              <img loading="lazy" decoding="async" className={styles.episodeThumb} src={artworkAt(ep.img, 60)} alt="" />
               <div className={styles.episodeText}>
                 <div className={styles.episodeLink}>{ep.title}</div>
                 <div className={styles.episodeDate}>{ep.date}</div>

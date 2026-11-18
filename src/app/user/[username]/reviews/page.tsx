@@ -9,6 +9,7 @@ import styles from "../profileSub.module.css";
 import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
 import { avatarSrc } from "@/lib/avatar";
 import { PUBLIC_PROFILE_SELECT } from "@/lib/profileUser";
+import { artworkAt } from "@/lib/artwork";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username: usernameParam } = await params;
@@ -101,7 +102,7 @@ export default async function ReviewsPage({ params }: { params: Promise<{ userna
               return (
                 <Link className={styles.reviewRow} href={href} key={entry.id}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img loading="lazy" decoding="async" className={styles.reviewThumb} src={cover} alt={title} />
+                  <img loading="lazy" decoding="async" className={styles.reviewThumb} src={artworkAt(cover, 80)} alt={title} />
                   <div className={styles.reviewBody}>
                     <div className={styles.reviewTitle}>{title}</div>
                     {rating && <span className={`${styles.reviewTag} ${styles[TIER_CLASS[rating.tier]]}`}>{TIER_LABELS[rating.tier]}</span>}

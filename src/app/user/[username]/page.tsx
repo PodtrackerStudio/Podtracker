@@ -15,6 +15,7 @@ import { avatarSrc } from "@/lib/avatar";
 import { PUBLIC_PROFILE_SELECT } from "@/lib/profileUser";
 import { getFollowState, getFollowCounts } from "@/lib/userFollow";
 import { UserFollowButton } from "@/components/UserFollowButton";
+import { artworkAt } from "@/lib/artwork";
 
 // A seeded demo account kept around to show what a populated profile looks
 // like — real signups won't have activity until rating/review persistence
@@ -91,7 +92,9 @@ const juneWeeks = [
  * the art were sliced in half. The whole cover is shown instead, and a blurred
  * copy of it fills the sides, so the slot keeps its shape without letterboxing.
  */
-function ListeningThumb({ src }: { src: string }) {
+function ListeningThumb({ src: original }: { src: string }) {
+  // One URL for both images below, so the browser downloads it once.
+  const src = artworkAt(original, 330);
   return (
     <span className={styles.listeningThumb}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -588,7 +591,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                       // eslint-disable-next-line @next/next/no-img-element
                       <img loading="lazy" decoding="async"
                         className={styles.listGalleryImg}
-                        src={item.coverUrl ?? "/default-avatar.webp"}
+                        src={artworkAt(item.coverUrl, 64) || "/default-avatar.webp"}
                         alt={item.title}
                         key={item.itemId}
                       />
