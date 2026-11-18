@@ -121,7 +121,18 @@ landing page's first row, which is its largest element, delaying it.
 
 **Why**
 
-@@LH_AFTER@@
+Re-run on the live site after deploying (same tool, same settings):
+
+| Page | Score | Largest content shown | Page weight | Images |
+| --- | --- | --- | --- | --- |
+| Landing | 89–94 (was 75) | 3.1–3.7s (was 7.3s) | 524 KB (was 1,891) | 177 KB (was 1,523) |
+| Explore | 92–98 (was 97) | 2.3–3.0s (was 2.6s) | 522 KB (was 1,690) | 179 KB (was 1,305) |
+| Show | 96 (was 91) | 2.7s (was 3.3s) | 488 KB (was 593) | 79 KB (was 166) |
+| Profile | 89–98 (was 77) | 2.3–3.8s (was 5.9s) | 665 KB (was 1,726) | 319 KB (was 1,339) |
+
+Lighthouse varies run to run — ranges are from repeated runs. One profile run
+reported an 820 ms main-thread stall; three re-runs each showed 10 ms, so it
+was noise rather than a regression.
 
 **Follow-ups**
 
