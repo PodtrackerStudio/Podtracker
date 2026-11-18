@@ -129,7 +129,25 @@ Verified on a local production build (`next build && next start`):
 - Cached HTML has the right title, canonical and JSON-LD, and no `/cached`
   links.
 
-@@LIVE@@
+Verified on the live site after deploying: signed-out requests return
+`x-vercel-cache: HIT`; requests carrying an auth cookie return `MISS` with
+`cache-control: private, no-store`.
+
+**The speed gain in normal conditions is small, and that should be said
+plainly.** Server wait (excluding connection setup), six requests each:
+
+| Page | Cached (signed-out) | Per-request (cookie) |
+| --- | --- | --- |
+| `/explore` | 70–133 ms | 101–133 ms |
+| `/podcast/360084272` | 75–100 ms | 112–120 ms, one at 460 ms |
+| `/podcast/…/episodes` | 80–205 ms | 97–170 ms |
+
+Per-request rendering was already fast because the data underneath was cached,
+and every request still passes through the proxy before the cache. What this
+buys is elsewhere: signed-out visitors no longer hit the slow cases (a cold
+server, an expired feed — the 460 ms above, and multi-second feed parses); and
+their page views use **no database connection and no function render**, which
+matters against the 15-connection pooler limit when traffic spikes.
 
 **Follow-ups**
 
