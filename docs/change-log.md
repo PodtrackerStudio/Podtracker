@@ -71,6 +71,43 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-18 — Vercel Speed Insights connected
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "can you connect the Vercel Speed Insights?"
+  (after asking how the site was doing for latency).
+- **Status:** Code complete. **Needs Speed Insights enabled in the Vercel
+  dashboard before any data appears.**
+
+**What changed**
+
+- Added `@vercel/speed-insights` and render `<SpeedInsights />` beside
+  `<Analytics />` in `SiteAnalytics.tsx`, so it is on every page via the layout.
+- It uses the same `beforeSend` that strips the query string from `/auth/*`
+  URLs, so one-time login tokens are not recorded. `stripSecrets` became
+  generic over `{ url: string }` to serve both packages.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/SiteAnalytics.tsx` | Modified — `<SpeedInsights />`, shared `stripSecrets` |
+| `package.json`, `package-lock.json` | Modified — `@vercel/speed-insights` 2.1.0 |
+
+**Why**
+
+Server timings measured with curl (0.25–0.4s for most pages) say nothing about
+what a phone experiences loading images and running scripts. Speed Insights
+reports that from real visitors. The privacy policy already names Vercel for
+hosting and analytics.
+
+**Follow-ups**
+
+- Enable it: Vercel → the project → Speed Insights → Enable. It may be a paid
+  add-on beyond the plan's included data points.
+- Not verified that data arrives; that can only be seen in the dashboard after
+  it is enabled and the site has had visitors.
+
 ### 2026-11-18 — Security and performance audit, and the fixes
 
 - **Branch:** `main`

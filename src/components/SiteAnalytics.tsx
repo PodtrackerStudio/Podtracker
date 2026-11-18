@@ -1,6 +1,7 @@
 "use client";
 
-import { Analytics, type BeforeSendEvent } from "@vercel/analytics/next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 /**
  * Vercel Web Analytics, with secrets stripped from the URLs it records.
@@ -13,8 +14,16 @@ import { Analytics, type BeforeSendEvent } from "@vercel/analytics/next";
  * token in the query string (`/auth/confirm?token_hash=…`, and the older
  * `/auth/callback?code=…`). Recording those would put working credentials into
  * a third-party dashboard. Every `/auth/*` URL is reported as its bare path.
+ *
+ * **Speed Insights (added 2026-11-18) gets the same treatment.** It reports
+ * real visitors' load times per page — and so records URLs too, through the
+ * same kind of hook. It only sends data from a Vercel deployment, and only
+ * once Speed Insights is switched on for the project in the Vercel dashboard.
+ *
+ * Generic so one function serves both: the two packages' event types differ,
+ * but each has a `url`, which is all this touches.
  */
-function stripSecrets(event: BeforeSendEvent): BeforeSendEvent | null {
+function stripSecrets<E extends { url: string }>(event: E): E {
   const url = new URL(event.url);
   if (url.pathname.startsWith("/auth/")) {
     url.search = "";
@@ -24,5 +33,10 @@ function stripSecrets(event: BeforeSendEvent): BeforeSendEvent | null {
 }
 
 export function SiteAnalytics() {
-  return <Analytics beforeSend={stripSecrets} />;
+  return (
+    <>
+      <Analytics beforeSend={stripSecrets} />
+      <SpeedInsights beforeSend={stripSecrets} />
+    </>
+  );
 }
