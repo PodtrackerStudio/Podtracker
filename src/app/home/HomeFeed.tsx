@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { MediaThumbCard } from "@/components/MediaThumbCard";
 import { PlayIcon, PlusIcon } from "@/components/icons";
@@ -40,10 +41,11 @@ async function getViewerStats(userId: string) {
  * page.tsx so the page itself is only the auth gate.
  */
 export async function HomeFeed({ user }: { user: HomeUser }) {
-  // In parallel: the feed parses podcast XML and is far and away the slowest of
-  // these, so running the rest alongside it costs nothing extra.
-  const [newEpisodes, reviews, popularPodcasts, stats] = await Promise.all([
-    getFollowedEpisodes(user.id),
+  // The followed-shows feed is NOT in this batch. It parses podcast XML and can
+  // take up to its 10-second budget on a cold server; awaited here, the whole
+  // page — greeting included — stayed blank that long. It renders in its own
+  // <Suspense> below and streams in when ready.
+  const [reviews, popularPodcasts, stats] = await Promise.all([
     // 8, not 3 (Sasha, 2026-10-22): show what has actually been written rather
     // than a sample of it, because the site reads as empty otherwise. Nothing
     // was being filtered out before — every review with text is eligible, and 3
@@ -60,7 +62,7 @@ export async function HomeFeed({ user }: { user: HomeUser }) {
 
   const name = user.displayName || user.username;
   const profilePath = `/user/${usernameToPath(user.username)}`;
-  const followsNothing = stats ? stats.following === 0 : newEpisodes.length === 0;
+  const followsNothing = stats ? stats.following === 0 : false;
 
   return (
     <main className={styles.main}>
@@ -107,35 +109,12 @@ export async function HomeFeed({ user }: { user: HomeUser }) {
         </div>
       </section>
 
-      {newEpisodes.length > 0 && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>New from shows you follow</h2>
-          <div className={styles.episodeGrid}>
-            {newEpisodes.map((ep) => (
-              <Link className={styles.episodeCard} href={ep.href} key={ep.key}>
-                {/* Episode art is often the show's square cover. Shown whole,
-                    over a blurred copy of itself, rather than cropped to 16:9 —
-                    the same treatment as the profile's recent logs. */}
-                <div className={styles.episodeThumb}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className={styles.episodeThumbBlur} src={ep.coverUrl} alt="" aria-hidden />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className={styles.episodeThumbImg} src={ep.coverUrl} alt="" />
-                  <div className={styles.playOverlay}>
-                    <PlayIcon />
-                  </div>
-                </div>
-                {/* Visible captions, not a hover card: twelve unlabelled images
-                    gave no way to tell what anything was without pointing at it,
-                    and on a phone there is no pointing. */}
-                <div className={styles.episodeTitle}>{ep.title}</div>
-                <div className={styles.episodeMeta}>
-                  {ep.showTitle} · {ep.dateLabel}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+      {/* Skipped outright for someone who follows nothing: there is no feed
+          to wait for, so no placeholder should flash and vanish. */}
+      {!followsNothing && (
+        <Suspense fallback={<NewEpisodesSkeleton />}>
+          <NewEpisodes userId={user.id} />
+        </Suspense>
       )}
 
       {reviews.length > 0 && (
@@ -158,7 +137,7 @@ export async function HomeFeed({ user }: { user: HomeUser }) {
                 <div className={styles.reviewBody}>
                   <div className={styles.reviewHeader}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className={styles.avatar} src={r.authorAvatarUrl ?? "/default-avatar.webp"} alt="" />
+                    <img loading="lazy" decoding="async" className={styles.avatar} src={r.authorAvatarUrl ?? "/default-avatar.webp"} alt="" />
                     <Link href={`/user/${usernameToPath(r.authorUsername)}`} className={styles.reviewerName}>
                       {r.authorName}
                     </Link>
@@ -183,11 +162,66 @@ export async function HomeFeed({ user }: { user: HomeUser }) {
           {popularPodcasts.map((p) => (
             <Link className={styles.podcastCard} href={`/podcast/${p.id}`} key={p.id}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.artworkUrl} alt={p.title} />
+              <img loading="lazy" decoding="async" src={p.artworkUrl} alt={p.title} />
             </Link>
           ))}
         </div>
       </section>
     </main>
+  );
+}
+
+/** The followed-shows feed, on its own so it can arrive after the rest. */
+async function NewEpisodes({ userId }: { userId: string }) {
+  const newEpisodes = await getFollowedEpisodes(userId);
+  if (newEpisodes.length === 0) return null;
+
+  return (
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>New from shows you follow</h2>
+        <div className={styles.episodeGrid}>
+          {newEpisodes.map((ep) => (
+            <Link className={styles.episodeCard} href={ep.href} key={ep.key}>
+              {/* Episode art is often the show's square cover. Shown whole,
+                  over a blurred copy of itself, rather than cropped to 16:9 —
+                  the same treatment as the profile's recent logs. */}
+              <div className={styles.episodeThumb}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img loading="lazy" decoding="async" className={styles.episodeThumbBlur} src={ep.coverUrl} alt="" aria-hidden />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img loading="lazy" decoding="async" className={styles.episodeThumbImg} src={ep.coverUrl} alt="" />
+                <div className={styles.playOverlay}>
+                  <PlayIcon />
+                </div>
+              </div>
+              {/* Visible captions, not a hover card: twelve unlabelled images
+                  gave no way to tell what anything was without pointing at it,
+                  and on a phone there is no pointing. */}
+              <div className={styles.episodeTitle}>{ep.title}</div>
+              <div className={styles.episodeMeta}>
+                {ep.showTitle} · {ep.dateLabel}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+  );
+}
+
+/** Holds the section's place while the feed loads: same title, empty tiles. */
+function NewEpisodesSkeleton() {
+  return (
+    <section className={styles.section} aria-busy="true" aria-label="Loading new episodes">
+      <h2 className={styles.sectionTitle}>New from shows you follow</h2>
+      <div className={styles.episodeGrid}>
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i}>
+            <div className={`${styles.episodeThumb} ${styles.skeleton}`} />
+            <div className={`${styles.skeletonLine} ${styles.skeleton}`} />
+            <div className={`${styles.skeletonLineShort} ${styles.skeleton}`} />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

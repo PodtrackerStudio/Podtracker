@@ -79,7 +79,7 @@ export default async function ListsPage({ params }: { params: Promise<{ username
                       const cover = item.podcast?.coverUrl ?? item.episode?.coverUrl ?? item.episode?.podcast?.coverUrl ?? "/placeholder-cover.svg";
                       return (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img className={styles.listRowGalleryImg} src={cover} alt="" key={item.id} />
+                        <img loading="lazy" decoding="async" className={styles.listRowGalleryImg} src={cover} alt="" key={item.id} />
                       );
                     })}
                   </div>

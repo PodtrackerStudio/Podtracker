@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { db } from "./db";
 import { episodeHref } from "./episodeKey";
 import { TIER_LABEL, TIER_CLASS, type Tier } from "./ratingScale";
@@ -50,8 +51,31 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
+/**
+ * The same list for every viewer, so it is computed at most once every five
+ * minutes rather than on every `/home` load: ordering every review by its like
+ * count is a scan of the whole table, plus two more queries.
+ *
+ * A failure throws out of the cached function, so it is not stored — the
+ * wrapper below turns it into an empty section for that one request.
+ */
 export async function getTrendingReviews(limit = 3): Promise<TrendingReview[]> {
   try {
+    return await cachedTrendingReviews(limit);
+  } catch {
+    // The home page survives without this section.
+    return [];
+  }
+}
+
+const cachedTrendingReviews = unstable_cache(
+  (limit: number) => loadTrendingReviews(limit),
+  ["trending-reviews"],
+  { revalidate: 300, tags: ["trending-reviews"] },
+);
+
+async function loadTrendingReviews(limit: number): Promise<TrendingReview[]> {
+  {
     const entries = await db.logEntry.findMany({
       where: { reviewText: { not: null } },
       include: {
@@ -130,8 +154,5 @@ export async function getTrendingReviews(limit = 3): Promise<TrendingReview[]> {
         dateLabel: dateFormatter.format(entry.listenedDate),
       };
     });
-  } catch {
-    // The home page survives without this section.
-    return [];
   }
 }

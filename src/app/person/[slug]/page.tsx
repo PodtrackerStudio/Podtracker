@@ -104,7 +104,7 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
         <div className={styles.layout}>
           <div className={styles.left}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={styles.photo} src={person.photo} alt={person.name} />
+            <img loading="lazy" decoding="async" className={styles.photo} src={person.photo} alt={person.name} />
             <p className={styles.bio}>{person.bio}</p>
           </div>
 
@@ -116,7 +116,7 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
                 <div className={styles.hostedShowLabel}>Hosted show</div>
                 <Link className={styles.hostedShowLink} href={person.hostedShow.href}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className={styles.hostedShowCover} src={person.hostedShow.cover} alt={person.hostedShow.title} />
+                  <img loading="lazy" decoding="async" className={styles.hostedShowCover} src={person.hostedShow.cover} alt={person.hostedShow.title} />
                 </Link>
               </>
             )}

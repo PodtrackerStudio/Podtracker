@@ -29,7 +29,7 @@ export function ProfileSubHeader({
   return (
     <div className={styles.subHeader}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className={styles.avatar} src={avatarUrl ?? "/default-avatar.webp"} alt="Profile picture" />
+      <img loading="lazy" decoding="async" className={styles.avatar} src={avatarUrl ?? "/default-avatar.webp"} alt="Profile picture" />
       <div className={styles.subnav}>
         <Link href={`/user/${usernameToPath(username)}`} className={active === "profile" ? styles.active : undefined}>
           Profile

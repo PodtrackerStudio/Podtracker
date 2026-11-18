@@ -107,7 +107,7 @@ export function AddPodcastsPopup({
                 aria-pressed={isAdded}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={show.artworkUrl} alt={show.title} />
+                <img loading="lazy" decoding="async" src={show.artworkUrl} alt={show.title} />
                 {isAdded && (
                   <span className={styles.addedBadge} aria-hidden="true">
                     <CheckIcon size={22} />

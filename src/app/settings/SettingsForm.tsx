@@ -257,7 +257,7 @@ export function SettingsForm({ user, theme }: { user: User; theme: Theme }) {
           <div className={styles.avatarWrap}>
             <button className={styles.avatarButton} onClick={() => fileInputRef.current?.click()}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className={styles.avatarImg} src={avatarUrl ?? "/default-avatar.webp"} alt="Profile picture" />
+              <img loading="lazy" decoding="async" className={styles.avatarImg} src={avatarUrl ?? "/default-avatar.webp"} alt="Profile picture" />
               <div className={styles.avatarOverlay}>
                 <PlusIcon size={28} />
               </div>

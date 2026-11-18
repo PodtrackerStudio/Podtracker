@@ -76,7 +76,7 @@ export function Comments({
           {comments.map((c) => (
             <div className={styles.comment} key={c.id}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className={styles.avatar} src={c.authorAvatarUrl ?? "/default-avatar.webp"} alt="" />
+              <img loading="lazy" decoding="async" className={styles.avatar} src={c.authorAvatarUrl ?? "/default-avatar.webp"} alt="" />
               <span className={styles.author}>{c.authorName}</span>
               <p className={styles.text}>{c.text}</p>
             </div>

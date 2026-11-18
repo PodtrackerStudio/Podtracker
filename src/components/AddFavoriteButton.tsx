@@ -98,7 +98,7 @@ export function AddFavoriteButton() {
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.cover} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 4, background: "#ccc", flexShrink: 0 }} />
+              <img loading="lazy" decoding="async" src={item.cover} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 4, background: "#ccc", flexShrink: 0 }} />
               <div>
                 <div>{item.title}</div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{subtitleForSearchItem(item)}</div>

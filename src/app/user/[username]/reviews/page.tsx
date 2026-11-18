@@ -101,7 +101,7 @@ export default async function ReviewsPage({ params }: { params: Promise<{ userna
               return (
                 <Link className={styles.reviewRow} href={href} key={entry.id}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className={styles.reviewThumb} src={cover} alt={title} />
+                  <img loading="lazy" decoding="async" className={styles.reviewThumb} src={cover} alt={title} />
                   <div className={styles.reviewBody}>
                     <div className={styles.reviewTitle}>{title}</div>
                     {rating && <span className={`${styles.reviewTag} ${styles[TIER_CLASS[rating.tier]]}`}>{TIER_LABELS[rating.tier]}</span>}

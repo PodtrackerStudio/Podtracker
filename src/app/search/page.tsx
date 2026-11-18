@@ -4,6 +4,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { search, hrefForSearchItem, subtitleForSearchItem, type SearchItem } from "@/lib/search";
 import styles from "./search.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 export const metadata: Metadata = {
   title: "Search",
@@ -38,7 +39,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             <h2 className={styles.sectionTitle}>Top result</h2>
             <Link className={styles.topResultCard} href={hrefForSearchItem(topResult)}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <img loading="lazy" decoding="async"
                 className={
                   topResult.type === "user"
                     ? `${styles.topResultCover} ${styles.topResultCoverUser}`
@@ -62,7 +63,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               {userResults.map((item: SearchItem) => (
                 <Link className={styles.resultCard} href={hrefForSearchItem(item)} key={item.id}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <img loading="lazy" decoding="async"
                     className={`${styles.resultCover} ${styles.resultCoverUser}`}
                     src={item.cover}
                     alt=""
@@ -84,7 +85,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               {mediaResults.map((item: SearchItem) => (
                 <Link className={styles.resultCard} href={hrefForSearchItem(item)} key={item.id}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className={styles.resultCover} src={item.cover} alt={item.title} />
+                  <img loading="lazy" decoding="async" className={styles.resultCover} src={artworkAt(item.cover, 90)} alt={item.title} />
                   <div>
                     <div className={styles.resultTitle}>{item.title}</div>
                     <div className={styles.resultSubtitle}>{subtitleForSearchItem(item)}</div>

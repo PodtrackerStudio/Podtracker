@@ -131,8 +131,51 @@ RLS is on (no policies) for the 19 tables that exist in production.
   profile links now go through `usernameToPath`; notifications mark-read runs
   in `after()`; Next.js 16.4.3 → 16.4.6 (GHSA-mfr8-8qww-v76h, GHSA-vc7v-qv4w-wrv8).
 
+**Part 2 — speed and reliability fixes**
+
+- **Loading states.** `app/loading.tsx` (nav-shaped bar plus three dots) gives a
+  click instant feedback; there was none anywhere. Pages with no nav (landing,
+  login, signup, forgot/reset password, `/auth/confirm`) have their own empty
+  one. **The landing page moved to `app/(landing)/page.tsx`** — a route group,
+  same URL — purely so it can have that.
+- **`/home` streams.** The followed-shows feed (up to a 10s budget on a cold
+  server) left the batch that blocks the page and renders in `<Suspense>` with a
+  skeleton. Measured locally, cold: first byte 0.96s, complete 5.7s — the whole
+  5.7s used to be blank.
+- **Feed cache** (`podcastApi.ts`): least-recently-*used* eviction (a hit
+  re-inserts); an expired entry is served while a refresh runs behind it, and
+  kept if the refresh fails. The cache itself stays — see CLAUDE.md.
+- **`withDbRetry` now matches pool exhaustion** (`EMAXCONNSESSION`, "max
+  clients"), the failure `db.ts` documents and the list had missed.
+- **Profile page:** follow counts via `getFollowCounts` in the main batch (was a
+  count, every followed id, then a second round trip); recent logs and ratings
+  select only the columns read.
+- **Trending reviews** cached 5 minutes (`unstable_cache`); failures not cached.
+- **`findStoredEpisodeId`** wrapped in React `cache` — one query per episode
+  page instead of two.
+- **Images:** `loading="lazy" decoding="async"` on 53 `<img>` tags (not the nav
+  logo, profile/hero avatars or a page's main cover). New `lib/artwork.ts`
+  `artworkAt(url, cssPx)` requests Apple art at display size: Explore's grids
+  300px (was 600), search dropdowns 100px, search results 200px.
+- **Bugs:** every show's top-rated page was titled "Modern Wisdom"; the
+  notification bell set state in an effect (the one eslint error in `src`).
+- `next build` passes from a clean `.next`; `tsc` and `eslint src` are clean.
+
 **Deliberately not changed**
 
+- **Public pages are still rendered per request** (audit item 13). Caching them
+  means adopting Cache Components and moving the nav's signed-in half behind
+  Suspense on every page — a re-architecture, not a fix, and not something to
+  push to production untested alongside twenty other changes.
+- **Diary and reviews pages still load a user's full history.** Capping them
+  hides old entries; doing it properly is pagination, which is a feature.
+- **Episode art from feeds is still full size** (often 1400–3000px shown at
+  56px). Those are arbitrary hosts with no resizing; the options are Vercel
+  image optimisation (cost, allow-list) or swapping in the show's cover
+  (changes what people see). Lazy loading takes the edge off meanwhile.
+- **Pool size (3 per instance against 15 pooler slots)** and the three small
+  read-then-write races (duplicate list position, two watchlists, simultaneous
+  mutual follow recorded as FOLLOW not FRIEND) are unchanged.
 - **Signup still says "an account with that email already exists".** That
   reveals registered addresses, but the wording was chosen on purpose after
   people got stuck (2026-11-17 entry); swapping it for a silent "check your

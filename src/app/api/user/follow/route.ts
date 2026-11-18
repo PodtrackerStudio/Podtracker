@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { usernameFromParam } from "@/lib/routeParams";
-import { getFollowState, type FollowState } from "@/lib/userFollow";
+import type { FollowState } from "@/lib/userFollow";
 import { guardWrite, tooManyRequests } from "@/lib/rateLimit";
 
 /**

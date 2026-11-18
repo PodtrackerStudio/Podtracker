@@ -38,7 +38,7 @@ export function AppearancesGrid({ appearances }: { appearances: Appearance[] }) 
         {sorted.map((a) => (
           <Link className={styles.appearanceCard} href={a.href} key={a.id}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={styles.appearanceCover} src={a.img} alt={a.title} />
+            <img loading="lazy" decoding="async" className={styles.appearanceCover} src={a.img} alt={a.title} />
             <div className={styles.appearanceTitle}>{a.title}</div>
           </Link>
         ))}

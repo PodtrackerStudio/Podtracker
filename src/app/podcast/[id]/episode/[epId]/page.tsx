@@ -206,7 +206,7 @@ export default async function EpisodePage({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className={styles.coverGlow} src={episode.coverUrl} alt="" aria-hidden="true" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className={styles.episodeCover} src={episode.coverUrl} alt="Episode cover" />
+              <img loading="lazy" decoding="async" className={styles.episodeCover} src={episode.coverUrl} alt="Episode cover" />
             </div>
             {/* Same rule as the show page: visible once anyone has rated this
                 episode, absent entirely when nobody has. */}
@@ -317,7 +317,7 @@ export default async function EpisodePage({
             {reviews.map((r) => (
               <div className={styles.reviewCard} key={r.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={styles.reviewerAvatar} src={r.avatar} alt="" />
+                <img loading="lazy" decoding="async" className={styles.reviewerAvatar} src={r.avatar} alt="" />
                 <div>
                   <div className={styles.reviewerName}>{r.name}</div>
                   <span className={`${styles.ratingTag} ${styles[r.tier]}`}>{r.tierLabel}</span>
@@ -344,7 +344,7 @@ export default async function EpisodePage({
               <Link className={styles.listCard} href="#" key={l.id}>
                 <div className={styles.listCardLeft}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className={styles.listAvatar} src={l.avatar} alt="" />
+                  <img loading="lazy" decoding="async" className={styles.listAvatar} src={l.avatar} alt="" />
                   <div>
                     <div className={styles.listInfoTitle}>{l.title}</div>
                     <div className={styles.listInfoAuthor}>{l.author}</div>
@@ -353,7 +353,7 @@ export default async function EpisodePage({
                 <div className={styles.listGallery}>
                   {l.gallery.map((src) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className={styles.listGalleryImg} src={src} alt="" key={src} />
+                    <img loading="lazy" decoding="async" className={styles.listGalleryImg} src={src} alt="" key={src} />
                   ))}
                   <div className={styles.listGalleryMore}>+{l.more}</div>
                 </div>

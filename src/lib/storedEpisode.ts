@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "./db";
 import { episodeKeyFromGuid } from "./episodeKey";
 
@@ -13,10 +14,15 @@ import { episodeKeyFromGuid } from "./episodeKey";
  * `ensureEpisode` only writes a row once somebody rates, logs or lists an
  * episode. If it ever isn't, the fix is a stored, indexed key column.
  */
-export async function findStoredEpisodeId(podcastId: string, episodeKey: string): Promise<string | null> {
+/**
+ * Wrapped in React `cache`, so the two callers on an episode page
+ * (`ratingSummary`, `viewerState`) share one query and one round of hashing
+ * instead of doing both twice per render.
+ */
+export const findStoredEpisodeId = cache(async (podcastId: string, episodeKey: string): Promise<string | null> => {
   const episodes = await db.episode.findMany({
     where: { podcastId, externalId: { not: null } },
     select: { id: true, externalId: true },
   });
   return episodes.find((e) => e.externalId && episodeKeyFromGuid(e.externalId) === episodeKey)?.id ?? null;
-}
+});

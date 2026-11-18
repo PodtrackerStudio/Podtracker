@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { hrefForSearchItem, subtitleForSearchItem, type SearchScope } from "@/lib/searchItem";
 import { useSearchResultsState } from "./useSearchResults";
 import { SearchIcon } from "./icons";
+import { artworkAt } from "@/lib/artwork";
 
 /**
  * The same filter the add bars carry, plus Users.
@@ -188,13 +189,13 @@ export function SearchBox() {
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <img loading="lazy" decoding="async"
                   className={
                     item.type === "user"
                       ? "search-dropdown-thumb search-dropdown-thumb-user"
                       : "search-dropdown-thumb"
                   }
-                  src={item.cover}
+                  src={artworkAt(item.cover, 44)}
                   alt=""
                 />
                 <div className="search-dropdown-text">

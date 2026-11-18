@@ -185,7 +185,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className={styles.coverGlow} src={podcast.coverUrl} alt="" aria-hidden="true" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className={styles.podcastCover} src={podcast.coverUrl} alt={`${podcast.title} cover`} />
+              <img loading="lazy" decoding="async" className={styles.podcastCover} src={podcast.coverUrl} alt={`${podcast.title} cover`} />
             </div>
             {/* Shown as soon as one person has rated the show, not on the
                 global switch: an average over two people is real, just small.
@@ -294,7 +294,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                   {friendsActivity.map((f) => (
                     <div className={styles.friendActivityItem} key={f.id}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img className={styles.friendActivityAvatar} src={f.avatar} alt="" />
+                      <img loading="lazy" decoding="async" className={styles.friendActivityAvatar} src={f.avatar} alt="" />
                       <span className={`${styles.friendRatingTag} ${styles[f.tier]}`}>{f.tierLabel}</span>
                       {f.hasReview && (
                         <Link href={`/podcast/${podcast.id}/episode/1109`} className={styles.friendReadReview}>
@@ -337,7 +337,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
             {recentEpisodes.map((ep) => (
               <Link className={styles.episodeRow} href={`/podcast/${podcast.id}/episode/${ep.id}`} key={ep.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={styles.episodeCover} src={ep.img} alt="Episode" />
+                <img loading="lazy" decoding="async" className={styles.episodeCover} src={ep.img} alt="Episode" />
                 <div className={styles.episodeInfo}>
                   <div className={styles.episodeTitle}>{ep.title}</div>
                   <div className={styles.episodeGuest}>{ep.guest}</div>
@@ -361,7 +361,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
             {reviews.map((r) => (
               <div className={styles.reviewCard} key={r.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={styles.reviewerAvatar} src={r.avatar} alt="" />
+                <img loading="lazy" decoding="async" className={styles.reviewerAvatar} src={r.avatar} alt="" />
                 <div>
                   <div className={styles.reviewerName}>{r.name}</div>
                   <span className={`${styles.ratingTag} ${styles[r.tier]}`}>{r.tierLabel}</span>
@@ -388,7 +388,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
               <Link className={styles.listCard} href="#" key={l.id}>
                 <div className={styles.listCardLeft}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className={styles.listAvatar} src={l.avatar} alt="" />
+                  <img loading="lazy" decoding="async" className={styles.listAvatar} src={l.avatar} alt="" />
                   <div>
                     <div className={styles.listInfoTitle}>{l.title}</div>
                     <div className={styles.listInfoAuthor}>{l.author}</div>
@@ -397,7 +397,7 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                 <div className={styles.listGallery}>
                   {l.gallery.map((src) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className={styles.listGalleryImg} src={src} alt="" key={src} />
+                    <img loading="lazy" decoding="async" className={styles.listGalleryImg} src={src} alt="" key={src} />
                   ))}
                   <div className={styles.listGalleryMore}>+{l.more}</div>
                 </div>

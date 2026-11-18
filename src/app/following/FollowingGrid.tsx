@@ -34,7 +34,7 @@ export function FollowingGrid({ shows }: { shows: FollowedShow[] }) {
         {visible.map((show) => (
           <Link className={styles.card} href={`/podcast/${show.externalId}`} key={show.externalId}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className={styles.cover} src={show.coverUrl ?? "/default-avatar.webp"} alt={show.title} />
+            <img loading="lazy" decoding="async" className={styles.cover} src={show.coverUrl ?? "/default-avatar.webp"} alt={show.title} />
             <div className={styles.title}>{show.title}</div>
             <div className={styles.hosts}>Hosted by {show.author}</div>
           </Link>

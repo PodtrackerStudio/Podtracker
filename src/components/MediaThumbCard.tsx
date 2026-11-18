@@ -20,7 +20,7 @@ export function MediaThumbCard({
   return (
     <Link className="media-thumb" href={href}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="media-thumb-cover" src={cover} alt={title} />
+      <img loading="lazy" decoding="async" className="media-thumb-cover" src={cover} alt={title} />
       <div className="media-thumb-popup">
         <div className="media-thumb-title">{title}</div>
         {subtitle && <div className="media-thumb-subtitle">{subtitle}</div>}

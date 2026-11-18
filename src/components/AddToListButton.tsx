@@ -153,7 +153,7 @@ export function AddToListButton({
             >
               <span className={styles.rowLeft}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={styles.avatar} src={owner?.avatarUrl ?? "/default-avatar.webp"} alt="" />
+                <img loading="lazy" decoding="async" className={styles.avatar} src={owner?.avatarUrl ?? "/default-avatar.webp"} alt="" />
                 <span className={styles.rowText}>
                   <span className={styles.rowTitle}>{list.title}</span>
                   <span className={styles.rowAuthor}>{owner?.name}</span>
@@ -163,7 +163,7 @@ export function AddToListButton({
               <span className={styles.gallery}>
                 {list.covers.map((cover, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img className={styles.galleryImg} src={cover} alt="" key={`${cover}-${i}`} />
+                  <img loading="lazy" decoding="async" className={styles.galleryImg} src={cover} alt="" key={`${cover}-${i}`} />
                 ))}
                 {list.itemCount > list.covers.length && (
                   <span className={styles.galleryMore}>+{list.itemCount - list.covers.length}</span>

@@ -33,7 +33,7 @@ export default async function TopPodcastsPage() {
             {podcasts.map((p) => (
               <Link className={styles.card} href={`/podcast/${p.id}`} key={p.id} title={p.title}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.artworkUrl} alt={p.title} />
+                <img loading="lazy" decoding="async" src={p.artworkUrl} alt={p.title} />
               </Link>
             ))}
           </div>

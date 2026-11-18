@@ -29,7 +29,12 @@ function isTransientConnectionError(error: unknown): boolean {
     /Connection terminated/i.test(message) ||
     /Server has closed the connection/i.test(message) ||
     /ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE/i.test(message) ||
-    /timeout exceeded when trying to connect/i.test(message)
+    /timeout exceeded when trying to connect/i.test(message) ||
+    // The pooler is out of session slots. This is the failure `db.ts` itself
+    // documents (the 2026-11-06 outage) and the one a traffic burst produces,
+    // and it was the one this list did not match. The connection was refused,
+    // so nothing ran and trying again a moment later is safe.
+    /EMAXCONNSESSION|max clients? (reached|in session mode)|too many clients|remaining connection slots/i.test(message)
   );
 }
 

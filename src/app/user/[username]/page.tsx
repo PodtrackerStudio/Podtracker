@@ -13,7 +13,7 @@ import styles from "./profile.module.css";
 import { usernameFromParam, usernameToPath } from "@/lib/routeParams";
 import { avatarSrc } from "@/lib/avatar";
 import { PUBLIC_PROFILE_SELECT } from "@/lib/profileUser";
-import { getFollowState } from "@/lib/userFollow";
+import { getFollowState, getFollowCounts } from "@/lib/userFollow";
 import { UserFollowButton } from "@/components/UserFollowButton";
 
 // A seeded demo account kept around to show what a populated profile looks
@@ -95,9 +95,9 @@ function ListeningThumb({ src }: { src: string }) {
   return (
     <span className={styles.listeningThumb}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className={styles.listeningThumbBlur} src={src} alt="" aria-hidden />
+      <img loading="lazy" decoding="async" className={styles.listeningThumbBlur} src={src} alt="" aria-hidden />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className={styles.listeningThumbImg} src={src} alt="Episode" />
+      <img loading="lazy" decoding="async" className={styles.listeningThumbImg} src={src} alt="Episode" />
     </span>
   );
 }
@@ -238,7 +238,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               <div className={styles.listGallery}>
                 {demoNextListening.map((src) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img className={styles.listGalleryImg} src={src} alt="" key={src} />
+                  <img loading="lazy" decoding="async" className={styles.listGalleryImg} src={src} alt="" key={src} />
                 ))}
                 <div className={styles.listGalleryMore}>+82</div>
               </div>
@@ -302,7 +302,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <div className={styles.friendsRow}>
               {demoFriends.map((src) => (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img className={styles.friendAvatar} src={src} alt="Friend" key={src} />
+                <img loading="lazy" decoding="async" className={styles.friendAvatar} src={src} alt="Friend" key={src} />
               ))}
             </div>
           </section>
@@ -352,20 +352,36 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   // Retried as one unit: these seven run together, so if the pool had no
   // connection to give, they all failed for the same reason and re-running the
   // batch is what fixes it. See lib/dbRetry.ts.
-  const [followersCount, followingIds, logEntries, podcastRatings, episodeRatings, nextListening, allLogs] =
+  //
+  // Slimmed on 2026-11-18. The three counts used to be a count, then every
+  // followed id loaded into memory, then a second round trip with all of them
+  // in an `IN (…)`; `getFollowCounts` does it in the database, in this batch.
+  // The recent logs pulled whole Podcast and Episode rows — descriptions
+  // included — for six thumbnails. And every rating came back in full to be
+  // counted by tier and matched against six entries; only those three columns
+  // are read.
+  const [followCounts, logEntries, podcastRatings, episodeRatings, nextListening, allLogs] =
     await withDbRetry(() => Promise.all([
-    db.follow.count({ where: { followingId: profileUser.id } }),
-    db.follow.findMany({ where: { followerId: profileUser.id }, select: { followingId: true } }),
+    getFollowCounts(profileUser.id),
     db.logEntry.findMany({
       where: { userId: profileUser.id },
       orderBy: { listenedDate: "desc" },
       take: 6,
       // episode.podcast, because an episode entry has no podcastId of its own —
       // without it every episode log had no show id and rendered unlinked.
-      include: { episode: { include: { podcast: true } }, podcast: true },
+      select: {
+        id: true,
+        episodeId: true,
+        podcastId: true,
+        reviewText: true,
+        episode: {
+          select: { externalId: true, coverUrl: true, podcast: { select: { externalId: true } } },
+        },
+        podcast: { select: { externalId: true, coverUrl: true } },
+      },
     }),
-    db.podcastRating.findMany({ where: { userId: profileUser.id } }),
-    db.episodeRating.findMany({ where: { userId: profileUser.id } }),
+    db.podcastRating.findMany({ where: { userId: profileUser.id }, select: { tier: true, podcastId: true } }),
+    db.episodeRating.findMany({ where: { userId: profileUser.id }, select: { tier: true, episodeId: true } }),
     getNextListening(profileUser.id),
     // Every log, for the calendar — the six above are the recent strip and
     // are capped, so they can’t drive a month grid.
@@ -376,17 +392,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     }),
   ]), "profile");
 
-  const followingCount = followingIds.length;
-  const friendsCount =
-    followingCount > 0
-      ? await withDbRetry(
-          () =>
-            db.follow.count({
-              where: { followerId: { in: followingIds.map((f) => f.followingId) }, followingId: profileUser.id },
-            }),
-          "profile:friends",
-        )
-      : 0;
+  const { followers: followersCount, following: followingCount, friends: friendsCount } = followCounts;
 
   const allRatings = [...podcastRatings, ...episodeRatings];
   const distributionCounts = {
@@ -580,7 +586,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                   <Link href={`/user/${usernameToPath(username)}/next-listening`} className={styles.listGallery}>
                     {nextListening.slice(0, 6).map((item) => (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <img loading="lazy" decoding="async"
                         className={styles.listGalleryImg}
                         src={item.coverUrl ?? "/default-avatar.webp"}
                         alt={item.title}

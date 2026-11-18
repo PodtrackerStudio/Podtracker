@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { subtitleForSearchItem, type SearchItem, type SearchScope } from "@/lib/searchItem";
 import { SearchIcon } from "./icons";
 import styles from "./addPodcastsBar.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 /** The Shows only / Episodes only control, in the wording the site already uses. */
 const SCOPES: { value: SearchScope; label: string }[] = [
@@ -216,7 +217,7 @@ export function AddPodcastsBar({
                 aria-selected={false}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={styles.resultCover} src={item.cover || "/default-avatar.webp"} alt="" />
+                <img loading="lazy" decoding="async" className={styles.resultCover} src={artworkAt(item.cover, 48) || "/default-avatar.webp"} alt="" />
                 <span className={styles.resultText}>
                   <span className={styles.resultTitle}>{item.title}</span>
                   {/* Episode count or author for a show; show name and date for

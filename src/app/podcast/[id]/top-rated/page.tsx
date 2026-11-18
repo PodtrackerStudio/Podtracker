@@ -18,11 +18,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function TopRatedEpisodesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // The real show's name. This was hardcoded to "Modern Wisdom" from the days
+  // of the demo page, so every show's top-rated page was titled that.
+  // `getPodcastDetail` is already called by `generateMetadata` above and its
+  // fetches are cached, so this costs nothing extra.
+  const detail = await getPodcastDetail(id).catch(() => null);
 
   return (
     <>
       <SiteNav />
-      <TopRatedClient podcastId={id} podcastTitle="Modern Wisdom" />
+      <TopRatedClient podcastId={id} podcastTitle={detail?.title ?? "this show"} />
       <SiteFooter />
     </>
   );

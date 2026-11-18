@@ -3,9 +3,9 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getCurrentUser } from "@/lib/auth";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
-import { HeroIntro } from "./HeroIntro";
-import { WhatIsPodtracker } from "./WhatIsPodtracker";
-import styles from "./landing.module.css";
+import { HeroIntro } from "../HeroIntro";
+import { WhatIsPodtracker } from "../WhatIsPodtracker";
+import styles from "../landing.module.css";
 
 const ratingTiers = [
   { name: "Highly recommend", color: "var(--highly-recommend)" },
@@ -46,7 +46,7 @@ export default async function LandingPage() {
           {popularPodcasts.map((p) => (
             <Link className={styles.podcastCard} href={`/podcast/${p.id}`} key={p.id}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.artworkUrl} alt={p.title} />
+              <img loading="lazy" decoding="async" src={p.artworkUrl} alt={p.title} />
             </Link>
           ))}
         </div>
@@ -93,7 +93,7 @@ export default async function LandingPage() {
         rel="noopener noreferrer"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <img loading="lazy" decoding="async"
           src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=light"
           width={180}
           alt="Podtracker featured on Fazier"

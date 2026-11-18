@@ -170,7 +170,7 @@ export function CreateListClient() {
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className={styles.addDropdownThumb} src={item.cover} alt="" />
+                  <img loading="lazy" decoding="async" className={styles.addDropdownThumb} src={item.cover} alt="" />
                   <div>
                     <div>{item.title}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{subtitleForSearchItem(item)}</div>

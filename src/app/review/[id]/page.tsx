@@ -205,7 +205,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             <div className={styles.byline}>
               <span className={styles.byWho}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={styles.bylineAvatar} src={avatarSrc(entry.user.id)} alt="" />
+                <img loading="lazy" decoding="async" className={styles.bylineAvatar} src={avatarSrc(entry.user.id)} alt="" />
                 Review by{" "}
                 <Link href={`/user/${usernameToPath(entry.user.username)}`} className={styles.author}>
                   {entry.user.displayName}

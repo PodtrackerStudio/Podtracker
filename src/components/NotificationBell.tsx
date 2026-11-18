@@ -39,8 +39,14 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
   const wrapRef = useRef<HTMLDivElement>(null);
 
   // The server's count wins whenever the nav re-renders — otherwise the badge
-  // would stay stale after navigating to a page where it has changed.
-  useEffect(() => setUnread(initialUnread), [initialUnread]);
+  // would stay stale after navigating to a page where it has changed. Adjusted
+  // during render (React's own pattern for "reset state when a prop changes")
+  // rather than in an effect, which rendered the stale count once first.
+  const [seenInitial, setSeenInitial] = useState(initialUnread);
+  if (seenInitial !== initialUnread) {
+    setSeenInitial(initialUnread);
+    setUnread(initialUnread);
+  }
 
   // Click away and Escape both close it, like every other dismissible thing on
   // the site.
@@ -123,7 +129,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
                     onClick={() => setOpen(false)}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className={styles.avatar} src={n.actor.avatar} alt="" />
+                    <img loading="lazy" decoding="async" className={styles.avatar} src={n.actor.avatar} alt="" />
                     <span className={styles.text}>
                       <strong className={styles.name}>{n.actor.displayName}</strong>{" "}
                       {/* Fixed when it happened, never recomputed — see the note

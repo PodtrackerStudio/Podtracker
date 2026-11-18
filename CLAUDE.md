@@ -79,7 +79,7 @@ Podcast data is real and comes from Apple. What is still missing is *community* 
 
 | Page | State |
 |---|---|
-| `/` landing | **Pre-launch version only.** Real. |
+| `/` landing | **Pre-launch version only.** Real. Lives at `src/app/(landing)/page.tsx` (a route group, same URL) so it can have its own empty `loading.tsx`. |
 | `/home` | **Real** as of 2026-10-03. New episodes from the shows you follow, plus Trending reviews ranked by likes, each rendering only when it has something. Popular podcasts stays as the fallback for an account that follows nothing. Friends' activity, New lists and Popular lists are still unbuilt. |
 | `/following` | **Real.** Lists the shows you follow; both empty and populated states work. |
 | `/explore` | **Real.** Top podcasts and Popular episodes both come from Apple's charts, live, revalidated hourly. Trending users / Popular lists / Curated lists are still hardcoded but sit behind `HAS_COMMUNITY_DATA`, so nothing renders them today. |
@@ -172,6 +172,24 @@ Three things to know before touching what is left:
   Explore row (7 of 8 resolve); at 100 items it spans ~40 shows and times out
   past 280s even cached. The full list passes `resolveEpisodeLinks: false` and
   links to shows. Don't "fix" it by raising `MAX_FEEDS`.
+
+## Security rules that are easy to break
+
+- **Every migration that creates a table must end with
+  `ALTER TABLE "X" ENABLE ROW LEVEL SECURITY;`.** Supabase serves every table
+  in `public` over REST to anyone with the anon key, which is in every browser.
+  The app never uses that API (Prisma connects as the owner), so RLS with no
+  policies costs nothing and is the only lock. `20261118000000_lock_public_tables`
+  also revoked the anon key's default grants, but do both.
+- **Never spend an emailed `token_hash` on a GET.** `/auth/confirm` shows a
+  button and `POST /api/auth/confirm` spends it. `/auth/callback` only forwards.
+- **`/api/auth/reset-password` must keep its `amr` check** — it is what stops a
+  signed-in session changing the password without the current one.
+- **Server-side downloads of third-party URLs go through `downloadFeed`** in
+  `podcastApi.ts` (deadline, size cap, private-address check per redirect hop).
+- **Rate limits:** `guardAuth` / `rateLimitDurable` (Postgres) on anything that
+  takes a password or sends email; `guardWrite` (in memory) on signed-in writes.
+  A new write route needs one.
 
 ## Known gaps — do NOT "fix" these
 

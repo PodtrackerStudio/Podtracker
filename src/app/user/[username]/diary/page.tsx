@@ -84,7 +84,7 @@ export default async function DiaryPage({ params }: { params: Promise<{ username
               const body = (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className={styles.reviewThumb} src={cover} alt={title} />
+                  <img loading="lazy" decoding="async" className={styles.reviewThumb} src={cover} alt={title} />
                   <div className={styles.reviewBody}>
                     <div className={styles.reviewTitle}>{title}</div>
                     <div className={styles.reviewDate}>{entry.listenedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}</div>

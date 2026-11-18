@@ -7,6 +7,7 @@ import { HAS_COMMUNITY_DATA } from "@/lib/community";
 import { getTrendingEpisodes } from "@/lib/trendingEpisodes";
 import { getPopularPodcasts } from "@/lib/popularPodcasts";
 import styles from "./explore.module.css";
+import { artworkAt } from "@/lib/artwork";
 
 export const metadata: Metadata = {
   title: "Explore podcasts",
@@ -82,7 +83,7 @@ export default async function ExplorePage() {
             {topPodcasts.map((p) => (
               <Link className={styles.coverCard} href={`/podcast/${p.id}`} key={p.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.artworkUrl} alt="Podcast cover" />
+                <img loading="lazy" decoding="async" src={artworkAt(p.artworkUrl, 150)} alt="Podcast cover" />
                 <div className={styles.hoverCard}>
                   <div className={styles.hoverCardTitle}>{p.title}</div>
                   <div className={styles.hoverCardDate}>{p.artistName}</div>
@@ -112,7 +113,7 @@ export default async function ExplorePage() {
             {trendingEpisodes.map((ep) => (
               <Link className={styles.episodeThumb} href={ep.href} key={ep.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ep.artworkUrl} alt="Episode thumbnail" />
+                <img loading="lazy" decoding="async" src={artworkAt(ep.artworkUrl, 150)} alt="Episode thumbnail" />
                 <div className={styles.playOverlay}>
                   <PlayIcon />
                 </div>
@@ -147,7 +148,7 @@ export default async function ExplorePage() {
             {trendingUsers.map((u) => (
               <Link className={styles.trendingCard} href={`/user/${u.id}`} key={u.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={styles.trendingAvatar} src={u.img} alt={u.name} />
+                <img loading="lazy" decoding="async" className={styles.trendingAvatar} src={u.img} alt={u.name} />
                 <span className={styles.trendingName}>{u.name}</span>
                 <span className={styles.trendingFollowers}>{u.followers}</span>
               </Link>
@@ -170,14 +171,14 @@ export default async function ExplorePage() {
                 <div className={styles.listGallery}>
                   {l.gallery.map((src) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt={l.title} key={src} />
+                    <img loading="lazy" decoding="async" src={src} alt={l.title} key={src} />
                   ))}
                   <span className={styles.listGalleryBadge}>+{l.more}</span>
                 </div>
                 <div className={styles.listMeta}>
                   <div className={styles.listAuthor}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className={styles.avatar} src={l.avatar} alt="" />
+                    <img loading="lazy" decoding="async" className={styles.avatar} src={l.avatar} alt="" />
                     <span className={styles.reviewerName}>{l.author}</span>
                   </div>
                   <div className={styles.listTitle}>{l.title}</div>
@@ -197,7 +198,7 @@ export default async function ExplorePage() {
             {curatedLists.map((c) => (
               <div className={styles.curatedCard} key={c.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={c.img} alt={c.title} />
+                <img loading="lazy" decoding="async" src={c.img} alt={c.title} />
                 <div className={styles.curatedOverlay}>
                   <span>{c.title}</span>
                 </div>

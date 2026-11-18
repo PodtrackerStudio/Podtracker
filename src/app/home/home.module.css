@@ -194,6 +194,33 @@
   height: 40px;
   color: white;
 }
+/* Placeholder tiles while the followed-shows feed loads. A slow pulse in the
+   page's own grey; no new colour. */
+.skeleton {
+  background: rgba(17, 17, 17, 0.08);
+  box-shadow: none;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+.skeletonLine,
+.skeletonLineShort {
+  height: 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+.skeletonLineShort {
+  width: 55%;
+}
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
 .episodeTitle {
   font-size: 14px;
   font-weight: 600;
