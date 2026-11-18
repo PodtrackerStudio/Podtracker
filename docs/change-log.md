@@ -77,9 +77,10 @@ rejected. This is the part that saves the most time later.
 - **Requested by:** Phillip — "do an entire system security audit of my website
   … focus on (1) what may cause a data breach or hack and (2) bugs that make the
   site not work as well or increase latency", then "fix all of them".
-- **Status:** Partial — see **Follow-ups**. **Three migrations are written but
-  NOT applied to production**; the session was not permitted to run
-  `prisma migrate deploy`.
+- **Status:** Complete, apart from the items under "Deliberately not changed".
+  Phillip ran `prisma migrate deploy` afterwards; verified the same day:
+  all 13 migrations applied, 22 tables, RLS on every one, and zero grants left
+  to `anon` / `authenticated`.
 
 **How the audit was done.** Three read-only reviewers (API authorization;
 injection/XSS/SSRF; performance), plus live read-only checks of the database:
@@ -183,11 +184,8 @@ RLS is on (no policies) for the 19 tables that exist in production.
 
 **Follow-ups**
 
-- **Run `npx prisma migrate deploy` against production.** Until then: there is
-  no `Notification` table (follow notifications do nothing), no `Feedback`
-  table (Discord delivery only), and the durable limiter runs in memory. The
-  lock-down migration runs after both table migrations, so they are locked in
-  the same deploy.
+- ~~Run `npx prisma migrate deploy` against production.~~ Done and verified
+  (see Status). `Notification`, `Feedback` and `RateLimit` now exist.
 - Set `HEALTH_CHECK_TOKEN` in Vercel if the detailed health report is wanted.
 - Supabase dashboard, not code: turn on "Secure password change" and "Secure
   email change" (Auth settings). The session cookies are readable by page
