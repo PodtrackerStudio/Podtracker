@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getNotifications, markAllNotificationsRead } from "@/lib/notifications";
 import { avatarSrc } from "@/lib/avatar";
@@ -24,10 +24,14 @@ export async function GET() {
     const rows = await getNotifications(user.id, 20);
 
     // Not awaited into the response: clearing the badge is a nicety, and the
-    // list is what the person opened the popup to see.
-    markAllNotificationsRead(user.id).catch((error) => {
-      console.error("[notifications] could not mark read:", error);
-    });
+    // list is what the person opened the popup to see. But in `after()`, not
+    // a bare promise — the instance can be frozen the moment the response is
+    // sent, which dropped the write and brought the badge back.
+    after(() =>
+      markAllNotificationsRead(user.id).catch((error) => {
+        console.error("[notifications] could not mark read:", error);
+      }),
+    );
 
     return NextResponse.json({
       notifications: rows.map((n) => ({

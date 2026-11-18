@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser, authErrorMessage } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
-import { rateLimit, clientKey, AUTH_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
+import { rateLimitDurable, tooManyRequests, AUTH_LIMIT, guardWrite } from "@/lib/rateLimit";
 import { siteOrigin } from "@/lib/siteUrl";
 
 /**
@@ -51,6 +51,8 @@ export async function PATCH(request: Request) {
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "That request couldn't be read." }, { status: 400 });
   }
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const fields = {
     username: str(body.username),
@@ -175,14 +177,9 @@ export async function DELETE(request: Request) {
 
   // Same limit as the password form: this takes a password and is therefore
   // something to guess at, and it is the most destructive call on the site.
-  const limitKey = clientKey(request, "delete-account", user.id);
-  const limited = rateLimit(limitKey, AUTH_LIMIT);
-  if (!limited.allowed) {
-    return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, {
-      status: 429,
-      headers: { "Retry-After": String(limited.retryAfterSeconds) },
-    });
-  }
+  const limitKey = `delete-account:acct:${user.id}`;
+  const limited = await rateLimitDurable(limitKey, AUTH_LIMIT);
+  if (!limited.allowed) return tooManyRequests(limited);
 
   // Checked before anything is touched. Half-deleting is worse than not
   // starting: see the note above. The same shape as /api/donate's Stripe
@@ -203,9 +200,9 @@ export async function DELETE(request: Request) {
     );
   }
 
-  const { password, confirmUsername } = await request.json().catch(() => ({}));
+  const { password, confirmUsername } = (await request.json().catch(() => null)) ?? {};
 
-  if (!password) {
+  if (typeof password !== "string" || !password) {
     return NextResponse.json({ error: "Please enter your password." }, { status: 400 });
   }
   // Proves intent, the way GitHub asks you to type a repository's name. The

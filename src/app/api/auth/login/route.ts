@@ -2,26 +2,23 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { authErrorMessage } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { rateLimit, resetRateLimit, clientKey, AUTH_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
+import { guardAuth, resetRateLimitDurable, tooManyRequests } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
-  const { email, password } = await request.json().catch(() => ({}));
+  // `?? {}`: a body of JSON `null` parses fine and then cannot be destructured.
+  const { email, password } = (await request.json().catch(() => null)) ?? {};
 
-  if (!email?.trim() || !password) {
+  // Strings, not just truthy: `email.trim()` on a number threw, and the 500
+  // came before the limiter, so it was free to repeat.
+  if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
     return NextResponse.json({ error: "Please enter both an email and a password." }, { status: 400 });
   }
 
   // Supabase rate-limits its own endpoints, but this route is still reachable
   // directly, and an attacker hammering it costs us the requests whether or not
   // Supabase eventually refuses them. Kept as the outer layer.
-  const limitKey = clientKey(request, "login", email);
-  const limited = rateLimit(limitKey, AUTH_LIMIT);
-  if (!limited.allowed) {
-    return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, {
-      status: 429,
-      headers: { "Retry-After": String(limited.retryAfterSeconds) },
-    });
-  }
+  const { result: limited, subjectKey } = await guardAuth(request, "login", email);
+  if (!limited.allowed) return tooManyRequests(limited);
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -52,7 +49,9 @@ export async function POST(request: Request) {
     );
   }
 
-  resetRateLimit(limitKey);
+  // Only the per-account count. The per-address one stands, or one working
+  // login would wipe the record of guesses against every other account.
+  if (subjectKey) await resetRateLimitDurable(subjectKey);
 
   // Supabase set the session cookies itself, through the cookie adapter in
   // `createSupabaseServerClient` — there is no token for this route to manage.

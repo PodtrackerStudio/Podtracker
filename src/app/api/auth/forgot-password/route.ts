@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { rateLimit, clientKey, AUTH_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
+import { guardAuth, tooManyRequests } from "@/lib/rateLimit";
 import { siteOrigin } from "@/lib/siteUrl";
 
 /**
@@ -12,7 +12,7 @@ import { siteOrigin } from "@/lib/siteUrl";
  * this one does not have to inherit.
  */
 export async function POST(request: Request) {
-  const { email } = await request.json().catch(() => ({}));
+  const { email } = (await request.json().catch(() => null)) ?? {};
 
   // Deliberately identical to the success response.
   const sameAnswer = NextResponse.json({
@@ -20,17 +20,12 @@ export async function POST(request: Request) {
     message: "If there's an account with that email, a reset link is on its way.",
   });
 
-  if (!email?.trim()) {
+  if (typeof email !== "string" || !email.trim()) {
     return NextResponse.json({ error: "Please enter your email address." }, { status: 400 });
   }
 
-  const limited = rateLimit(clientKey(request, "forgot", email), AUTH_LIMIT);
-  if (!limited.allowed) {
-    return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, {
-      status: 429,
-      headers: { "Retry-After": String(limited.retryAfterSeconds) },
-    });
-  }
+  const { result: limited } = await guardAuth(request, "forgot", email);
+  if (!limited.allowed) return tooManyRequests(limited);
 
   const supabase = await createSupabaseServerClient();
 

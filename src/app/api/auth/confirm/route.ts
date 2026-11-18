@@ -60,6 +60,17 @@ export async function POST(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=link-expired`, { status: 303 });
   }
 
+  // An address that was signed up for more than once before being confirmed
+  // may be carrying a password chosen by somebody who never had the inbox —
+  // see `must_set_password` in the signup route. Clicking the link is the
+  // proof of the inbox, so the person who clicked chooses the password now.
+  if (type !== "recovery") {
+    const { data } = await supabase.auth.getUser();
+    if (data.user?.app_metadata?.must_set_password) {
+      return NextResponse.redirect(`${origin}/reset-password`, { status: 303 });
+    }
+  }
+
   // 303 so the browser follows with a GET rather than re-POSTing to the
   // destination, which is what a plain redirect after a form submit would do.
   return NextResponse.redirect(

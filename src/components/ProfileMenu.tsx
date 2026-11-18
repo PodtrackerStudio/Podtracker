@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon } from "./icons";
 import { LogoutButton } from "./LogoutButton";
+import { usernameToPath } from "@/lib/routeParams";
 
 /**
  * "Profile ▾" in the signed-in nav, holding the account links that used to sit
@@ -61,7 +62,7 @@ export function ProfileMenu({ username, active }: { username: string; active: bo
           if ((e.target as HTMLElement).closest("a, button")) setOpen(false);
         }}
       >
-        <Link href={`/user/${username}`} role="menuitem">
+        <Link href={`/user/${usernameToPath(username)}`} role="menuitem">
           Your profile
         </Link>
         <Link href="/settings" role="menuitem">

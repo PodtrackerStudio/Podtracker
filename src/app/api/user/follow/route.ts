@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { usernameFromParam } from "@/lib/routeParams";
 import { getFollowState, type FollowState } from "@/lib/userFollow";
+import { guardWrite, tooManyRequests } from "@/lib/rateLimit";
 
 /**
  * Follow and unfollow a **person**.
@@ -28,6 +29,8 @@ export async function POST(request: Request) {
   if (typeof username !== "string" || !username.trim()) {
     return NextResponse.json({ error: "Missing username." }, { status: 400 });
   }
+  const writeLimit = guardWrite(viewer.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const target = await db.user.findUnique({
     where: { username: usernameFromParam(username) },
@@ -100,14 +103,28 @@ export async function POST(request: Request) {
     // The type is fixed here and never recomputed: derived at read time,
     // "X followed you" would silently become "you're friends now" the day you
     // followed back, rewriting what actually happened.
+    //
+    // At most one per pair per day. Unfollowing keeps the notification, so a
+    // script looping follow/unfollow used to add one to the other person's
+    // list on every pass, without limit.
     try {
-      await db.notification.create({
-        data: {
+      const recent = await db.notification.findFirst({
+        where: {
           userId: target.id,
           actorId: viewer.id,
-          type: theyFollowBack ? "FRIEND" : "FOLLOW",
+          createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
         },
+        select: { id: true },
       });
+      if (!recent) {
+        await db.notification.create({
+          data: {
+            userId: target.id,
+            actorId: viewer.id,
+            type: theyFollowBack ? "FRIEND" : "FOLLOW",
+          },
+        });
+      }
     } catch (error) {
       console.error(
         "[user-follow] the follow succeeded but its notification did not. " +
@@ -129,6 +146,8 @@ export async function DELETE(request: Request) {
   if (typeof username !== "string" || !username.trim()) {
     return NextResponse.json({ error: "Missing username." }, { status: 400 });
   }
+  const writeLimit = guardWrite(viewer.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const target = await db.user.findUnique({
     where: { username: usernameFromParam(username) },

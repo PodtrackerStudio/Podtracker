@@ -448,3 +448,13 @@ model Notification {
   @@index([userId, createdAt])
   @@index([userId, readAt])
 }
+
+/// Counters for the durable rate limiter in `src/lib/rateLimit.ts`. Written
+/// with raw SQL (one atomic upsert), never through this model — it exists so
+/// the table is part of the schema and migrations.
+model RateLimit {
+  key          String    @id
+  count        Int       @default(0)
+  windowStart  DateTime  @default(now())
+  blockedUntil DateTime?
+}

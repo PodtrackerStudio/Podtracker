@@ -3,7 +3,11 @@ import { db } from "@/lib/db";
 import { authErrorMessage } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkPassword } from "@/lib/passwordPolicy";
-import { rateLimit, clientKey, SIGNUP_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
+import { rateLimitDurable, clientIp, tooManyRequests, SIGNUP_LIMIT } from "@/lib/rateLimit";
+import { createSupabaseAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+
+/** Same as Settings — see `PATCH /api/account`. */
+const USERNAME_MAX = 40;
 import { reportDatabaseFailure } from "@/lib/dbError";
 import { siteOrigin } from "@/lib/siteUrl";
 
@@ -23,10 +27,22 @@ import { siteOrigin } from "@/lib/siteUrl";
  * hold. Checking first makes the bad state unreachable in the common case.
  */
 export async function POST(request: Request) {
-  const { email, username, password, agreedToTerms } = await request.json().catch(() => ({}));
+  const { email, username, password, agreedToTerms } = (await request.json().catch(() => null)) ?? {};
 
-  if (!email?.trim() || !username?.trim() || !password) {
+  if (
+    typeof email !== "string" || typeof username !== "string" || typeof password !== "string" ||
+    !email.trim() || !username.trim() || !password
+  ) {
     return NextResponse.json({ error: "Please fill in every field." }, { status: 400 });
+  }
+  // The same cap Settings applies. The form has it too, but a direct POST
+  // could store a username megabytes long, rendered on every page that names
+  // them.
+  if (username.trim().length > USERNAME_MAX) {
+    return NextResponse.json({ error: `Usernames can be at most ${USERNAME_MAX} characters.` }, { status: 400 });
+  }
+  if (email.trim().length > 254) {
+    return NextResponse.json({ error: "That email address is too long." }, { status: 400 });
   }
 
   // Enforced here and not only on the form, for the same reason the password
@@ -40,13 +56,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const limited = rateLimit(clientKey(request, "signup"), SIGNUP_LIMIT);
-  if (!limited.allowed) {
-    return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, {
-      status: 429,
-      headers: { "Retry-After": String(limited.retryAfterSeconds) },
-    });
-  }
+  const limited = await rateLimitDurable(`signup:ip:${clientIp(request)}`, SIGNUP_LIMIT);
+  if (!limited.allowed) return tooManyRequests(limited);
 
   // Our policy, not Supabase's — theirs is a 6-character minimum by default.
   const policy = checkPassword(password, [email, username]);
@@ -150,6 +161,20 @@ export async function POST(request: Request) {
 
         if (usernameTaken) {
           return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
+        }
+
+        // **This address has now been signed up for at least twice without
+        // being confirmed.** Supabase keeps the *first* password in that case.
+        // So if a stranger signed up with somebody's address, and the real
+        // owner later signs up and clicks the confirmation they are sent, they
+        // would land in an account whose password the stranger knows.
+        // Flagged here; `/api/auth/confirm` then sends whoever clicks the
+        // link to choose a password before anything else. The flag lives in
+        // `app_metadata`, which only the service role can write.
+        if (!data.session && isSupabaseAdminConfigured) {
+          await createSupabaseAdminClient()
+            .auth.admin.updateUserById(data.user.id, { app_metadata: { must_set_password: true } })
+            .catch((e) => console.error("[signup] could not flag must_set_password:", e?.message));
         }
         // Email or primary key: the account already exists. Say so without
         // confirming whether it is confirmed — that is the account holder's

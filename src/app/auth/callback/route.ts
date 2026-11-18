@@ -48,22 +48,21 @@ export async function GET(request: Request) {
   // protocol-relative URL to another host.
   const next = requested.startsWith("/") && !requested.startsWith("//") ? requested : "/";
 
-  const supabase = await createSupabaseServerClient();
-
+  // **A `token_hash` is never spent on a GET.** This route used to verify it
+  // right here, which had two problems. Anyone could mail a victim a link
+  // carrying *their own* token: opening it silently signed the victim into the
+  // attacker's account, and whatever they then logged or reviewed landed there.
+  // And a mail scanner fetching the link burned it before the person clicked.
+  // `/auth/confirm` exists to fix both — it shows a button, and only the POST
+  // behind it (which refuses cross-site requests) spends the token. Old emails
+  // that still point here are forwarded to it rather than broken.
   if (tokenHash && type && ALLOWED_TYPES.has(type as EmailOtpType)) {
-    const { error } = await supabase.auth.verifyOtp({
-      type: type as EmailOtpType,
-      token_hash: tokenHash,
-    });
-    if (error) {
-      console.error("[auth/callback] verifyOtp failed:", type, error.message);
-      return NextResponse.redirect(`${origin}/login?error=link-expired`);
-    }
-    // A recovery link proves control of the inbox, not knowledge of the
-    // password, so it lands on the form that sets a new one rather than on the
-    // signed-in site.
-    return NextResponse.redirect(`${origin}${type === "recovery" ? "/reset-password" : next}`);
+    const forward = new URLSearchParams({ token_hash: tokenHash, type });
+    if (next !== "/") forward.set("next", next);
+    return NextResponse.redirect(`${origin}/auth/confirm?${forward}`);
   }
+
+  const supabase = await createSupabaseServerClient();
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);

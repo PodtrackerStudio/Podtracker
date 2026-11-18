@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { guardWrite, tooManyRequests } from "@/lib/rateLimit";
 
 /**
  * Like / unlike a review or a list.
@@ -31,6 +32,8 @@ async function resolveTarget(body: unknown) {
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const target = await resolveTarget(await request.json().catch(() => null));
   if (!target) return NextResponse.json({ error: "Pass exactly one of logEntryId or listId." }, { status: 400 });
@@ -61,6 +64,8 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const target = await resolveTarget(await request.json().catch(() => null));
   if (!target) return NextResponse.json({ error: "Pass exactly one of logEntryId or listId." }, { status: 400 });

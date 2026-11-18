@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { siteOrigin } from "@/lib/siteUrl";
-import { rateLimit, clientKey, AUTH_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
+import { guardAuth, tooManyRequests } from "@/lib/rateLimit";
 
 /**
  * Send the confirmation email again.
@@ -21,22 +21,17 @@ import { rateLimit, clientKey, AUTH_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/ra
  * are logged but not returned.
  */
 export async function POST(request: Request) {
-  const { email } = await request.json().catch(() => ({}));
+  const { email } = (await request.json().catch(() => null)) ?? {};
 
-  if (!email?.trim()) {
+  if (typeof email !== "string" || !email.trim()) {
     return NextResponse.json({ error: "Please enter your email address." }, { status: 400 });
   }
   const cleanEmail = email.trim();
 
   // Keyed on the address as well as the caller, so one person cannot use this
   // to mail-bomb someone else's inbox by resending over and over.
-  const limited = rateLimit(clientKey(request, "resend-confirmation", cleanEmail), AUTH_LIMIT);
-  if (!limited.allowed) {
-    return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, {
-      status: 429,
-      headers: { "Retry-After": String(limited.retryAfterSeconds) },
-    });
-  }
+  const { result: limited } = await guardAuth(request, "resend-confirmation", cleanEmail);
+  if (!limited.allowed) return tooManyRequests(limited);
 
   if (!isSupabaseConfigured) {
     return NextResponse.json({ ok: true });

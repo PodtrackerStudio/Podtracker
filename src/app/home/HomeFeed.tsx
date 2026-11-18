@@ -159,7 +159,7 @@ export async function HomeFeed({ user }: { user: HomeUser }) {
                   <div className={styles.reviewHeader}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img className={styles.avatar} src={r.authorAvatarUrl ?? "/default-avatar.webp"} alt="" />
-                    <Link href={`/user/${r.authorUsername}`} className={styles.reviewerName}>
+                    <Link href={`/user/${usernameToPath(r.authorUsername)}`} className={styles.reviewerName}>
                       {r.authorName}
                     </Link>
                     {r.tierLabel && r.tierClass && (

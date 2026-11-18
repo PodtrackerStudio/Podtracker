@@ -229,7 +229,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
             {viewer?.id === entry.userId && (
               <DeleteReviewButton
                 logEntryId={entry.id}
-                returnTo={`/user/${entry.user.username}/reviews`}
+                returnTo={`/user/${usernameToPath(entry.user.username)}/reviews`}
                 className={styles.ownerActions}
               />
             )}

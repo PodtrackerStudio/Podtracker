@@ -1,5 +1,7 @@
 import Parser from "rss-parser";
 import { feedTextToPlain } from "./feedText";
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 
 const rssParser = new Parser();
 
@@ -70,7 +72,7 @@ function toPodcastResult(r: Record<string, unknown>): ItunesPodcastResult {
 
 export async function searchPodcasts(term: string, limit = 10): Promise<ItunesPodcastResult[]> {
   const url = `${ITUNES_BASE}/search?media=podcast&entity=podcast&limit=${limit}&term=${encodeURIComponent(term)}`;
-  const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS } });
+  const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS }, signal: AbortSignal.timeout(ITUNES_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`iTunes search failed: ${res.status}`);
   const data = await res.json();
 
@@ -81,7 +83,7 @@ export async function searchPodcasts(term: string, limit = 10): Promise<ItunesPo
 // returns, and the one the landing page links carry.
 export async function lookupPodcast(itunesId: string | number): Promise<ItunesPodcastResult | null> {
   const url = `${ITUNES_BASE}/lookup?id=${encodeURIComponent(String(itunesId))}&entity=podcast`;
-  const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS } });
+  const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS }, signal: AbortSignal.timeout(ITUNES_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`iTunes lookup failed: ${res.status}`);
   const data = await res.json();
 
@@ -123,7 +125,7 @@ export type ItunesEpisodeResult = {
  */
 export async function searchEpisodes(term: string, limit = 10): Promise<ItunesEpisodeResult[]> {
   const url = `${ITUNES_BASE}/search?media=podcast&entity=podcastEpisode&limit=${limit}&term=${encodeURIComponent(term)}`;
-  const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS } });
+  const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS }, signal: AbortSignal.timeout(ITUNES_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`iTunes episode search failed: ${res.status}`);
   const data = await res.json();
 
@@ -209,8 +211,31 @@ const feedsInFlight = new Map<string, Promise<PodcastFeed>>();
 export function fetchPodcastFeed(feedUrl: string): Promise<PodcastFeed> {
   const cached = parsedFeedCache.get(feedUrl);
   if (cached) {
-    if (cached.expiresAt > Date.now()) return Promise.resolve(cached.feed);
+    // Re-inserted on every hit, so the Map's order is "least recently USED"
+    // and not "least recently stored". Stored-order meant a crawler walking 40
+    // obscure shows pushed out the popular ones everybody was reading.
     parsedFeedCache.delete(feedUrl);
+    parsedFeedCache.set(feedUrl, cached);
+
+    if (cached.expiresAt > Date.now()) return Promise.resolve(cached.feed);
+
+    // **Expired, but still the answer.** The old copy is served now and a
+    // fresh one fetched behind it. Deleting it first meant one visitor an hour
+    // per show waited for the whole download and parse — and if the feed's
+    // host was down at that moment, the good copy was already gone and the
+    // page failed. If the refresh fails, the old copy stays, and is not
+    // retried for a few minutes.
+    if (!feedsInFlight.has(feedUrl)) {
+      const refresh = loadPodcastFeed(feedUrl)
+        .catch((error) => {
+          console.error("[feed] refresh failed, keeping the cached copy:", feedUrl, (error as Error)?.message);
+          cached.expiresAt = Date.now() + STALE_RETRY_MS;
+          return cached.feed;
+        })
+        .finally(() => feedsInFlight.delete(feedUrl));
+      feedsInFlight.set(feedUrl, refresh);
+    }
+    return Promise.resolve(cached.feed);
   }
 
   const pending = feedsInFlight.get(feedUrl);
@@ -221,10 +246,126 @@ export function fetchPodcastFeed(feedUrl: string): Promise<PodcastFeed> {
   return work;
 }
 
+/** How long a failed refresh waits before the next attempt. */
+const STALE_RETRY_MS = 5 * 60 * 1000;
+
+/** Apple answers in well under a second when it is going to answer at all. */
+const ITUNES_TIMEOUT_MS = 6_000;
+
+/** Whole download, headers to last byte. JRE's feed takes a few seconds. */
+const FEED_TIMEOUT_MS = 20_000;
+
+/** The largest feeds seen are ~15MB. Past this it is not a podcast feed. */
+const FEED_MAX_BYTES = 60 * 1024 * 1024;
+
+const FEED_MAX_REDIRECTS = 4;
+
+/**
+ * True for an address on this machine or a private network.
+ *
+ * A feed url comes from Apple's catalogue, and anyone can list a podcast there
+ * with a feed they host. Without this, such a feed (or a redirect from it)
+ * could point the server at `127.0.0.1`, `169.254.169.254` or a private
+ * address and make it fetch from inside its own network.
+ */
+function isPrivateAddress(ip: string): boolean {
+  if (isIP(ip) === 4) {
+    const [a, b] = ip.split(".").map(Number);
+    return (
+      a === 0 || a === 10 || a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      a >= 224
+    );
+  }
+  const v6 = ip.toLowerCase();
+  if (v6.startsWith("::ffff:")) return isPrivateAddress(v6.slice(7));
+  return v6 === "::" || v6 === "::1" || /^f[cd]/.test(v6) || /^fe[89ab]/.test(v6);
+}
+
+async function assertPublicHttpUrl(raw: string): Promise<URL> {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error(`Feed url is not a url: ${raw.slice(0, 200)}`);
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error(`Feed url is not http(s): ${url.protocol}`);
+  }
+  const host = url.hostname.replace(/^\[|\]$/g, "");
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal")) {
+    throw new Error(`Feed url points at a local host: ${host}`);
+  }
+  // Every address the name resolves to, so a public-looking name that resolves
+  // to a private address is refused too.
+  const addresses = isIP(host) ? [{ address: host }] : await lookup(host, { all: true });
+  if (addresses.length === 0 || addresses.some((a) => isPrivateAddress(a.address))) {
+    throw new Error(`Feed url resolves to a private address: ${host}`);
+  }
+  return url;
+}
+
+/**
+ * Downloads a feed with three limits it did not have: a deadline, a size cap,
+ * and a check on where it is going (at every redirect, not just the first
+ * url). Before, one slow or endless feed held a function until the platform
+ * killed it — and `feedsInFlight` handed that same stuck promise to every
+ * later request for the show.
+ */
+async function downloadFeed(feedUrl: string): Promise<string> {
+  const signal = AbortSignal.timeout(FEED_TIMEOUT_MS);
+  let current = feedUrl;
+
+  for (let hop = 0; hop <= FEED_MAX_REDIRECTS; hop++) {
+    const url = await assertPublicHttpUrl(current);
+    const res = await fetch(url, {
+      redirect: "manual",
+      signal,
+      // Same revalidate as before for feeds small enough for Next to cache.
+      next: { revalidate: REVALIDATE_SECONDS },
+    });
+
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      await res.body?.cancel().catch(() => {});
+      if (!location) throw new FeedFetchError(res.status, feedUrl);
+      current = new URL(location, url).toString();
+      continue;
+    }
+    if (!res.ok) throw new FeedFetchError(res.status, feedUrl);
+
+    const declared = Number(res.headers.get("content-length"));
+    if (declared > FEED_MAX_BYTES) {
+      await res.body?.cancel().catch(() => {});
+      throw new Error(`Feed is too large (${declared} bytes): ${feedUrl}`);
+    }
+    if (!res.body) return res.text();
+
+    // Read in chunks so an endless or mislabelled body is cut off at the cap
+    // instead of being buffered whole.
+    const reader = res.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > FEED_MAX_BYTES) {
+        await reader.cancel().catch(() => {});
+        throw new Error(`Feed is too large (over ${FEED_MAX_BYTES} bytes): ${feedUrl}`);
+      }
+      chunks.push(value);
+    }
+    return new TextDecoder().decode(Buffer.concat(chunks));
+  }
+  throw new Error(`Feed redirected more than ${FEED_MAX_REDIRECTS} times: ${feedUrl}`);
+}
+
 async function loadPodcastFeed(feedUrl: string): Promise<PodcastFeed> {
-  const res = await fetch(feedUrl, { next: { revalidate: REVALIDATE_SECONDS } });
-  if (!res.ok) throw new FeedFetchError(res.status, feedUrl);
-  const feed = await rssParser.parseString(await res.text());
+  const feed = await rssParser.parseString(await downloadFeed(feedUrl));
 
   // **Newest first, by date, not by position in the XML.** Everything
   // downstream assumed feeds list the newest episode first, and most do, but

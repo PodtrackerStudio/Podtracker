@@ -1,18 +1,24 @@
 /**
- * A small in-process rate limiter for the auth routes.
+ * Rate limiting, in two strengths.
  *
- * **Know its limits before trusting it.** State lives in this process's memory,
- * so it resets on restart and is not shared between instances. On a single
- * long-running server it works. On Vercel, where each serverless instance has
- * its own memory, an attacker spread across instances gets one bucket per
- * instance — it raises the cost of brute force without eliminating it.
+ * **`rateLimit` — in this process's memory.** Resets on restart and is not
+ * shared between instances, so on Vercel an attacker spread across instances
+ * gets one bucket per instance. Cheap, and good enough to stop one account or
+ * one address hammering an ordinary write route.
  *
- * It is here because the alternative was *nothing*, and nothing meant an
- * attacker could try passwords against `/api/auth/login` as fast as the network
- * allowed. A durable limiter needs shared storage (a Postgres table, or Redis);
- * Supabase applies its own limits to auth endpoints, so when that migration
- * lands this file should be deleted rather than upgraded.
+ * **`rateLimitDurable` — in Postgres (the `RateLimit` table).** One atomic
+ * statement per attempt, shared by every instance and surviving restarts. Used
+ * where each attempt is a password guess or sends an email. If the table is
+ * missing or the database is unreachable it falls back to the in-memory
+ * limiter rather than failing the request: a limiter must never be the reason
+ * somebody cannot log in.
+ *
+ * **`guardAuth` counts twice** — once per address and once per account — as two
+ * separate buckets. The old single `ip:account` key reset every time an
+ * attacker changed address, so there was no per-account limit at all, despite
+ * the comment that said there was.
  */
+import { db } from "./db";
 
 type Attempt = { count: number; firstAt: number; blockedUntil: number };
 
@@ -81,22 +87,125 @@ export function resetRateLimit(key: string) {
 }
 
 /**
- * Identifies the caller for limiting purposes.
- *
- * `x-forwarded-for` is set by the proxy in front of the app; its first entry is
- * the client. It is trivially spoofed when nothing trusted sets it, which is why
- * the limit is keyed on **IP plus the account being targeted** — an attacker
- * rotating the header still collides on the account they are attacking, and one
- * rotating accounts still collides on their IP.
+ * The caller's address. `x-forwarded-for` is set by the proxy in front of the
+ * app (Vercel overwrites whatever the client sent); its first entry is the
+ * client. Anywhere nothing trusted sets it, it is trivially spoofed — which is
+ * why anything that matters is also counted per account, see `guardAuth`.
  */
-export function clientKey(request: Request, scope: string, subject?: string): string {
+export function clientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for") ?? "";
-  const ip = forwarded.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
-  return `${scope}:${ip}:${subject?.trim().toLowerCase() ?? ""}`;
+  return forwarded.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
 }
 
-/** Login and change-password: slow, because each attempt is a password guess. */
+/** One bucket per scope + address (+ subject). For the in-memory limiter. */
+export function clientKey(request: Request, scope: string, subject?: string): string {
+  return `${scope}:${clientIp(request)}:${typeof subject === "string" ? subject.trim().toLowerCase() : ""}`;
+}
+
+type LimitOptions = { limit: number; windowMs: number; blockMs: number };
+
+/**
+ * The durable limiter. One statement, so two instances counting the same key
+ * at the same moment cannot both read "under the limit".
+ */
+export async function rateLimitDurable(key: string, opts: LimitOptions): Promise<RateLimitResult> {
+  // Keys are built from request input (an email address); bounded so one
+  // cannot be megabytes long.
+  const k = key.slice(0, 300);
+  try {
+    const rows = await db.$queryRaw<{ blocked_for: number | null }[]>`
+      INSERT INTO "RateLimit" AS r ("key", "count", "windowStart", "blockedUntil")
+      VALUES (${k}, 1, now(), NULL)
+      ON CONFLICT ("key") DO UPDATE SET
+        "count" = CASE
+          WHEN r."blockedUntil" IS NOT NULL AND r."blockedUntil" > now() THEN r."count"
+          WHEN r."windowStart" < now() - make_interval(secs => ${opts.windowMs / 1000}) THEN 1
+          ELSE r."count" + 1 END,
+        "windowStart" = CASE
+          WHEN r."blockedUntil" IS NOT NULL AND r."blockedUntil" > now() THEN r."windowStart"
+          WHEN r."windowStart" < now() - make_interval(secs => ${opts.windowMs / 1000}) THEN now()
+          ELSE r."windowStart" END,
+        "blockedUntil" = CASE
+          WHEN r."blockedUntil" IS NOT NULL AND r."blockedUntil" > now() THEN r."blockedUntil"
+          WHEN r."windowStart" >= now() - make_interval(secs => ${opts.windowMs / 1000})
+               AND r."count" + 1 > ${opts.limit}
+            THEN now() + make_interval(secs => ${opts.blockMs / 1000})
+          ELSE NULL END
+      RETURNING CEIL(EXTRACT(EPOCH FROM ("blockedUntil" - now())))::int AS blocked_for`;
+    // Old counters are swept here, occasionally, rather than by a cron job
+    // this project does not otherwise need.
+    if (Math.random() < 0.01) {
+      void db.$executeRaw`DELETE FROM "RateLimit" WHERE "windowStart" < now() - interval '1 day' AND ("blockedUntil" IS NULL OR "blockedUntil" < now())`.catch(() => {});
+    }
+    const blockedFor = rows[0]?.blocked_for ?? null;
+    if (blockedFor !== null && blockedFor > 0) return { allowed: false, retryAfterSeconds: blockedFor };
+    return { allowed: true };
+  } catch (error) {
+    // Table not migrated yet, or the database is having a moment. Logged once
+    // per instance so a missing table is noticed without flooding the log.
+    if (!warnedDurable) {
+      warnedDurable = true;
+      console.error("[rateLimit] durable limiter unavailable, using in-memory:", (error as Error)?.message);
+    }
+    return rateLimit(k, opts);
+  }
+}
+let warnedDurable = false;
+
+/** Forget a durable bucket — after a successful login. Best effort. */
+export async function resetRateLimitDurable(key: string) {
+  resetRateLimit(key.slice(0, 300));
+  await db.$executeRaw`DELETE FROM "RateLimit" WHERE "key" = ${key.slice(0, 300)}`.catch(() => {});
+}
+
+/**
+ * The check every password or email-sending route makes: per address, and per
+ * account (or target email) where there is one. Returns the keys so a
+ * successful login can clear the per-account count.
+ */
+export async function guardAuth(
+  request: Request,
+  scope: string,
+  subject?: string,
+): Promise<{ result: RateLimitResult; subjectKey: string | null }> {
+  const ip = await rateLimitDurable(`${scope}:ip:${clientIp(request)}`, AUTH_IP_LIMIT);
+  if (!ip.allowed) return { result: ip, subjectKey: null };
+  if (typeof subject !== "string" || !subject.trim()) return { result: ip, subjectKey: null };
+  const subjectKey = `${scope}:acct:${subject.trim().toLowerCase()}`;
+  return { result: await rateLimitDurable(subjectKey, AUTH_LIMIT), subjectKey };
+}
+
+/** The 429 every limited route returns. */
+export function tooManyRequests(result: { retryAfterSeconds: number }, message = RATE_LIMITED_MESSAGE) {
+  return Response.json(
+    { error: message },
+    { status: 429, headers: { "Retry-After": String(result.retryAfterSeconds) } },
+  );
+}
+
+/**
+ * Ordinary signed-in writes (follow, like, rate, log, list edits), per account.
+ * Far above what a person clicking does; low enough that a script cannot run
+ * thousands a minute. In memory — see the note at the top.
+ */
+export function guardWrite(userId: string, scope: "write" | "lists-create" = "write"): RateLimitResult {
+  // Creating a list can look up to 100 shows on Apple and parse their feeds,
+  // so it gets a much smaller allowance than a like or a follow.
+  return rateLimit(`${scope}:${userId}`, scope === "lists-create" ? LIST_CREATE_LIMIT : WRITE_LIMIT);
+}
+
+/** Per account. Login and change-password: slow, because each attempt is a password guess. */
 export const AUTH_LIMIT = { limit: 8, windowMs: 15 * 60 * 1000, blockMs: 15 * 60 * 1000 };
+
+/** Per address, across all accounts. Looser than per-account: an office or a
+ *  campus shares one address. */
+export const AUTH_IP_LIMIT = { limit: 30, windowMs: 15 * 60 * 1000, blockMs: 15 * 60 * 1000 };
+
+export const WRITE_LIMIT = { limit: 60, windowMs: 60 * 1000, blockMs: 60 * 1000 };
+export const LIST_CREATE_LIMIT = { limit: 6, windowMs: 60 * 1000, blockMs: 2 * 60 * 1000 };
+
+/** Search, per address: a fast typist makes a handful a second at most. */
+export const SEARCH_LIMIT = { limit: 90, windowMs: 60 * 1000, blockMs: 60 * 1000 };
 
 /** Signup: looser, since a person filling in a form legitimately retries, but
  *  tight enough to stop bulk account creation from one address. */

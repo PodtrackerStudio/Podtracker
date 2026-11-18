@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, authErrorMessage } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkPassword } from "@/lib/passwordPolicy";
-import { rateLimit, resetRateLimit, clientKey, AUTH_LIMIT, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
+import { rateLimitDurable, resetRateLimitDurable, tooManyRequests, AUTH_LIMIT } from "@/lib/rateLimit";
 
 /**
  * Change the signed-in user's password (Account Settings → Authentication).
@@ -16,18 +16,15 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
 
-  const limitKey = clientKey(request, "password", user.id);
-  const limited = rateLimit(limitKey, AUTH_LIMIT);
-  if (!limited.allowed) {
-    return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, {
-      status: 429,
-      headers: { "Retry-After": String(limited.retryAfterSeconds) },
-    });
-  }
+  // Per account only: the caller is already signed in, so the account is the
+  // thing being guessed at, whatever address the guesses come from.
+  const limitKey = `password:acct:${user.id}`;
+  const limited = await rateLimitDurable(limitKey, AUTH_LIMIT);
+  if (!limited.allowed) return tooManyRequests(limited);
 
-  const { currentPassword, newPassword, confirmPassword } = await request.json().catch(() => ({}));
+  const { currentPassword, newPassword, confirmPassword } = (await request.json().catch(() => null)) ?? {};
 
-  if (!currentPassword || !newPassword || !confirmPassword) {
+  if (typeof currentPassword !== "string" || typeof newPassword !== "string" || typeof confirmPassword !== "string" || !currentPassword || !newPassword || !confirmPassword) {
     return NextResponse.json({ error: "Please fill in every field." }, { status: 400 });
   }
   if (newPassword !== confirmPassword) {
@@ -69,6 +66,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: authErrorMessage(updateError.message) }, { status: 400 });
   }
 
-  resetRateLimit(limitKey);
+  await resetRateLimitDurable(limitKey);
   return NextResponse.json({ ok: true });
 }

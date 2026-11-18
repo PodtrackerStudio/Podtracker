@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ensurePodcast } from "@/lib/ensureRecords";
+import { guardWrite, tooManyRequests } from "@/lib/rateLimit";
 
 /**
  * Favourite a show — and follow it at the same time.
@@ -20,6 +21,8 @@ import { ensurePodcast } from "@/lib/ensureRecords";
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const { externalId } = await request.json().catch(() => ({}));
   if (!externalId) return NextResponse.json({ error: "Missing externalId." }, { status: 400 });
@@ -58,6 +61,8 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const { externalId } = await request.json().catch(() => ({}));
   if (!externalId) return NextResponse.json({ error: "Missing externalId." }, { status: 400 });

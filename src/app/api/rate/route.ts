@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
 import { RatingTier } from "@/generated/prisma/enums";
 import { findStoredEpisodeId } from "@/lib/storedEpisode";
+import { guardWrite, tooManyRequests } from "@/lib/rateLimit";
 
 const TIERS = new Set<string>(Object.values(RatingTier));
 
@@ -66,6 +67,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const { externalId, episodeKey, tier } = await request.json().catch(() => ({}));
 

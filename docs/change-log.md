@@ -71,6 +71,89 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-18 — Security and performance audit, and the fixes
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "do an entire system security audit of my website
+  … focus on (1) what may cause a data breach or hack and (2) bugs that make the
+  site not work as well or increase latency", then "fix all of them".
+- **Status:** Partial — see **Follow-ups**. **Three migrations are written but
+  NOT applied to production**; the session was not permitted to run
+  `prisma migrate deploy`.
+
+**How the audit was done.** Three read-only reviewers (API authorization;
+injection/XSS/SSRF; performance), plus live read-only checks of the database:
+RLS state per table, grants, default privileges, event triggers, `npm audit`,
+and a secrets scan of the full git history (the GitHub repo is public).
+
+**Verified fine:** no secret was ever committed; no IDOR in any route; no XSS
+through themes, JSON-LD, feeds, bios or reviews; no raw SQL on request input;
+RLS is on (no policies) for the 19 tables that exist in production.
+
+**Part 1 — security fixes**
+
+- **New tables would have been world-readable.** RLS on the existing tables was
+  switched on by hand in the dashboard; no migration does it, there is no event
+  trigger, and the database's default privileges grant `anon` and
+  `authenticated` everything on any new table. `Notification` and `Feedback`
+  (both still unapplied in production) would have been readable and writable
+  with the public anon key the moment they were created.
+  `20261118000000_lock_public_tables` enables RLS on every public table,
+  revokes anon/authenticated's table and sequence grants, and revokes the
+  default privileges so future tables start locked. The app never uses the
+  Data API, so nothing depends on those grants.
+- **Password reset without a reset link.** `/api/auth/reset-password` only
+  checked for a session, so any signed-in session could set a new password
+  without the current one. It now requires the session's `amr` claim to show an
+  emailed-link method within the last hour. It is rate-limited.
+- **Login CSRF through `/auth/callback`.** It spent `token_hash` on a GET. It now
+  forwards to `/auth/confirm` (button + cross-site-protected POST), so old
+  emails still work.
+- **Pre-hijack on signup.** A second signup for an unconfirmed address now flags
+  the auth user `app_metadata.must_set_password`; `/api/auth/confirm` sends
+  whoever clicks the link to `/reset-password` first; the flag clears once a
+  password is set. Signup also caps username (40) and email (254) length.
+- **Rate limiting.** New `rateLimitDurable` (Postgres `RateLimit` table, one
+  atomic upsert, falls back to memory if the table is missing) for login,
+  signup, forgot, resend, reset, change-password and delete-account. `guardAuth`
+  counts per address **and** per account as separate buckets; the old single
+  `ip:account` key gave no per-account limit. `guardWrite` (in memory, 60/min
+  per account) on rate, log, likes, follow, favorites, user-follow, lists,
+  list items, next-listening, account and theme; list creation is 6/min.
+  `/api/search` is 90/min per address.
+- **Feed downloads** (`podcastApi.ts`): 20s deadline, 60MB cap read in chunks,
+  http(s) only, private/loopback/link-local destinations refused at every
+  redirect hop (DNS-resolved). The three iTunes calls get a 6s timeout.
+- **Smaller:** one follow notification per pair per day; `/api/health/db`
+  returns only `{ok}` unless `?token=` matches `HEALTH_CHECK_TOKEN`; non-string
+  JSON fields no longer 500 the auth routes; search `limit` clamped to 1–25 and
+  `q` to 100 chars; feedback text escaped before posting to Discord; four
+  profile links now go through `usernameToPath`; notifications mark-read runs
+  in `after()`; Next.js 16.4.3 → 16.4.6 (GHSA-mfr8-8qww-v76h, GHSA-vc7v-qv4w-wrv8).
+
+**Deliberately not changed**
+
+- **Signup still says "an account with that email already exists".** That
+  reveals registered addresses, but the wording was chosen on purpose after
+  people got stuck (2026-11-17 entry); swapping it for a silent "check your
+  inbox" sends real users to an inbox nothing was sent to. Left for a decision.
+
+**Follow-ups**
+
+- **Run `npx prisma migrate deploy` against production.** Until then: there is
+  no `Notification` table (follow notifications do nothing), no `Feedback`
+  table (Discord delivery only), and the durable limiter runs in memory. The
+  lock-down migration runs after both table migrations, so they are locked in
+  the same deploy.
+- Set `HEALTH_CHECK_TOKEN` in Vercel if the detailed health report is wanted.
+- Supabase dashboard, not code: turn on "Secure password change" and "Secure
+  email change" (Auth settings). The session cookies are readable by page
+  JavaScript, so a stolen token can call Supabase's API directly.
+- Not exercised against live Supabase: the `amr` check on a real reset link,
+  and the `must_set_password` path. **Test a password reset end to end after
+  deploying**; if it is refused, the server log line `[reset-password] refused`
+  prints the methods the session actually carried.
+
 ### 2026-11-18 — /log page: centred card, large search bar
 
 - **Branch:** `main`

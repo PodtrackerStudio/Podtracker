@@ -58,14 +58,20 @@ async function postToDiscord(fields: {
   const webhook = process.env.DISCORD_FEEDBACK_WEBHOOK_URL;
   if (!webhook) return false;
 
+  // Everything a stranger typed is escaped. Unescaped, a message could carry
+  // `[Vercel billing alert](https://evil.example)` and it would render as a
+  // clickable link posted by a trusted integration, or a name could fake the
+  // "signed in as" line below.
+  const plain = (text: string) => text.replace(/([\\`*_~|>\[\]()<#@:])/g, "\\$1");
+
   const who = fields.username
-    ? `**${fields.name ?? "—"}** (signed in as ${fields.username})`
-    : `**${fields.name ?? "—"}** (not signed in)`;
+    ? `**${plain(fields.name ?? "—")}** (signed in as ${plain(fields.username)})`
+    : `**${plain(fields.name ?? "—")}** (not signed in)`;
 
   const body =
     `**New feedback**\n${who}\n` +
-    `Email: ${fields.email ?? "not given"}\n\n` +
-    fields.message.slice(0, DISCORD_MAX);
+    `Email: ${fields.email ? plain(fields.email) : "not given"}\n\n` +
+    plain(fields.message).slice(0, DISCORD_MAX);
 
   try {
     const res = await fetch(webhook, {

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
 import { avatarSrc } from "@/lib/avatar";
+import { guardWrite, tooManyRequests } from "@/lib/rateLimit";
 
 /** How many covers the picker stacks on a row before it shows a "+N". */
 const COVERS_PER_ROW = 4;
@@ -78,6 +79,8 @@ type IncomingItem = { externalId?: string; episodeKey?: string | null };
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id, "lists-create");
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const body = await request.json().catch(() => ({}));
   const title = typeof body?.title === "string" ? body.title.trim() : "";

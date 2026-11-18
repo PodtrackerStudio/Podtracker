@@ -5,6 +5,7 @@ import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
 import { getOrCreateWatchlist } from "@/lib/nextListening";
 import { appendListItem } from "@/lib/lists";
 import { findStoredEpisodeId } from "@/lib/storedEpisode";
+import { guardWrite, tooManyRequests } from "@/lib/rateLimit";
 
 /**
  * Add a show or episode to the user's Next listening.
@@ -18,6 +19,8 @@ import { findStoredEpisodeId } from "@/lib/storedEpisode";
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const { externalId, episodeKey } = await request.json().catch(() => ({}));
   if (!externalId) return NextResponse.json({ error: "Missing externalId." }, { status: 400 });
@@ -51,6 +54,8 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const { externalId, episodeKey } = await request.json().catch(() => ({}));
   if (!externalId) return NextResponse.json({ error: "Missing externalId." }, { status: 400 });

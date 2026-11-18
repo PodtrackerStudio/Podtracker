@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ensurePodcast, ensureEpisode } from "@/lib/ensureRecords";
 import { RatingTier } from "@/generated/prisma/enums";
+import { guardWrite, tooManyRequests } from "@/lib/rateLimit";
 
 const TIERS = new Set<string>(Object.values(RatingTier));
 
@@ -28,6 +29,8 @@ const MAX_REVIEW = 10_000;
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const { externalId, episodeKey, tier, reviewText, listenedDate } = await request.json().catch(() => ({}));
 
@@ -121,6 +124,8 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   const { logEntryId } = await request.json().catch(() => ({}));
   if (!logEntryId) return NextResponse.json({ error: "Missing logEntryId." }, { status: 400 });

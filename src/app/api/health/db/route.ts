@@ -154,7 +154,26 @@ const FRESH_MS = 30_000;
 let last: { at: number; report: Record<string, unknown>; status: number } | null = null;
 let inFlight: Promise<{ report: Record<string, unknown>; status: number }> | null = null;
 
-export async function GET() {
+/**
+ * The full report names which env vars are set, the database provider, port
+ * and failure cause — a description of the deployment, useful to exactly two
+ * groups: whoever is fixing it and whoever is attacking it. So it is returned
+ * only with `?token=` matching `HEALTH_CHECK_TOKEN`. Everyone else gets up or
+ * down, which is all an uptime monitor needs. With no token configured the
+ * detail is simply unavailable over HTTP; `npm run check:db` still gives it
+ * from a terminal.
+ */
+function mayseeDetail(request: Request): boolean {
+  const expected = process.env.HEALTH_CHECK_TOKEN;
+  if (!expected) return false;
+  const given = new URL(request.url).searchParams.get("token") ?? "";
+  if (given.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ given.charCodeAt(i);
+  return diff === 0;
+}
+
+export async function GET(request: Request) {
   if (!last || Date.now() - last.at > FRESH_MS) {
     inFlight ??= runCheck()
       .then((result) => {
@@ -168,6 +187,12 @@ export async function GET() {
   }
   if (!last) return NextResponse.json({ verdict: "Health check failed to run." }, { status: 503 });
   const { report, status } = last;
+  if (!mayseeDetail(request)) {
+    return NextResponse.json(
+      { ok: status === 200, checkedAt: report.checkedAt },
+      { status, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   return NextResponse.json(
     { ...report, cachedForSeconds: Math.round((FRESH_MS - (Date.now() - last.at)) / 1000) },
     { status, headers: { "Cache-Control": "no-store" } },

@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { getListForView } from "@/lib/lists";
 import { ListDetailClient } from "./ListDetailClient";
 import styles from "./list.module.css";
+import { usernameToPath } from "@/lib/routeParams";
 
 const MEDIA_OPTIONS: FilterOption[] = [
   { value: "shows", label: "Shows only" },
@@ -68,7 +69,7 @@ export default async function ListDetailPage({
 
   // Next listening is a List too (isWatchlist). It has its own page — land
   // there rather than rendering it as a list the user curated.
-  if (list.isWatchlist) redirect(`/user/${list.ownerUsername}/next-listening`);
+  if (list.isWatchlist) redirect(`/user/${usernameToPath(list.ownerUsername)}/next-listening`);
 
   const viewer = await getCurrentUser();
   const isOwner = viewer?.id === list.ownerId;

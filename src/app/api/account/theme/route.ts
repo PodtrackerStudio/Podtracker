@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { cleanFont, cleanHex, cleanTheme } from "@/lib/theme";
+import { guardWrite, tooManyRequests } from "@/lib/rateLimit";
 
 /**
  * Save Account Settings → Theme: the signed-in person's own colours and font.
@@ -18,6 +19,8 @@ export async function PUT(request: Request) {
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
   for (const key of ["main", "accent"] as const) {
     if (body[key] != null && !cleanHex(body[key])) {
