@@ -208,6 +208,11 @@ nav, or any page listed here.
   The app never uses that API (Prisma connects as the owner), so RLS with no
   policies costs nothing and is the only lock. `20261118000000_lock_public_tables`
   also revoked the anon key's default grants, but do both.
+- **Every migration that creates a function in `public` must revoke EXECUTE**
+  from `PUBLIC`, `anon` and `authenticated`, or it becomes callable at
+  `/rest/v1/rpc/<name>`. That revoke does not cover functions, and the default
+  grant to `PUBLIC` cannot be removed per schema. Trigger functions keep working
+  without the grant. See `20261118010000_revoke_trigger_function_execute`.
 - **Never spend an emailed `token_hash` on a GET.** `/auth/confirm` shows a
   button and `POST /api/auth/confirm` spends it. `/auth/callback` only forwards.
 - **`/api/auth/reset-password` must keep its `amr` check** — it is what stops a

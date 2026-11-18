@@ -71,6 +71,56 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-18 — Revoke public EXECUTE on the profile-deletion trigger function
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "fix it and push", after the Supabase security
+  advisor flagged `delete_profile_for_auth_user()`.
+- **Status:** Complete. Applied to production and verified.
+
+**What changed**
+
+- New migration revokes EXECUTE on `public.delete_profile_for_auth_user()`
+  from `PUBLIC`, `anon` and `authenticated`. It had been exposed as
+  `/rest/v1/rpc/delete_profile_for_auth_user` (advisor lints 0028 and 0029).
+- CLAUDE.md security rules: new functions in `public` need the same revoke.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `prisma/migrations/20261118010000_revoke_trigger_function_execute/migration.sql` | Added — the revoke, guarded for the shadow database |
+| `CLAUDE.md` | Modified — rule for new functions |
+
+**Why**
+
+Not exploitable in practice, because Postgres refuses to run a function that
+`RETURNS trigger` outside a trigger. But nothing except the
+`on_auth_user_deleted` trigger should call it, and the advisor warning would
+otherwise hide real ones. The `lock_public_tables` migration revoked table and
+sequence grants only, so functions were never covered.
+
+Applied with `npx prisma migrate deploy` from Phillip's `.env` (production).
+Verified afterwards:
+
+- Function ACL is now `postgres` and `service_role` only.
+  `has_function_privilege` is false for both `anon` and `authenticated`.
+- Security advisor: both WARN lints gone. Only the expected
+  `rls_enabled_no_policy` INFO remains, which is intentional.
+- Trigger still fires: in a transaction that was rolled back, inserting a test
+  `auth.users` row and profile and then deleting the login removed the
+  profile. No test rows remain. The delete ran as `postgres`; switching to
+  `supabase_auth_admin` was not permitted. That doesn't affect the result,
+  because EXECUTE on a trigger function is checked only when the trigger is
+  created.
+
+The Supabase MCP connector was signed in this session. It runs SQL read-only,
+so the trigger test went through `pg` with `DATABASE_URL` instead.
+
+**Follow-ups**
+
+- None.
+
 ### 2026-11-18 — Page caching for signed-out visitors
 
 - **Branch:** `main`
