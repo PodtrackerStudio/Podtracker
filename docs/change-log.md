@@ -71,6 +71,57 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-18 — /log page: centred card, large search bar
+
+- **Branch:** `main`
+- **Requested by:** Phillip — screenshot of `/log`: "fix this page, it looks
+  kinda ugly and the bar is too far up".
+- **Status:** Complete.
+
+**What changed**
+
+- **Position:** `.main` now fills the height between the nav and footer
+  (`100svh` minus both) and centres its content. The page is short, so the
+  search used to sit near the top and the footer floated halfway up the screen.
+  On phones the card sits at the top instead.
+- **One card**, using the site's `--surface` with a faint `--accent-blue` glow at
+  the top: a mic badge in `--btn-primary-blue`, "Log podcast", the lead line
+  "Find a show or episode you listened to, then rate and review it." (replaces
+  "Pick what you listened to."), the search, and a three-step strip:
+  1 Find it · 2 Rate it · 3 Review it (optional).
+- **`AddPodcastsBar` gained `size="large"` and `autoFocus`.** Large is full width,
+  56px, pill-shaped, with a search icon, a focus glow, and a dropdown as wide as
+  the bar with bigger rows. `/log` uses both, so you can type immediately. Next
+  listening and list pages keep the default size, unchanged.
+- In pick mode (only `/log`) each result shows `›` instead of `+`: choosing one
+  takes you to rating it, it doesn't add it anywhere.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/app/log/page.tsx` | Modified — card, badge, lead, steps |
+| `src/app/log/LogClient.tsx` | Modified — large, autofocused bar; old hint removed |
+| `src/app/log/log.module.css` | Rewritten — full-height centring, card, steps, breakpoints |
+| `src/components/AddPodcastsBar.tsx` | Modified — `size`, `autoFocus`, `›` in pick mode |
+| `src/components/addPodcastsBar.module.css` | Modified — `.large` variant |
+
+**Why**
+
+Checked through a temporary route (deleted) at 1470×900 and 390×760: the card
+is centred, the input is focused on load, a search for "huberman" opens a
+full-width dropdown, and there's no horizontal overflow. `tsc` and eslint clean.
+Logged-out `/log` still redirects to `/login`.
+
+Note for whoever runs the dev server next: after pulling `ca62d7a` (feedback
+form, new Prisma model), `npx prisma generate` and a dev server restart are
+needed. Without them `tsc` fails on `db.feedback`, and the dev overlay showed
+a red issue until the server was restarted.
+
+**Follow-ups**
+
+- None.
+
 ### 2026-11-17 — Feedback form at /contact
 
 - **Branch:** `main`

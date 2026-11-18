@@ -30,9 +30,8 @@ export function LogClient({ username }: { username: string }) {
   return (
     <>
       <div className={styles.searchRow}>
-        <AddPodcastsBar onSelect={setPicked} placeholder="Search a show or episode…" />
+        <AddPodcastsBar onSelect={setPicked} placeholder="Search a show or episode…" size="large" autoFocus />
       </div>
-      <p className={styles.hint}>Pick what you listened to.</p>
 
       {/* Picking opens the popup straight away — there is no in-between
           confirmation step. Closing it without saving returns to the search. */}

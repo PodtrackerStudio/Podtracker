@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { subtitleForSearchItem, type SearchItem, type SearchScope } from "@/lib/searchItem";
+import { SearchIcon } from "./icons";
 import styles from "./addPodcastsBar.module.css";
 
 /** The Shows only / Episodes only control, in the wording the site already uses. */
@@ -37,6 +38,8 @@ export function AddPodcastsBar({
   collectionName = "Next listening",
   onSelect,
   placeholder = "Add podcasts...",
+  size = "default",
+  autoFocus = false,
 }: {
   endpoint?: string;
   extraBody?: Record<string, string>;
@@ -49,6 +52,13 @@ export function AddPodcastsBar({
    */
   onSelect?: (item: SearchItem) => void;
   placeholder?: string;
+  /**
+   * "large" is the /log page's version: full width of its container, taller,
+   * with a search icon, and a dropdown as wide as the bar. Next listening and
+   * lists keep the default.
+   */
+  size?: "default" | "large";
+  autoFocus?: boolean;
 } = {}) {
   const router = useRouter();
   const [value, setValue] = useState("");
@@ -161,9 +171,15 @@ export function AddPodcastsBar({
   }
 
   return (
-    <div className={styles.wrap} ref={wrapRef}>
+    <div className={size === "large" ? `${styles.wrap} ${styles.large}` : styles.wrap} ref={wrapRef}>
+      {size === "large" && (
+        <span className={styles.icon} aria-hidden="true">
+          <SearchIcon />
+        </span>
+      )}
       <input
         className={styles.input}
+        autoFocus={autoFocus}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onFocus={() => value.trim() && setOpen(true)}
@@ -208,7 +224,9 @@ export function AddPodcastsBar({
                       describe the same result differently. */}
                   <span className={styles.resultSubtitle}>{subtitleForSearchItem(item)}</span>
                 </span>
-                <span className={styles.resultAdd}>{busyId === item.id ? "…" : "+"}</span>
+                {/* "+" means "add to this collection". In pick mode nothing is
+                    added yet — choosing moves you on to rating it. */}
+                <span className={styles.resultAdd}>{busyId === item.id ? "…" : onSelect ? "›" : "+"}</span>
               </button>
             ))}
 

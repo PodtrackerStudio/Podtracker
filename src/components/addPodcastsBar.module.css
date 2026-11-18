@@ -147,3 +147,83 @@
   color: var(--text-muted);
   text-align: center;
 }
+
+/* ── size="large" — the /log page ──
+   The same control, sized to be the one thing on the page: full width of its
+   container, 56px tall, a search icon inside, and a dropdown as wide as the bar
+   with roomier rows. The default size above is untouched. */
+.large {
+  display: block;
+  max-width: none;
+}
+.icon {
+  position: absolute;
+  left: 20px;
+  top: 28px;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.icon svg {
+  width: 20px;
+  height: 20px;
+}
+.large .input {
+  height: 56px;
+  padding: 0 20px 0 52px;
+  font-size: 17px;
+  background: #fff;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.large .input:hover {
+  border-color: rgba(17, 17, 17, 0.2);
+}
+.large .input:focus {
+  outline: none;
+  border-color: transparent;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--btn-primary-blue) 45%, transparent), var(--shadow-md);
+}
+.large:focus-within .icon {
+  color: var(--text);
+}
+.large .dropdown {
+  top: calc(100% + 10px);
+  width: 100%;
+  max-width: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  text-align: left;
+}
+.large .scopeRow {
+  padding: 8px;
+}
+.large .scopeButton {
+  font-size: 13px;
+  padding: 7px 6px;
+  border-radius: var(--radius-sm);
+}
+.large .result {
+  padding: 10px 16px;
+  gap: 14px;
+}
+.large .resultCover {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+}
+.large .resultTitle {
+  font-size: 14px;
+}
+.large .resultSubtitle {
+  font-size: 12.5px;
+}
+.large .resultAdd {
+  font-size: 22px;
+}
+.large .result:hover:not(:disabled) .resultAdd {
+  color: var(--text);
+}
