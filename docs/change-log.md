@@ -578,18 +578,22 @@ Next's route announcer.
 
 **Follow-ups**
 
-- **`DISCORD_FEEDBACK_WEBHOOK_URL` is not set in Vercel.** Until it is, and
-  until the migration is applied, the form correctly refuses and tells people
-  to email. Setting the webhook is something Sasha can do himself; the
-  migration still needs Supabase access he does not have.
-- **`docs/apply-feedback-by-hand.sql` has not been run.**
-- **Nothing reads the stored feedback yet.** No admin page, no script. Discord
-  is the reading surface for now; a `npm run feedback` listing would be the
-  obvious small addition.
-- **Next.js reports that this version has a known security vulnerability.** The
-  build prints it and exits 1 on the first run, then succeeds on a retry, so it
-  will not block Vercel but it is real. Not acted on — an upgrade is Sasha's
-  call, not something to slip into a feedback-form commit.
+- **`DISCORD_FEEDBACK_WEBHOOK_URL` is still not set in Vercel.** This is now the
+  only thing between the form and working delivery. Messages reach the
+  `Feedback` table, but nobody is notified, so they sit unread until somebody
+  queries for them. Sasha can set this himself; it needs no Supabase access.
+- ~~`docs/apply-feedback-by-hand.sql` has not been run.~~ **Not needed** —
+  Phillip ran `prisma migrate deploy` on 2026-11-18 and `Feedback` exists in
+  production. The hand-apply file stays in `docs/` as the documented route for
+  the next time the connection string is unavailable.
+- **Nothing reads the stored feedback yet.** No admin page, no script. With the
+  webhook unset there is currently *no* reading surface at all, which makes a
+  `npm run feedback` listing more than a nicety.
+- ~~Next.js reports a known security vulnerability.~~ **Upgraded** to `^16.4.6`
+  on 2026-11-18. For the record, neither advisory ever applied to this codebase:
+  both concerned the `'use cache'` directive, which is not used here — only
+  `unstable_cache`, which is a vector only when it wraps a `'use cache'`
+  function.
 
 ---
 
