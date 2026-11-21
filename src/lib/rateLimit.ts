@@ -159,20 +159,39 @@ export async function resetRateLimitDurable(key: string) {
 }
 
 /**
- * The check every password or email-sending route makes: per address, and per
- * account (or target email) where there is one. Returns the keys so a
- * successful login can clear the per-account count.
+ * The check every password or email-sending route makes, in three buckets:
+ *
+ * 1. **per address**, across all accounts (`AUTH_IP_LIMIT`);
+ * 2. **per account *and* address** (`AUTH_LIMIT`) — this is what stops one
+ *    source guessing one account's password;
+ * 3. **per account, from anywhere** (`accountTotal`) — a much looser ceiling
+ *    for attacks spread over many addresses.
+ *
+ * Until 2026-11-21 the per-account bucket was (3) with (2)'s numbers, so it
+ * counted *anyone's* attempts: eight requests every 15 minutes, from a stranger
+ * who only knew the email address, kept the owner out indefinitely, correct
+ * password and all, and stopped their reset emails too. Now a stranger fills
+ * their own bucket (2), and reaching (3) takes several addresses working
+ * together.
+ *
+ * Returns the per-account-and-address key, which a successful login clears.
  */
 export async function guardAuth(
   request: Request,
   scope: string,
   subject?: string,
+  accountTotal: LimitOptions = AUTH_ACCOUNT_LIMIT,
 ): Promise<{ result: RateLimitResult; subjectKey: string | null }> {
-  const ip = await rateLimitDurable(`${scope}:ip:${clientIp(request)}`, AUTH_IP_LIMIT);
-  if (!ip.allowed) return { result: ip, subjectKey: null };
-  if (typeof subject !== "string" || !subject.trim()) return { result: ip, subjectKey: null };
-  const subjectKey = `${scope}:acct:${subject.trim().toLowerCase()}`;
-  return { result: await rateLimitDurable(subjectKey, AUTH_LIMIT), subjectKey };
+  const ip = clientIp(request);
+  const perIp = await rateLimitDurable(`${scope}:ip:${ip}`, AUTH_IP_LIMIT);
+  if (!perIp.allowed) return { result: perIp, subjectKey: null };
+  if (typeof subject !== "string" || !subject.trim()) return { result: perIp, subjectKey: null };
+
+  const account = subject.trim().toLowerCase();
+  const subjectKey = `${scope}:acct:${account}:ip:${ip}`;
+  const perSource = await rateLimitDurable(subjectKey, AUTH_LIMIT);
+  if (!perSource.allowed) return { result: perSource, subjectKey };
+  return { result: await rateLimitDurable(`${scope}:acct:${account}`, accountTotal), subjectKey };
 }
 
 /** The 429 every limited route returns. */
@@ -196,6 +215,21 @@ export function guardWrite(userId: string, scope: "write" | "lists-create" = "wr
 
 /** Per account. Login and change-password: slow, because each attempt is a password guess. */
 export const AUTH_LIMIT = { limit: 8, windowMs: 15 * 60 * 1000, blockMs: 15 * 60 * 1000 };
+
+/**
+ * Per account from every address together. One address manages at most 32
+ * attempts an hour on one account (`AUTH_LIMIT`), so reaching 100 needs at
+ * least four working together — and 100 guesses an hour is still hopeless
+ * against the password policy.
+ */
+export const AUTH_ACCOUNT_LIMIT = { limit: 100, windowMs: 60 * 60 * 1000, blockMs: 15 * 60 * 1000 };
+
+/**
+ * The same, for routes that send an email to the address (reset, resend
+ * confirmation). Lower, because every allowed request lands in somebody's
+ * inbox; Supabase's own per-address email limit sits behind it.
+ */
+export const EMAIL_TARGET_LIMIT = { limit: 20, windowMs: 60 * 60 * 1000, blockMs: 60 * 60 * 1000 };
 
 /** Per address, across all accounts. Looser than per-account: an office or a
  *  campus shares one address. */

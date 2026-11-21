@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { siteOrigin } from "@/lib/siteUrl";
-import { guardAuth, tooManyRequests } from "@/lib/rateLimit";
+import { EMAIL_TARGET_LIMIT, guardAuth, tooManyRequests } from "@/lib/rateLimit";
 
 /**
  * Send the confirmation email again.
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
   // Keyed on the address as well as the caller, so one person cannot use this
   // to mail-bomb someone else's inbox by resending over and over.
-  const { result: limited } = await guardAuth(request, "resend-confirmation", cleanEmail);
+  const { result: limited } = await guardAuth(request, "resend-confirmation", cleanEmail, EMAIL_TARGET_LIMIT);
   if (!limited.allowed) return tooManyRequests(limited);
 
   if (!isSupabaseConfigured) {

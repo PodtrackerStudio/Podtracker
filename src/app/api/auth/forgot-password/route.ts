@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { guardAuth, tooManyRequests } from "@/lib/rateLimit";
+import { EMAIL_TARGET_LIMIT, guardAuth, tooManyRequests } from "@/lib/rateLimit";
 import { siteOrigin } from "@/lib/siteUrl";
 
 /**
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please enter your email address." }, { status: 400 });
   }
 
-  const { result: limited } = await guardAuth(request, "forgot", email);
+  const { result: limited } = await guardAuth(request, "forgot", email, EMAIL_TARGET_LIMIT);
   if (!limited.allowed) return tooManyRequests(limited);
 
   const supabase = await createSupabaseServerClient();

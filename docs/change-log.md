@@ -94,12 +94,22 @@ rejected. This is the part that saves the most time later.
   (rebinding). Checked locally: 21 address cases, refusals for
   `127.0.0.1`, `[::ffff:127.0.0.1]`, `localhost`, and `localtest.me` (a public
   name resolving to loopback), and two real feeds (2MB and 19MB) downloading.
+- **A stranger can no longer lock someone out of login or password reset.**
+  `guardAuth`'s per-account bucket counted every caller's attempts, so eight
+  requests every 15 minutes kept the owner out, correct password included,
+  and blocked their reset emails. It is now three buckets: per address
+  (unchanged), per account *and* address (the old 8 per 15 minutes, so one
+  source still cannot guess), and per account from anywhere (100 an hour for
+  login, 20 an hour for routes that send email). A successful login clears
+  its own account-and-address bucket.
 
 **Files touched**
 
 | File | Change |
 | --- | --- |
 | `src/lib/podcastApi.ts` | Modified — address parsing, connect-time check, `node:https` download |
+| `src/lib/rateLimit.ts` | Modified — `guardAuth` per-source + per-account buckets, `AUTH_ACCOUNT_LIMIT`, `EMAIL_TARGET_LIMIT` |
+| `src/app/api/auth/forgot-password/route.ts`, `resend-confirmation/route.ts` | Modified — pass `EMAIL_TARGET_LIMIT` |
 
 **Why**
 
