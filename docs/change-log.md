@@ -161,9 +161,28 @@ of them ever produces an error that makes no sense, check this first.
 
 **Follow-ups**
 
-- **Not yet redeployed or tested with a real card.** The donate path has never
-  completed a live charge. Until a $1 test succeeds and is refunded, donations
-  are unproven rather than working.
+- ~~Not yet redeployed or tested.~~ **Working as of 2026-11-21.** `/donate`
+  reaches Stripe Checkout. Confirmed by Sasha on the live site.
+
+  **It took three tries, and the third was the one that mattered.** `.trim()`
+  reached only the ends; a blacklist of header-breaking characters still missed
+  anything above U+00FF. Only the whitelist could not miss. Then, with the
+  request finally sendable, Stripe returned a plain `Invalid API Key` — and the
+  masked key in that error was **119 characters against an expected 107**. The
+  stored value had roughly twelve characters that were not part of the key,
+  which is why stripping the line break alone was never going to be enough: it
+  joined two halves, one of which was not the key. Re-pasting a freshly rolled
+  key into a deleted-and-recreated variable fixed it.
+
+  **The lesson for the next secret that misbehaves:** the connection error was
+  a lie, and the useful error was hiding behind it. Expanding the full log
+  entry gave `ERR_INVALID_CHAR` and later the key's length, and both were
+  decisive. Two rounds were lost to reading a stale log entry that looked
+  identical to the fresh one — check the timestamp.
+- **Still untested: an actual charge.** Reaching Checkout proves the key and
+  the route. It does not prove a card can be charged or that money reaches the
+  Chase account. A $1 donation, confirmed in Stripe and then refunded, is the
+  step that proves the payout wiring, and it has not been done.
 - **`managed_payments: { enabled: false }`** in the donate route was written
   against the Stripe account as it was earlier. The account has since been
   re-activated against a new bank. If a later failure names that parameter,
