@@ -71,6 +71,71 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-21 — Trim STRIPE_SECRET_KEY; a pasted newline broke donations
+
+- **Branch:** `main`
+- **Requested by:** Sasha — switching donations on for the first time, with a
+  live key and the Chase account attached.
+- **Status:** Code fix complete. **Needs a redeploy to take effect**, and the
+  live path has not yet been exercised with a real card.
+
+**The symptom, and why it was misleading**
+
+With the key set, `/api/donate` answered *"Couldn't reach the payment provider.
+Nothing has been charged."* The log said:
+
+```
+[donate] Stripe checkout session failed: Error: An error occurred with our
+connection to Stripe. Request was retried 2 times.
+```
+
+That reads as a network problem, and it sends you looking at regions, firewalls
+and Stripe's status page. It is none of those. The SDK puts the key into an
+`Authorization` header, and **a header value containing a newline is invalid** —
+Node refuses to construct the request, and the SDK surfaces that as a connection
+failure.
+
+Verified rather than assumed, against a local server so nothing left the machine:
+
+| Key value | Result |
+| --- | --- |
+| `sk_live_abc123` | header accepted |
+| `sk_live_abc123\n` | **throws `ERR_INVALID_CHAR`** |
+| `sk_live_abc123 ` (trailing space) | header accepted |
+| trimmed | header accepted |
+
+Note the asymmetry, which is what makes the diagnosis: a trailing **space**
+would have produced Stripe's own `Invalid API Key` 401. Only a **newline**
+produces a connection error. Pasting a key into a dashboard's value box picks
+one up very easily.
+
+**The fix**
+
+`SECRET_KEY` is now `.trim()`ed where it is read, with a `console.warn` if the
+raw value differed — so it keeps working, and the log still says what happened
+if the key is re-pasted badly later. The fix belongs in the code rather than in
+whoever pastes the key: an API key never has meaningful surrounding whitespace,
+and the failure it causes lands nowhere near its cause.
+
+**Worth checking elsewhere.** Every other secret read from the environment has
+the same exposure. `DATABASE_URL`, the Supabase keys and
+`DISCORD_FEEDBACK_WEBHOOK_URL` were deliberately not touched here — none is
+currently failing, and changing them blind is how a working thing breaks. If one
+of them ever produces an error that makes no sense, check this first.
+
+**Follow-ups**
+
+- **Not yet redeployed or tested with a real card.** The donate path has never
+  completed a live charge. Until a $1 test succeeds and is refunded, donations
+  are unproven rather than working.
+- **`managed_payments: { enabled: false }`** in the donate route was written
+  against the Stripe account as it was earlier. The account has since been
+  re-activated against a new bank. If a later failure names that parameter,
+  that is why — and removing it is not trivial, because it governs whether
+  Stripe acts as merchant of record and charges sales tax on what it would
+  treat as a sale.
+
+---
 ### 2026-11-21 — Fix the findings of a security audit
 
 - **Branch:** `main`
@@ -204,6 +269,8 @@ any visit to that show's page would make the server request it.
   but it's a dashboard and billing decision, so it was left to the owners.
 - Feeds no longer use Next's fetch cache. It only ever held feeds under 2MB;
   the in-memory parsed cache covers repeat reads either way.
+
+---
 
 ### 2026-11-21 — Tidy the review page's comments and byline
 

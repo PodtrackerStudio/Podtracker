@@ -11,7 +11,26 @@ import Stripe from "stripe";
  * public key at all: the browser is redirected to a URL the server creates, so
  * nothing Stripe-related reaches the client bundle.
  */
-const SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "";
+/**
+ * **Trimmed, and that is load-bearing.** The SDK puts this straight into an
+ * `Authorization` header, and a header value containing a newline is invalid —
+ * Node refuses to send the request at all. The Stripe SDK reports that as
+ * "An error occurred with our connection to Stripe", which reads like a network
+ * problem and sends you looking at regions and firewalls. It cost an hour on
+ * 2026-11-21. Pasting a key into a dashboard's value box picks up a trailing
+ * newline very easily, so the fix belongs here rather than in whoever pastes it.
+ */
+const SECRET_KEY = (process.env.STRIPE_SECRET_KEY ?? "").trim();
+
+// Worth knowing about, because the symptom is otherwise baffling: everything
+// still works after the trim, so this never becomes an error — but if the key
+// is re-pasted and the problem comes back, the log says what happened.
+if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== SECRET_KEY) {
+  console.warn(
+    "[stripe] STRIPE_SECRET_KEY had surrounding whitespace, which was trimmed. " +
+      "Worth fixing where it is set — untrimmed it makes an invalid HTTP header.",
+  );
+}
 
 /**
  * False until a Stripe account's key is in `.env`.
