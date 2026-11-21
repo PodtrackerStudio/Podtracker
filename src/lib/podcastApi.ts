@@ -1,7 +1,11 @@
 import Parser from "rss-parser";
 import { feedTextToPlain } from "./feedText";
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
+import { lookup as dnsLookup, type LookupAddress } from "node:dns";
+import { isIP, type LookupFunction } from "node:net";
+import { request as httpRequest, type IncomingMessage } from "node:http";
+import { request as httpsRequest } from "node:https";
+import type { Readable } from "node:stream";
+import { createBrotliDecompress, createGunzip, createInflate } from "node:zlib";
 
 const rssParser = new Parser();
 
@@ -267,25 +271,101 @@ const FEED_MAX_REDIRECTS = 4;
  * with a feed they host. Without this, such a feed (or a redirect from it)
  * could point the server at `127.0.0.1`, `169.254.169.254` or a private
  * address and make it fetch from inside its own network.
+ *
+ * IPv6 is parsed to its eight groups rather than matched as text. The old
+ * string check stripped a `::ffff:` prefix, but `new URL` rewrites
+ * `[::ffff:127.0.0.1]` to `::ffff:7f00:1`, which left `7f00:1` — not an IPv4
+ * address, so it was waved through as public. Every form that embeds an IPv4
+ * address (mapped, compatible, SIIT, NAT64, 6to4) is now unpacked and the
+ * IPv4 address checked.
  */
-function isPrivateAddress(ip: string): boolean {
-  if (isIP(ip) === 4) {
-    const [a, b] = ip.split(".").map(Number);
-    return (
-      a === 0 || a === 10 || a === 127 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      a >= 224
-    );
-  }
-  const v6 = ip.toLowerCase();
-  if (v6.startsWith("::ffff:")) return isPrivateAddress(v6.slice(7));
-  return v6 === "::" || v6 === "::1" || /^f[cd]/.test(v6) || /^fe[89ab]/.test(v6);
+export function isPrivateAddress(ip: string): boolean {
+  const version = isIP(ip);
+  if (version === 4) return isPrivateIPv4(ip);
+  if (version !== 6) return true; // not an address at all: refuse
+  const g = ipv6Groups(ip);
+  if (!g) return true;
+
+  const zeros = (from: number, to: number) => g.slice(from, to).every((x) => x === 0);
+  const embedded = `${g[6] >> 8}.${g[6] & 255}.${g[7] >> 8}.${g[7] & 255}`;
+  // ::/96 (compatible, also `::` and `::1`), ::ffff:0:0/96 (mapped),
+  // ::ffff:0:0:0/96 (SIIT) and 64:ff9b::/96 (NAT64) all carry IPv4 in the
+  // last 32 bits.
+  if (zeros(0, 5) && (g[5] === 0 || g[5] === 0xffff)) return isPrivateIPv4(embedded);
+  if (zeros(0, 4) && g[4] === 0xffff && g[5] === 0) return isPrivateIPv4(embedded);
+  if (g[0] === 0x64 && g[1] === 0xff9b && zeros(2, 6)) return isPrivateIPv4(embedded);
+
+  const first = g[0];
+  return (
+    first === 0x2002 || // 6to4 — tunnels to an embedded IPv4 address
+    (first === 0x2001 && (g[1] === 0 || g[1] === 0xdb8)) || // Teredo, documentation
+    (first === 0x100 && zeros(1, 4)) || // discard-only
+    (first & 0xfe00) === 0xfc00 || // unique local fc00::/7
+    (first & 0xffc0) === 0xfe80 || // link-local fe80::/10
+    (first & 0xffc0) === 0xfec0 || // old site-local fec0::/10
+    (first & 0xff00) === 0xff00 // multicast
+  );
 }
 
-async function assertPublicHttpUrl(raw: string): Promise<URL> {
+function isPrivateIPv4(ip: string): boolean {
+  const [a, b, c] = ip.split(".").map(Number);
+  return (
+    a === 0 || a === 10 || a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) || // carrier-grade NAT
+    (a === 169 && b === 254) || // link-local, including cloud metadata
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 192 && b === 0 && (c === 0 || c === 2)) || // IETF protocol, documentation
+    (a === 198 && (b === 18 || b === 19)) || // benchmarking 198.18.0.0/15
+    (a === 198 && b === 51 && c === 100) ||
+    (a === 203 && b === 0 && c === 113) ||
+    a >= 224 // multicast and reserved
+  );
+}
+
+/** The eight 16-bit groups of a valid IPv6 address (`isIP(ip) === 6`). */
+function ipv6Groups(ip: string): number[] | null {
+  let s = ip.toLowerCase();
+  const zone = s.indexOf("%");
+  if (zone >= 0) s = s.slice(0, zone);
+  // A dotted IPv4 tail becomes two hex groups.
+  const lastColon = s.lastIndexOf(":");
+  const tail = s.slice(lastColon + 1);
+  if (isIP(tail) === 4) {
+    const [a, b, c, d] = tail.split(".").map(Number);
+    s = `${s.slice(0, lastColon + 1)}${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}`;
+  }
+  const halves = s.split("::");
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(":") : [];
+  const rest = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  const fill = halves.length === 2 ? 8 - head.length - rest.length : 0;
+  const groups = [...head, ...Array(fill).fill("0"), ...rest].map((h) => parseInt(h, 16));
+  return groups.length === 8 && groups.every((n) => Number.isInteger(n) && n >= 0 && n <= 0xffff) ? groups : null;
+}
+
+/**
+ * A `dns.lookup` that refuses private addresses, handed to `http.request` so
+ * the address that is checked is the address that is connected to.
+ *
+ * Checking first and then calling `fetch` resolved the name twice: a feed
+ * host with a zero-TTL record could answer with a public address for the
+ * check and `127.0.0.1` for the connection (DNS rebinding).
+ */
+const guardedLookup: LookupFunction = (hostname, options, callback) => {
+  dnsLookup(hostname, { ...options, all: true }, (error, addresses) => {
+    if (error) return callback(error, "", 4);
+    const list = addresses as unknown as LookupAddress[];
+    if (list.length === 0 || list.some((a) => isPrivateAddress(a.address))) {
+      return callback(new Error(`Feed url resolves to a private address: ${hostname}`), "", 4);
+    }
+    // Node asks for every address when it races IPv4 against IPv6.
+    if (options.all) return (callback as unknown as (e: null, a: LookupAddress[]) => void)(null, list);
+    callback(null, list[0].address, list[0].family);
+  });
+};
+
+function checkFeedUrl(raw: string): URL {
   let url: URL;
   try {
     url = new URL(raw);
@@ -299,65 +379,104 @@ async function assertPublicHttpUrl(raw: string): Promise<URL> {
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal")) {
     throw new Error(`Feed url points at a local host: ${host}`);
   }
-  // Every address the name resolves to, so a public-looking name that resolves
-  // to a private address is refused too.
-  const addresses = isIP(host) ? [{ address: host }] : await lookup(host, { all: true });
-  if (addresses.length === 0 || addresses.some((a) => isPrivateAddress(a.address))) {
+  // A literal address never reaches `guardedLookup` — Node connects to it
+  // directly — so it is checked here. Names are checked at connect time.
+  if (isIP(host) && isPrivateAddress(host)) {
     throw new Error(`Feed url resolves to a private address: ${host}`);
   }
   return url;
 }
 
+/** One GET, no redirects followed, connecting only to public addresses. */
+function getOnce(url: URL, signal: AbortSignal): Promise<IncomingMessage> {
+  const request = url.protocol === "https:" ? httpsRequest : httpRequest;
+  return new Promise((resolve, reject) => {
+    const req = request(
+      url,
+      {
+        method: "GET",
+        lookup: guardedLookup,
+        signal,
+        headers: {
+          accept: "application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
+          "accept-encoding": "gzip, deflate, br",
+          "user-agent": "Podtracker/1.0",
+        },
+      },
+      resolve,
+    );
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+function decoded(res: IncomingMessage): Readable {
+  switch ((res.headers["content-encoding"] ?? "").toLowerCase()) {
+    case "gzip":
+    case "x-gzip":
+      return res.pipe(createGunzip());
+    case "deflate":
+      return res.pipe(createInflate());
+    case "br":
+      return res.pipe(createBrotliDecompress());
+    default:
+      return res;
+  }
+}
+
 /**
- * Downloads a feed with three limits it did not have: a deadline, a size cap,
- * and a check on where it is going (at every redirect, not just the first
- * url). Before, one slow or endless feed held a function until the platform
- * killed it — and `feedsInFlight` handed that same stuck promise to every
- * later request for the show.
+ * Downloads a feed with a deadline, a size cap, and a check on where it is
+ * going (at every redirect, not just the first url). Before the deadline, one
+ * slow or endless feed held a function until the platform killed it — and
+ * `feedsInFlight` handed that same stuck promise to every later request for
+ * the show.
+ *
+ * `node:http(s)` rather than `fetch`, because `fetch` cannot be given a
+ * lookup function, and the lookup is where the address check has to live (see
+ * `guardedLookup`). This gives up Next's fetch cache, which only ever held the
+ * small feeds — anything over 2MB was never cached by it — and the parsed
+ * cache above covers repeat reads either way.
  */
-async function downloadFeed(feedUrl: string): Promise<string> {
+export async function downloadFeed(feedUrl: string): Promise<string> {
   const signal = AbortSignal.timeout(FEED_TIMEOUT_MS);
   let current = feedUrl;
 
   for (let hop = 0; hop <= FEED_MAX_REDIRECTS; hop++) {
-    const url = await assertPublicHttpUrl(current);
-    const res = await fetch(url, {
-      redirect: "manual",
-      signal,
-      // Same revalidate as before for feeds small enough for Next to cache.
-      next: { revalidate: REVALIDATE_SECONDS },
-    });
+    const url = checkFeedUrl(current);
+    const res = await getOnce(url, signal);
+    const status = res.statusCode ?? 0;
 
-    if (res.status >= 300 && res.status < 400) {
-      const location = res.headers.get("location");
-      await res.body?.cancel().catch(() => {});
-      if (!location) throw new FeedFetchError(res.status, feedUrl);
+    if (status >= 300 && status < 400) {
+      const location = res.headers.location;
+      res.resume();
+      if (!location) throw new FeedFetchError(status, feedUrl);
       current = new URL(location, url).toString();
       continue;
     }
-    if (!res.ok) throw new FeedFetchError(res.status, feedUrl);
+    if (status < 200 || status >= 300) {
+      res.resume();
+      throw new FeedFetchError(status, feedUrl);
+    }
 
-    const declared = Number(res.headers.get("content-length"));
+    const declared = Number(res.headers["content-length"]);
     if (declared > FEED_MAX_BYTES) {
-      await res.body?.cancel().catch(() => {});
+      res.destroy();
       throw new Error(`Feed is too large (${declared} bytes): ${feedUrl}`);
     }
-    if (!res.body) return res.text();
 
-    // Read in chunks so an endless or mislabelled body is cut off at the cap
-    // instead of being buffered whole.
-    const reader = res.body.getReader();
-    const chunks: Uint8Array[] = [];
+    // Counted after decompression, so an endless body or a compression bomb is
+    // cut off at the cap instead of being buffered whole.
+    const body = decoded(res);
+    const chunks: Buffer[] = [];
     let total = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > FEED_MAX_BYTES) {
-        await reader.cancel().catch(() => {});
-        throw new Error(`Feed is too large (over ${FEED_MAX_BYTES} bytes): ${feedUrl}`);
+    try {
+      for await (const chunk of body) {
+        total += (chunk as Buffer).byteLength;
+        if (total > FEED_MAX_BYTES) throw new Error(`Feed is too large (over ${FEED_MAX_BYTES} bytes): ${feedUrl}`);
+        chunks.push(chunk as Buffer);
       }
-      chunks.push(value);
+    } finally {
+      res.destroy();
     }
     return new TextDecoder().decode(Buffer.concat(chunks));
   }

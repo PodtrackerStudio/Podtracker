@@ -71,6 +71,47 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-21 — Fix the findings of a security audit
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "run the security check agent", then "can you
+  fix all of them" for the findings it reported.
+- **Status:** In progress — one commit per finding; this entry is extended as
+  each lands.
+
+**What changed**
+
+- **Feed downloads can no longer be steered at internal addresses.**
+  `isPrivateAddress` now parses IPv6 to its eight groups. The old string
+  check stripped `::ffff:`, but `new URL` rewrites `[::ffff:127.0.0.1]` to
+  `::ffff:7f00:1`, leaving `7f00:1`, which passed as public. Every IPv6 form
+  that embeds an IPv4 address (mapped, compatible, SIIT, NAT64, 6to4) is
+  unpacked and checked, and 198.18/15, Teredo, multicast and documentation
+  ranges were added. `downloadFeed` now uses `node:http(s)` with a lookup
+  function that refuses private addresses, so the address checked is the
+  address connected to. Before, `dns.lookup` checked one answer and `fetch`
+  resolved the name again, which a zero-TTL DNS record could exploit
+  (rebinding). Checked locally: 21 address cases, refusals for
+  `127.0.0.1`, `[::ffff:127.0.0.1]`, `localhost`, and `localtest.me` (a public
+  name resolving to loopback), and two real feeds (2MB and 19MB) downloading.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/lib/podcastApi.ts` | Modified — address parsing, connect-time check, `node:https` download |
+
+**Why**
+
+The audit found the feed download guard could be bypassed. A podcast listed on
+Apple (anyone can list one) could redirect its feed to an internal address, and
+any visit to that show's page would make the server request it.
+
+**Follow-ups**
+
+- Feeds no longer use Next's fetch cache. It only ever held feeds under 2MB;
+  the in-memory parsed cache covers repeat reads either way.
+
 ### 2026-11-21 — Tidy the review page's comments and byline
 
 - **Branch:** `main`
