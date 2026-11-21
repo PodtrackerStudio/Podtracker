@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import { siteOrigin } from "@/lib/siteUrl";
+import { PENDING_CONFIRMATION_COOKIE, parsePendingConfirmations } from "@/lib/pendingConfirmation";
 
 /**
  * Spends the token from an emailed link — and only ever on a POST.
@@ -15,14 +17,29 @@ import { siteOrigin } from "@/lib/siteUrl";
  * a one-time token and creating a session.
  */
 
+/**
+ * `magiclink` is not here: the site never sends one, and anyone can request a
+ * magic link for their own address from Supabase's public API — a ready-made
+ * token for signing a victim into the attacker's account.
+ */
 const ALLOWED_TYPES = new Set<EmailOtpType>([
   "recovery",
   "signup",
   "invite",
-  "magiclink",
   "email",
   "email_change",
 ]);
+
+/**
+ * Links that sign the clicker in, and that a stranger can mint for an account
+ * of their own. Only honoured as a sign-in when this browser asked for one —
+ * see `src/lib/pendingConfirmation.ts`.
+ *
+ * `recovery` is left out because opening a reset email on a phone is normal
+ * and must keep working; `/reset-password` names the account instead. `invite`
+ * needs the service-role key to create, so a stranger cannot make one.
+ */
+const SIGN_IN_ONLY_IF_REQUESTED = new Set<EmailOtpType>(["signup", "email", "email_change"]);
 
 /** Where each kind of link should land once the token has been spent. */
 function destinationFor(type: EmailOtpType, requested: string | null): string {
@@ -68,6 +85,19 @@ export async function POST(request: Request) {
     const { data } = await supabase.auth.getUser();
     if (data.user?.app_metadata?.must_set_password) {
       return NextResponse.redirect(`${origin}/reset-password`, { status: 303 });
+    }
+
+    // A link this browser did not ask for: the address is confirmed (the token
+    // was good), but nobody is signed in on the strength of it.
+    if (SIGN_IN_ONLY_IF_REQUESTED.has(type as EmailOtpType)) {
+      const pending = parsePendingConfirmations((await cookies()).get(PENDING_CONFIRMATION_COOKIE)?.value);
+      const addresses = [data.user?.email, data.user?.new_email]
+        .filter((e): e is string => typeof e === "string")
+        .map((e) => e.toLowerCase());
+      if (!addresses.some((a) => pending.includes(a))) {
+        await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+        return NextResponse.redirect(`${origin}/login?confirm=done`, { status: 303 });
+      }
     }
   }
 

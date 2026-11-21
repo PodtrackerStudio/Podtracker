@@ -7,9 +7,11 @@ import styles from "../signup/auth.module.css";
 
 export function LoginForm({
   awaitingConfirmation = false,
+  emailConfirmed = false,
   linkError = null,
 }: {
   awaitingConfirmation?: boolean;
+  emailConfirmed?: boolean;
   /** Set when an emailed link could not be used — see LINK_ERRORS in page.tsx. */
   linkError?: string | null;
 }) {
@@ -86,6 +88,9 @@ export function LoginForm({
           <p className={styles.authNote}>
             Your account is made. Click the link in your email to confirm it, then log in here.
           </p>
+        )}
+        {emailConfirmed && (
+          <p className={styles.authNote}>Your email is confirmed. Log in to continue.</p>
         )}
         <form onSubmit={handleSubmit}>
           <div className={styles.field}>

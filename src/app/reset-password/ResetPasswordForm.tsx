@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from "@/lib/passwordPolicy";
 import styles from "../signup/auth.module.css";
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ email }: { email: string | null }) {
   const router = useRouter();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -59,6 +59,9 @@ export function ResetPasswordForm() {
   return (
     <div className={styles.authWrap}>
       <h1>Set a new password</h1>
+      {/* Named so a reset link for somebody else's account — mailed to you to
+          sign you into it — is visible before you use it. */}
+      {email && <p className={styles.authNote}>For the account {email}.</p>}
       <form onSubmit={handleSubmit}>
         <div className={styles.field}>
           <label htmlFor="new-password">New password</label>

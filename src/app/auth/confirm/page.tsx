@@ -61,11 +61,6 @@ const COPY: Record<string, { heading: string; body: string; action: string }> = 
     body: "Click below to set up your account.",
     action: "Accept",
   },
-  magiclink: {
-    heading: "Sign in to Podtracker",
-    body: "Click below to finish signing in.",
-    action: "Sign in",
-  },
 };
 
 export default async function ConfirmPage({

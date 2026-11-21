@@ -40,5 +40,13 @@ export default async function LoginPage({
   // the site quietly returning you to the login page for no reason.
   const linkError = LINK_ERRORS[error ?? ""] ?? null;
 
-  return <LoginForm awaitingConfirmation={confirm === "pending"} linkError={linkError} />;
+  return (
+    <LoginForm
+      awaitingConfirmation={confirm === "pending"}
+      // `/api/auth/confirm` confirmed the address but did not sign this
+      // browser in, because the link was not requested here.
+      emailConfirmed={confirm === "done"}
+      linkError={linkError}
+    />
+  );
 }

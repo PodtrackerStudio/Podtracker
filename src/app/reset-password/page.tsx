@@ -59,5 +59,5 @@ export default async function ResetPasswordPage() {
     );
   }
 
-  return <ResetPasswordForm />;
+  return <ResetPasswordForm email={user.email ?? null} />;
 }

@@ -102,6 +102,19 @@ rejected. This is the part that saves the most time later.
   source still cannot guess), and per account from anywhere (100 an hour for
   login, 20 an hour for routes that send email). A successful login clears
   its own account-and-address bucket.
+- **A mailed confirmation link can no longer sign someone into a stranger's
+  account.** Signup, resend-confirmation and email change now set an httpOnly
+  cookie (`pt_confirming`, scoped to `/api/auth/confirm`) naming the address
+  this browser asked about. For `signup`, `email` and `email_change` links,
+  `POST /api/auth/confirm` still confirms the address, but if the account
+  doesn't match the cookie it signs the browser out and sends it to
+  `/login?confirm=done` ("Your email is confirmed. Log in to continue."). The
+  `must_set_password` path is unchanged. `magiclink` links are no longer
+  accepted anywhere (the site never sends them, and anyone can request one for
+  their own address). Reset links still work on any device, so
+  `/reset-password` now says which account it is for. Not tested end-to-end
+  against Supabase, which would mean creating real accounts in production;
+  typechecked and linted.
 
 **Files touched**
 
@@ -109,7 +122,13 @@ rejected. This is the part that saves the most time later.
 | --- | --- |
 | `src/lib/podcastApi.ts` | Modified — address parsing, connect-time check, `node:https` download |
 | `src/lib/rateLimit.ts` | Modified — `guardAuth` per-source + per-account buckets, `AUTH_ACCOUNT_LIMIT`, `EMAIL_TARGET_LIMIT` |
-| `src/app/api/auth/forgot-password/route.ts`, `resend-confirmation/route.ts` | Modified — pass `EMAIL_TARGET_LIMIT` |
+| `src/app/api/auth/forgot-password/route.ts`, `resend-confirmation/route.ts` | Modified — pass `EMAIL_TARGET_LIMIT`; resend sets the pending-confirmation cookie |
+| `src/lib/pendingConfirmation.ts` | Added — the `pt_confirming` cookie |
+| `src/app/api/auth/confirm/route.ts` | Modified — sign in only for links this browser asked for; drop `magiclink` |
+| `src/app/api/auth/signup/route.ts`, `src/app/api/account/route.ts` | Modified — set the pending-confirmation cookie |
+| `src/app/auth/confirm/page.tsx`, `src/app/auth/callback/route.ts` | Modified — drop `magiclink` |
+| `src/app/login/page.tsx`, `LoginForm.tsx` | Modified — "Your email is confirmed" note for `?confirm=done` |
+| `src/app/reset-password/page.tsx`, `ResetPasswordForm.tsx` | Modified — name the account being reset |
 
 **Why**
 
@@ -119,6 +138,9 @@ any visit to that show's page would make the server request it.
 
 **Follow-ups**
 
+- **Two new lines of copy need Sasha's eye:** "Your email is confirmed. Log in
+  to continue." on `/login`, and "For the account {email}." under "Set a new
+  password". Both use the existing `.authNote` style; no frame covers them.
 - Feeds no longer use Next's fetch cache. It only ever held feeds under 2MB;
   the in-memory parsed cache covers repeat reads either way.
 

@@ -32,7 +32,6 @@ const ALLOWED_TYPES = new Set<EmailOtpType>([
   "recovery",
   "signup",
   "invite",
-  "magiclink",
   "email",
   "email_change",
 ]);

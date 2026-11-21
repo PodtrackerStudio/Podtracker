@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { PENDING_CONFIRMATION_COOKIE, rememberPendingConfirmation } from "@/lib/pendingConfirmation";
 import { db } from "@/lib/db";
 import { getCurrentUser, authErrorMessage } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -127,7 +129,12 @@ export async function PATCH(request: Request) {
       select: { username: true },
     });
 
-    return NextResponse.json({ username: updated.username, ...(emailChanged && { emailPending: email }) });
+    const response = NextResponse.json({ username: updated.username, ...(emailChanged && { emailPending: email }) });
+    // So the confirmation link keeps this browser signed in — see pendingConfirmation.
+    if (emailChanged) {
+      rememberPendingConfirmation(response, (await cookies()).get(PENDING_CONFIRMATION_COOKIE)?.value, email);
+    }
+    return response;
   } catch (error) {
     // Two people claiming the same username between the check and the write.
     if ((error as { code?: string })?.code === "P2002") {

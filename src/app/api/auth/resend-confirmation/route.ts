@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { siteOrigin } from "@/lib/siteUrl";
 import { EMAIL_TARGET_LIMIT, guardAuth, tooManyRequests } from "@/lib/rateLimit";
+import { cookies } from "next/headers";
+import { PENDING_CONFIRMATION_COOKIE, rememberPendingConfirmation } from "@/lib/pendingConfirmation";
 
 /**
  * Send the confirmation email again.
@@ -51,5 +53,9 @@ export async function POST(request: Request) {
     console.error("[resend-confirmation] supabase rejected:", error.status, error.message);
   }
 
-  return NextResponse.json({ ok: true });
+  // Set whether or not Supabase sent anything, so the response does not reveal
+  // which. It only matters if a link for this address is later clicked here.
+  const response = NextResponse.json({ ok: true });
+  rememberPendingConfirmation(response, (await cookies()).get(PENDING_CONFIRMATION_COOKIE)?.value, cleanEmail);
+  return response;
 }

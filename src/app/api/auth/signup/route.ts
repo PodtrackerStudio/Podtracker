@@ -10,6 +10,8 @@ import { createSupabaseAdminClient, isSupabaseAdminConfigured } from "@/lib/supa
 const USERNAME_MAX = 40;
 import { reportDatabaseFailure } from "@/lib/dbError";
 import { siteOrigin } from "@/lib/siteUrl";
+import { cookies } from "next/headers";
+import { PENDING_CONFIRMATION_COOKIE, rememberPendingConfirmation } from "@/lib/pendingConfirmation";
 
 /**
  * Create an account.
@@ -187,7 +189,7 @@ export async function POST(request: Request) {
       throw error;
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       id: data.user.id,
       username: cleanUsername,
       needsEmailConfirmation,
@@ -195,6 +197,11 @@ export async function POST(request: Request) {
       // resend without the form having to hold on to it.
       email: cleanEmail,
     });
+    // So the confirmation link signs this browser in — see pendingConfirmation.
+    if (needsEmailConfirmation) {
+      rememberPendingConfirmation(response, (await cookies()).get(PENDING_CONFIRMATION_COOKIE)?.value, cleanEmail);
+    }
+    return response;
   } catch (error) {
     return NextResponse.json({ error: reportDatabaseFailure("signup", error) }, { status: 503 });
   }
