@@ -23,15 +23,16 @@ import Stripe from "stripe";
 const RAW_KEY = process.env.STRIPE_SECRET_KEY ?? "";
 
 /**
- * Everything that cannot legally appear in a Stripe key: whitespace of any
- * kind, control characters, DEL, and the zero-width characters that ride along
- * invisibly on a copy-paste.
+ * What a Stripe key is made of: ASCII letters, digits and underscores. Nothing
+ * else, ever.
  *
- * **Not `.trim()`, and that distinction cost a deploy.** Trim only touches the
- * ends, and `​` is not whitespace by `trim()`'s definition at all. The
- * character that actually broke this was somewhere a trim could not reach.
+ * **A whitelist, after a blacklist failed twice.** First `.trim()`, which only
+ * reaches the ends. Then a list of the characters known to break an HTTP
+ * header, which still missed — any character above U+00FF is rejected by Node
+ * too, and no blacklist of invisible characters is ever complete. Keeping only
+ * what is valid cannot miss anything, and a real key passes through untouched.
  */
-const ILLEGAL_IN_KEY = /[\s\u0000-\u001F\u007F​-‍﻿]/g;
+const NOT_IN_A_KEY = /[^A-Za-z0-9_]/g;
 
 /**
  * **Stripped, and that is load-bearing.** The SDK puts this straight into an
@@ -45,15 +46,27 @@ const ILLEGAL_IN_KEY = /[\s\u0000-\u001F\u007F​-‍﻿]/g;
  * easily — a wrapped line, a zero-width space — so the defence belongs here
  * rather than in whoever does the pasting.
  */
-const SECRET_KEY = RAW_KEY.replace(ILLEGAL_IN_KEY, "");
+const SECRET_KEY = RAW_KEY.replace(NOT_IN_A_KEY, "");
 
 if (RAW_KEY && RAW_KEY !== SECRET_KEY) {
-  // The count, never the characters: this goes to a log, and the surrounding
-  // material is the key itself.
+  // The count and the shape, never the characters: this goes to a log, and the
+  // surrounding material is the key itself.
   console.warn(
     `[stripe] STRIPE_SECRET_KEY contained ${RAW_KEY.length - SECRET_KEY.length} ` +
-      "character(s) that cannot appear in an HTTP header, and they were removed. " +
-      "Re-paste the key where it is set — untrimmed it makes the request unsendable.",
+      `character(s) that cannot appear in a key; removed, leaving ${SECRET_KEY.length}. ` +
+      "Re-paste it where it is set — a stray character makes the request unsendable.",
+  );
+}
+
+// Says plainly whether what arrived even looks like a key. Without this, a
+// truncated or wrong-field paste reaches Stripe and comes back as a generic
+// auth failure, which is a long way from "you pasted the wrong thing".
+if (SECRET_KEY && !/^(sk|rk)_(test|live)_[A-Za-z0-9_]+$/.test(SECRET_KEY)) {
+  console.warn(
+    `[stripe] STRIPE_SECRET_KEY does not look like a Stripe secret key ` +
+      `(${SECRET_KEY.length} characters, starts "${SECRET_KEY.slice(0, 8)}"). ` +
+      "Expected sk_live_… — check it is the secret key itself and not a key ID " +
+      "or the publishable key.",
   );
 }
 
