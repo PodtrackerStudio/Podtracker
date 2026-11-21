@@ -46,6 +46,14 @@ export function siteOrigin(request: Request): string {
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (configured) return configured.replace(/\/+$/, "");
 
+  // On the production deployment, never take the origin from a header: a
+  // forwarded host is the one input here a request can influence, and these
+  // links go into people's inboxes. Previews still infer theirs below.
+  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (process.env.VERCEL_ENV === "production" && productionHost) {
+    return `https://${productionHost.replace(/\/+$/, "")}`;
+  }
+
   const proto = request.headers.get("x-forwarded-proto");
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   if (proto && host) return `${proto.split(",")[0].trim()}://${host.split(",")[0].trim()}`;

@@ -24,6 +24,9 @@ function publicKey(hex: string): KeyObject {
   return key;
 }
 
+/** How old a signed request may be before it is treated as a replay. */
+const MAX_AGE_SECONDS = 5 * 60;
+
 export function isValidDiscordRequest(
   rawBody: string,
   signature: string | null,
@@ -32,6 +35,10 @@ export function isValidDiscordRequest(
 ): boolean {
   if (!signature || !timestamp || !/^[0-9a-f]{64}$/i.test(publicKeyHex)) return false;
   if (!/^[0-9a-f]{128}$/i.test(signature)) return false;
+  // The signature covers the timestamp, so a stale one means a captured request
+  // being replayed. Discord's clock and ours agree to well within this.
+  const sentAt = Number(timestamp);
+  if (!Number.isFinite(sentAt) || Math.abs(Date.now() / 1000 - sentAt) > MAX_AGE_SECONDS) return false;
 
   try {
     return verify(

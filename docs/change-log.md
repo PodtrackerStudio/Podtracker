@@ -144,6 +144,14 @@ rejected. This is the part that saves the most time later.
   show only the intended "RLS enabled, no policy" notices. PUBLIC's grant and
   `supabase_admin`'s defaults can't be changed from here (see the migration's
   comments), so the per-migration revoke rule in CLAUDE.md still applies.
+- **Minor hardening.** Discord interactions older than 5 minutes are refused
+  (the signature covers the timestamp, so a stale one is a replay).
+  Opening the notification bell no longer marks everything read inside the GET:
+  the bell now sends `POST /api/notifications` after the list loads, so a page
+  that navigates someone to the GET can't change state. `siteOrigin` uses
+  `VERCEL_PROJECT_PRODUCTION_URL` on the production deployment before
+  falling back to forwarded headers. `NEXT_PUBLIC_SITE_URL` is set in
+  production (checked by name in Vercel), so this is only a backstop.
 
 **Files touched**
 
@@ -162,6 +170,9 @@ rejected. This is the part that saves the most time later.
 | `src/app/api/podcast/[id]/episodes/route.ts` | Modified — per-address limit |
 | `src/lib/username.ts` | Added — username character and reserved-name rules |
 | `prisma/migrations/20261121000000_revoke_default_function_execute/` | Added — revoke default function EXECUTE from anon/authenticated |
+| `src/lib/discord/verify.ts` | Modified — 5-minute replay window |
+| `src/app/api/notifications/route.ts`, `src/components/NotificationBell.tsx` | Modified — mark-read moved to POST |
+| `src/lib/siteUrl.ts` | Modified — production origin never from headers |
 | `src/app/api/account/route.ts` | Modified — username rules, case-insensitive uniqueness, web-only profile links |
 
 **Why**

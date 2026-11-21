@@ -2,6 +2,7 @@ import { NextResponse, after } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getNotifications, markAllNotificationsRead } from "@/lib/notifications";
 import { avatarSrc } from "@/lib/avatar";
+import { guardWrite, tooManyRequests } from "@/lib/rateLimit";
 
 /**
  * What the bell popup loads when it opens.
@@ -11,27 +12,16 @@ import { avatarSrc } from "@/lib/avatar";
  * of every page. The badge count is the only thing worth paying for up front.
  *
  * Opening the popup marks everything read, which is what a bell is expected to
- * do. That happens here rather than in a second request so the two cannot
- * disagree.
+ * do — but through `POST` below, which the bell sends once this list has
+ * arrived. It used to happen inside this GET, and a GET that changes state can
+ * be triggered by any page that links or navigates here.
  */
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
 
   try {
-    // Read before marking, so this response still says which were unread. Mark
-    // first and the popup would open with everything already looking old.
     const rows = await getNotifications(user.id, 20);
-
-    // Not awaited into the response: clearing the badge is a nicety, and the
-    // list is what the person opened the popup to see. But in `after()`, not
-    // a bare promise — the instance can be frozen the moment the response is
-    // sent, which dropped the write and brought the badge back.
-    after(() =>
-      markAllNotificationsRead(user.id).catch((error) => {
-        console.error("[notifications] could not mark read:", error);
-      }),
-    );
 
     return NextResponse.json({
       notifications: rows.map((n) => ({
@@ -67,4 +57,24 @@ export async function GET() {
     );
     return NextResponse.json({ notifications: [], error: true });
   }
+}
+
+/**
+ * Marks everything read. Sent by the bell after the list has loaded, so the
+ * list it shows still says which were unread.
+ */
+export async function POST() {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  const writeLimit = guardWrite(user.id);
+  if (!writeLimit.allowed) return tooManyRequests(writeLimit);
+
+  // In `after()`, not a bare promise — the instance can be frozen the moment
+  // the response is sent, which dropped the write and brought the badge back.
+  after(() =>
+    markAllNotificationsRead(user.id).catch((error) => {
+      console.error("[notifications] could not mark read:", error);
+    }),
+  );
+  return NextResponse.json({ ok: true });
 }

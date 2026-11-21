@@ -71,7 +71,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
     setOpen(next);
     if (!next) return;
 
-    // The badge clears as soon as it is opened. The request does the same
+    // The badge clears as soon as it is opened. The POST below does the same
     // server-side; doing it here too means the number does not sit there
     // looking unread while the list loads.
     setUnread(0);
@@ -89,6 +89,9 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
         return;
       }
       setItems(data.notifications);
+      // Now that the list says which were unread, mark them read. Fire and
+      // forget: the badge is already cleared above.
+      void fetch("/api/notifications", { method: "POST" }).catch(() => {});
     } catch {
       setFailed(true);
     }
