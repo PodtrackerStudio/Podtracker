@@ -76,8 +76,10 @@ rejected. This is the part that saves the most time later.
 - **Branch:** `main`
 - **Requested by:** Phillip — "run the security check agent", then "can you
   fix all of them" for the findings it reported.
-- **Status:** In progress — one commit per finding; this entry is extended as
-  each lands.
+- **Status:** Complete, except the items under Follow-ups. `tsc`, `eslint` and
+  `next build` pass. A local `next start` served a real podcast page and the
+  episodes API (both through the new feed download), the new `/login` note,
+  and a 401 for the signed-out notifications POST.
 
 **What changed**
 
@@ -189,6 +191,13 @@ any visit to that show's page would make the server request it.
   numbers, spaces and standard punctuation." and "That link couldn't be used.
   Try a web address like youtube.com."). All use existing styles; no frame
   covers them.
+- **Not done, needs the Supabase dashboard:** confirm Auth → Email →
+  "Secure email change" is on. Changing email needs no password in Settings,
+  which is only safe if the change must be confirmed from both addresses. It
+  can't be read through the tools available here.
+- **Deliberately not done: `npm audit`'s 3 "high"s.** All are `effect`
+  (ReDoS) under the Prisma CLI, which no request reaches. The suggested fix
+  downgrades Prisma to 6.12; wait for an upstream bump instead.
 - **Not done: a Vercel Firewall rate rule** for `/podcast/*`. A signed-in
   visitor or a URL with a query string skips the page cache, and each such
   visit can parse a feed. The firewall is the right layer for page routes,
