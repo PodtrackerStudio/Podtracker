@@ -7,6 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { rateLimitDurable, tooManyRequests, AUTH_LIMIT, guardWrite } from "@/lib/rateLimit";
 import { siteOrigin } from "@/lib/siteUrl";
+import { usernameProblem } from "@/lib/username";
 
 /**
  * Save Account Settings → Display.
@@ -40,6 +41,24 @@ const AVATAR_PATTERN = /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$
  * 3.9 MB were stored and then sent inside every page that showed them.
  */
 const AVATAR_MAX_CHARS = 300_000;
+
+/**
+ * A web address, with or without `https://` — the field's placeholder is
+ * "e.g. Youtube.com". Any other scheme is refused when it is saved: the link
+ * renders as text today, but the day it becomes an `href`, a stored
+ * `javascript:` link would be script running on everyone who clicks it.
+ * (`name:` followed by a digit is a host and port, not a scheme.)
+ */
+function isWebLink(value: string): boolean {
+  const hasScheme = /^[a-z][a-z0-9+.-]*:(?!\d)/i.test(value);
+  if (hasScheme && !/^https?:\/\//i.test(value)) return false;
+  try {
+    const url = new URL(hasScheme ? value : `https://${value}`);
+    return (url.protocol === "http:" || url.protocol === "https:") && url.hostname.includes(".");
+  } catch {
+    return false;
+  }
+}
 
 function str(value: unknown): string | undefined {
   return typeof value === "string" ? value.trim() : undefined;
@@ -77,6 +96,9 @@ export async function PATCH(request: Request) {
       );
     }
   }
+  if (fields.externalLink && !isWebLink(fields.externalLink)) {
+    return NextResponse.json({ error: "That link couldn't be used. Try a web address like youtube.com." }, { status: 400 });
+  }
   if (avatarUrl !== undefined && avatarUrl !== null) {
     if (typeof avatarUrl !== "string" || !AVATAR_PATTERN.test(avatarUrl)) {
       return NextResponse.json({ error: "That picture couldn't be used. Try a PNG, JPEG, WebP or GIF." }, { status: 400 });
@@ -89,19 +111,26 @@ export async function PATCH(request: Request) {
   const username = fields.username;
   const emailChanged = email.toLowerCase() !== user.email.toLowerCase();
 
+  // Only when it changes, so a name from before these rules can be kept.
+  if (username !== user.username) {
+    const nameProblem = usernameProblem(username);
+    if (nameProblem) return NextResponse.json({ error: nameProblem }, { status: 400 });
+  }
+
   try {
     const existing = await db.user.findFirst({
       where: {
         id: { not: user.id },
         OR: [
-          { username },
+          // Case-insensitive, so "Phil" cannot be registered beside "phil".
+          { username: { equals: username, mode: "insensitive" as const } },
           ...(emailChanged ? [{ email: { equals: email, mode: "insensitive" as const } }] : []),
         ],
       },
       select: { username: true },
     });
     if (existing) {
-      const which = existing.username === username ? "username" : "email";
+      const which = existing.username.toLowerCase() === username.toLowerCase() ? "username" : "email";
       return NextResponse.json({ error: `That ${which} is already taken.` }, { status: 409 });
     }
 

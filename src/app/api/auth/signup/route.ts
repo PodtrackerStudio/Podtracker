@@ -10,6 +10,7 @@ import { createSupabaseAdminClient, isSupabaseAdminConfigured } from "@/lib/supa
 const USERNAME_MAX = 40;
 import { reportDatabaseFailure } from "@/lib/dbError";
 import { siteOrigin } from "@/lib/siteUrl";
+import { usernameProblem } from "@/lib/username";
 import { cookies } from "next/headers";
 import { PENDING_CONFIRMATION_COOKIE, rememberPendingConfirmation } from "@/lib/pendingConfirmation";
 
@@ -43,6 +44,8 @@ export async function POST(request: Request) {
   if (username.trim().length > USERNAME_MAX) {
     return NextResponse.json({ error: `Usernames can be at most ${USERNAME_MAX} characters.` }, { status: 400 });
   }
+  const nameProblem = usernameProblem(username.trim());
+  if (nameProblem) return NextResponse.json({ error: nameProblem }, { status: 400 });
   if (email.trim().length > 254) {
     return NextResponse.json({ error: "That email address is too long." }, { status: 400 });
   }
@@ -76,7 +79,11 @@ export async function POST(request: Request) {
   const cleanUsername = username.trim();
 
   try {
-    const taken = await db.user.findUnique({ where: { username: cleanUsername }, select: { id: true } });
+    // Case-insensitive, so "Phil" cannot be registered beside "phil".
+    const taken = await db.user.findFirst({
+      where: { username: { equals: cleanUsername, mode: "insensitive" } },
+      select: { id: true },
+    });
     if (taken) {
       return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
     }

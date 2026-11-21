@@ -124,6 +124,16 @@ rejected. This is the part that saves the most time later.
   trigger a 60MB feed download and parse per call, now has an in-memory
   per-address limit (`FEED_API_LIMIT`, 60 a minute). It's in memory on purpose,
   to avoid a database write on a public read.
+- **Usernames: no look-alikes, no `sasha`, no case twins.** New
+  `src/lib/username.ts`: usernames must be printable ASCII (checked first: 0
+  of 53 existing names use anything else, while 13 use spaces or punctuation,
+  which stay allowed). `sasha` (the demo profile's URL), `admin`, `podtracker`,
+  `support`, `moderator` and `staff` are refused, worded as "already taken".
+  Uniqueness is case-insensitive at signup and in Settings. Settings applies the
+  rules only when the username changes, so older names can be kept.
+- **Profile links must be web addresses.** `externalLink` accepts `youtube.com`
+  or `http(s)://…` and refuses any other scheme (`javascript:`, `data:`…)
+  when saved. No account had a link set, so nothing stored was affected.
 
 **Files touched**
 
@@ -140,6 +150,8 @@ rejected. This is the part that saves the most time later.
 | `src/app/reset-password/page.tsx`, `ResetPasswordForm.tsx` | Modified — name the account being reset |
 | `src/app/api/feedback/route.ts`, `src/app/api/donate/route.ts` | Modified — durable per-address limit |
 | `src/app/api/podcast/[id]/episodes/route.ts` | Modified — per-address limit |
+| `src/lib/username.ts` | Added — username character and reserved-name rules |
+| `src/app/api/account/route.ts` | Modified — username rules, case-insensitive uniqueness, web-only profile links |
 
 **Why**
 
@@ -149,9 +161,12 @@ any visit to that show's page would make the server request it.
 
 **Follow-ups**
 
-- **Two new lines of copy need Sasha's eye:** "Your email is confirmed. Log in
-  to continue." on `/login`, and "For the account {email}." under "Set a new
-  password". Both use the existing `.authNote` style; no frame covers them.
+- **New copy that needs Sasha's eye:** "Your email is confirmed. Log in to
+  continue." on `/login`; "For the account {email}." under "Set a new
+  password"; and two error messages ("Usernames can only use English letters,
+  numbers, spaces and standard punctuation." and "That link couldn't be used.
+  Try a web address like youtube.com."). All use existing styles; no frame
+  covers them.
 - **Not done: a Vercel Firewall rate rule** for `/podcast/*`. A signed-in
   visitor or a URL with a query string skips the page cache, and each such
   visit can parse a feed. The firewall is the right layer for page routes,
