@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getEpisodePage, EPISODE_PAGE_MAX } from "@/lib/episodeDetail";
+import { rateLimit, clientKey, tooManyRequests, FEED_API_LIMIT } from "@/lib/rateLimit";
 
 /**
  * One page of a show's episodes, for "Load more" and the Newest/Oldest switch on
@@ -10,6 +11,14 @@ import { getEpisodePage, EPISODE_PAGE_MAX } from "@/lib/episodeDetail";
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // Each uncached call can download and parse a feed of up to 60MB, and
+  // cycling through ids defeats every cache. In-memory and per address:
+  // enough to stop one client walking the catalogue from one instance, without
+  // a database write on a public read. A Vercel Firewall rate rule is the
+  // stronger layer.
+  const limited = rateLimit(clientKey(request, "feed-api"), FEED_API_LIMIT);
+  if (!limited.allowed) return tooManyRequests(limited);
+
   const query = new URL(request.url).searchParams;
 
   const sort = query.get("sort") === "oldest" ? "oldest" : "newest";

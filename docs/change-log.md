@@ -115,6 +115,15 @@ rejected. This is the part that saves the most time later.
   `/reset-password` now says which account it is for. Not tested end-to-end
   against Supabase, which would mean creating real accounts in production;
   typechecked and linted.
+- **Rate limits tightened where the audit found them soft.** Feedback and
+  Donate need no account and used the in-memory limiter, which on Vercel is
+  one count per warm instance; both now use `rateLimitDurable` per address,
+  with their existing numbers. Signup also counts per target email
+  (`EMAIL_TARGET_LIMIT`, 20 an hour), so rotating addresses cannot keep
+  mailing confirmations to one inbox. `/api/podcast/[id]/episodes`, which can
+  trigger a 60MB feed download and parse per call, now has an in-memory
+  per-address limit (`FEED_API_LIMIT`, 60 a minute). It's in memory on purpose,
+  to avoid a database write on a public read.
 
 **Files touched**
 
@@ -129,6 +138,8 @@ rejected. This is the part that saves the most time later.
 | `src/app/auth/confirm/page.tsx`, `src/app/auth/callback/route.ts` | Modified — drop `magiclink` |
 | `src/app/login/page.tsx`, `LoginForm.tsx` | Modified — "Your email is confirmed" note for `?confirm=done` |
 | `src/app/reset-password/page.tsx`, `ResetPasswordForm.tsx` | Modified — name the account being reset |
+| `src/app/api/feedback/route.ts`, `src/app/api/donate/route.ts` | Modified — durable per-address limit |
+| `src/app/api/podcast/[id]/episodes/route.ts` | Modified — per-address limit |
 
 **Why**
 
@@ -141,6 +152,10 @@ any visit to that show's page would make the server request it.
 - **Two new lines of copy need Sasha's eye:** "Your email is confirmed. Log in
   to continue." on `/login`, and "For the account {email}." under "Set a new
   password". Both use the existing `.authNote` style; no frame covers them.
+- **Not done: a Vercel Firewall rate rule** for `/podcast/*`. A signed-in
+  visitor or a URL with a query string skips the page cache, and each such
+  visit can parse a feed. The firewall is the right layer for page routes,
+  but it's a dashboard and billing decision, so it was left to the owners.
 - Feeds no longer use Next's fetch cache. It only ever held feeds under 2MB;
   the in-memory parsed cache covers repeat reads either way.
 

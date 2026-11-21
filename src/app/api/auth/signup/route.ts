@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { authErrorMessage } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkPassword } from "@/lib/passwordPolicy";
-import { rateLimitDurable, clientIp, tooManyRequests, SIGNUP_LIMIT } from "@/lib/rateLimit";
+import { rateLimitDurable, clientIp, tooManyRequests, SIGNUP_LIMIT, EMAIL_TARGET_LIMIT } from "@/lib/rateLimit";
 import { createSupabaseAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
 /** Same as Settings — see `PATCH /api/account`. */
@@ -60,6 +60,11 @@ export async function POST(request: Request) {
 
   const limited = await rateLimitDurable(`signup:ip:${clientIp(request)}`, SIGNUP_LIMIT);
   if (!limited.allowed) return tooManyRequests(limited);
+  // And per target address, from anywhere. Each attempt can send a
+  // confirmation email to that address, so without this, rotating addresses
+  // could keep somebody's inbox filling up.
+  const perEmail = await rateLimitDurable(`signup:acct:${email.trim().toLowerCase()}`, EMAIL_TARGET_LIMIT);
+  if (!perEmail.allowed) return tooManyRequests(perEmail);
 
   // Our policy, not Supabase's — theirs is a 6-character minimum by default.
   const policy = checkPassword(password, [email, username]);

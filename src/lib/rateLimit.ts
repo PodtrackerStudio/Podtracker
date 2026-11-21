@@ -238,6 +238,9 @@ export const AUTH_IP_LIMIT = { limit: 30, windowMs: 15 * 60 * 1000, blockMs: 15 
 export const WRITE_LIMIT = { limit: 60, windowMs: 60 * 1000, blockMs: 60 * 1000 };
 export const LIST_CREATE_LIMIT = { limit: 6, windowMs: 60 * 1000, blockMs: 2 * 60 * 1000 };
 
+/** The public episode-page API, per address. "Load more" is a few a minute. */
+export const FEED_API_LIMIT = { limit: 60, windowMs: 60 * 1000, blockMs: 2 * 60 * 1000 };
+
 /** Search, per address: a fast typist makes a handful a second at most. */
 export const SEARCH_LIMIT = { limit: 90, windowMs: 60 * 1000, blockMs: 60 * 1000 };
 

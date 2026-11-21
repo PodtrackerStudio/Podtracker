@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit, clientKey, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
+import { rateLimitDurable, clientIp, RATE_LIMITED_MESSAGE } from "@/lib/rateLimit";
 import { siteOrigin } from "@/lib/siteUrl";
 import {
   DONATION_CURRENCY,
@@ -33,7 +33,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const limited = rateLimit(clientKey(request, "donate"), DONATE_LIMIT);
+  // Durable, not in-memory: this route needs no account, and on Vercel each
+  // instance kept its own count, so the in-memory limit multiplied by however
+  // many instances were warm.
+  const limited = await rateLimitDurable(`donate:ip:${clientIp(request)}`, DONATE_LIMIT);
   if (!limited.allowed) {
     return NextResponse.json(
       { error: RATE_LIMITED_MESSAGE },
