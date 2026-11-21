@@ -4,7 +4,19 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./donate.module.css";
 
-const PRESET_AMOUNTS = [1, 5, 10, 25, 50, 100];
+/**
+ * Starts at $3, not $1 (Sasha, 2026-11-21).
+ *
+ * Stripe charges 2.9% + **$0.30** per card payment, and that 30c is flat. On a
+ * dollar it takes a third — $1 given nets $0.67 — while on $25 it is barely
+ * visible. $1 was also first in the grid, which is where the eye lands, so the
+ * least efficient amount was the one being suggested hardest. $3 nets $2.61,
+ * 87%, and is still an easy thing to give.
+ *
+ * `MIN_DONATION` stays at $1, so a custom amount can still be a dollar. This
+ * changes what is suggested, not what is allowed.
+ */
+const PRESET_AMOUNTS = [3, 5, 10, 25, 50, 100];
 
 /** Guards a typo like 100000 from being presented back as a real total. */
 const MAX_AMOUNT = 10_000;

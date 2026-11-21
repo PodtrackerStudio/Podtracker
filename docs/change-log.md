@@ -179,10 +179,21 @@ of them ever produces an error that makes no sense, check this first.
   entry gave `ERR_INVALID_CHAR` and later the key's length, and both were
   decisive. Two rounds were lost to reading a stale log entry that looked
   identical to the fresh one — check the timestamp.
-- **Still untested: an actual charge.** Reaching Checkout proves the key and
-  the route. It does not prove a card can be charged or that money reaches the
-  Chase account. A $1 donation, confirmed in Stripe and then refunded, is the
-  step that proves the payout wiring, and it has not been done.
+- ~~Still untested: an actual charge.~~ **A real $1 card payment went through
+  on 2026-11-21** and appears in Stripe → Payments. Net $0.67: Stripe's US
+  pricing is 2.9% + $0.30, so 33c on a dollar. Not refunded, deliberately —
+  Stripe keeps the fee on a refund too, so it costs the same 33c either way.
+- **Presets now start at $3, not $1.** That flat 30c takes a third of a dollar
+  (67% kept) against 87% of $3 and 96% of $25, and $1 sat first in the grid,
+  where the eye lands — so the least efficient amount was the one being
+  suggested hardest. `MIN_DONATION` stays at $1, so a custom amount can still
+  be a dollar. This changes what is suggested, not what is allowed.
+- **Receipts were not being sent.** Stripe's customer emails are off by
+  default; "Successful payments" has to be switched on at
+  `dashboard.stripe.com/settings/emails`. Raised with Sasha, along with
+  enabling "Refunds" at the same time. Not a code change — and worth leaving
+  Stripe's default wording alone, since a payment confirmation is not a
+  charitable tax receipt and Podtracker is not a charity.
 - **`managed_payments: { enabled: false }`** in the donate route was written
   against the Stripe account as it was earlier. The account has since been
   re-activated against a new bank. If a later failure names that parameter,
