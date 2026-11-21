@@ -109,13 +109,49 @@ would have produced Stripe's own `Invalid API Key` 401. Only a **newline**
 produces a connection error. Pasting a key into a dashboard's value box picks
 one up very easily.
 
-**The fix**
+**The first fix was wrong, and the log said so**
 
-`SECRET_KEY` is now `.trim()`ed where it is read, with a `console.warn` if the
-raw value differed — so it keeps working, and the log still says what happened
-if the key is re-pasted badly later. The fix belongs in the code rather than in
-whoever pastes the key: an API key never has meaningful surrounding whitespace,
-and the failure it causes lands nowhere near its cause.
+`.trim()` was shipped first. It did not work, and expanding the Vercel log entry
+gave the reason outright:
+
+```
+detail: TypeError: Invalid character in header content ["Authorization"]
+code: "ERR_INVALID_CHAR"
+```
+
+Right mechanism, wrong location. **`trim()` only touches the ends**, and the
+offending character was not at an end — a line break mid-key from a wrapped
+paste, or a zero-width character, which `trim()` does not treat as whitespace
+at all (`​` is not in its definition).
+
+**The fix that works**
+
+Strip everything that cannot legally appear in a key, *wherever it sits*:
+whitespace of any kind, control characters, DEL, and the zero-width range.
+Verified across every realistic paste corruption, each checked for whether Node
+would send the header and whether the original key was recovered intact:
+
+| Key | Raw | After stripping |
+| --- | --- | --- |
+| clean | sent | sent |
+| trailing newline | `ERR_INVALID_CHAR` | sent, recovered |
+| **newline mid-key** | `ERR_INVALID_CHAR` | sent, recovered |
+| CRLF mid-key | `ERR_INVALID_CHAR` | sent, recovered |
+| zero-width space | `ERR_INVALID_CHAR` | sent, recovered |
+| non-breaking space | sent | sent, recovered |
+| tab mid-key | sent | sent, recovered |
+
+The last two are worth noting: Node sends them happily, so they never produce
+this error — Stripe just rejects the key as invalid, which at least says what
+is wrong. Only the characters Node refuses outright produce the misleading
+"connection" error.
+
+The warning logs the *count* of removed characters, never the characters
+themselves — the surrounding material is the key.
+
+The defence belongs in the code rather than in whoever pastes the key. A key
+never contains any of these legitimately, and the failure they cause lands
+nowhere near its cause.
 
 **Worth checking elsewhere.** Every other secret read from the environment has
 the same exposure. `DATABASE_URL`, the Supabase keys and

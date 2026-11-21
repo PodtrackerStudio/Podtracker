@@ -20,15 +20,40 @@ import Stripe from "stripe";
  * 2026-11-21. Pasting a key into a dashboard's value box picks up a trailing
  * newline very easily, so the fix belongs here rather than in whoever pastes it.
  */
-const SECRET_KEY = (process.env.STRIPE_SECRET_KEY ?? "").trim();
+const RAW_KEY = process.env.STRIPE_SECRET_KEY ?? "";
 
-// Worth knowing about, because the symptom is otherwise baffling: everything
-// still works after the trim, so this never becomes an error — but if the key
-// is re-pasted and the problem comes back, the log says what happened.
-if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== SECRET_KEY) {
+/**
+ * Everything that cannot legally appear in a Stripe key: whitespace of any
+ * kind, control characters, DEL, and the zero-width characters that ride along
+ * invisibly on a copy-paste.
+ *
+ * **Not `.trim()`, and that distinction cost a deploy.** Trim only touches the
+ * ends, and `​` is not whitespace by `trim()`'s definition at all. The
+ * character that actually broke this was somewhere a trim could not reach.
+ */
+const ILLEGAL_IN_KEY = /[\s\u0000-\u001F\u007F​-‍﻿]/g;
+
+/**
+ * **Stripped, and that is load-bearing.** The SDK puts this straight into an
+ * `Authorization` header, and a header value containing a newline or control
+ * character is invalid — Node refuses to send the request at all, throwing
+ * `ERR_INVALID_CHAR`. The Stripe SDK wraps that as "An error occurred with our
+ * connection to Stripe", which reads like a network problem and sends you
+ * looking at regions and firewalls. It cost an evening on 2026-11-21.
+ *
+ * Pasting a key into a dashboard's value box picks up a stray character very
+ * easily — a wrapped line, a zero-width space — so the defence belongs here
+ * rather than in whoever does the pasting.
+ */
+const SECRET_KEY = RAW_KEY.replace(ILLEGAL_IN_KEY, "");
+
+if (RAW_KEY && RAW_KEY !== SECRET_KEY) {
+  // The count, never the characters: this goes to a log, and the surrounding
+  // material is the key itself.
   console.warn(
-    "[stripe] STRIPE_SECRET_KEY had surrounding whitespace, which was trimmed. " +
-      "Worth fixing where it is set — untrimmed it makes an invalid HTTP header.",
+    `[stripe] STRIPE_SECRET_KEY contained ${RAW_KEY.length - SECRET_KEY.length} ` +
+      "character(s) that cannot appear in an HTTP header, and they were removed. " +
+      "Re-paste the key where it is set — untrimmed it makes the request unsendable.",
   );
 }
 
