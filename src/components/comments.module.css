@@ -35,9 +35,15 @@
   display: block;
 }
 
+/* The name is not user-written prose, so it takes the site default (PT Serif
+   Caption) rather than the Roboto the comment body uses. The top padding is the
+   bubble's own (10px padding + 1px border), so the name sits on the same line
+   as the comment's first line instead of floating above it. */
 .author {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
   font-size: 14px;
-  padding-top: 4px;
+  line-height: 1.5;
+  padding-top: 11px;
 }
 
 /* Comment bodies are user-written, so Roboto — the same rule reviews follow. */
@@ -61,7 +67,10 @@
   margin-bottom: 32px;
 }
 
+/* An h3, which the global h1/h2 serif rule doesn't reach, so it was rendering
+   in Roboto directly under a serif "Comments". Headlines are PT Serif Caption. */
 .addHeading {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
   font-size: 20px;
   font-weight: 400;
   margin-bottom: 14px;

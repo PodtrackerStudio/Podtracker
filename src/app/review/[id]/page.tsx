@@ -207,10 +207,14 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
               <span className={styles.byWho}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img loading="lazy" decoding="async" className={styles.bylineAvatar} src={avatarSrc(entry.user.id)} alt="" />
-                Review by{" "}
-                <Link href={`/user/${usernameToPath(entry.user.username)}`} className={styles.author}>
-                  {entry.user.displayName}
-                </Link>
+                {/* Wrapped so the flex gap (meant for the avatar) doesn't
+                    also land between "by" and the name, doubling the space. */}
+                <span>
+                  Review by{" "}
+                  <Link href={`/user/${usernameToPath(entry.user.username)}`} className={styles.author}>
+                    {entry.user.displayName}
+                  </Link>
+                </span>
               </span>
               <span className={styles.date}>Date: {dateFormatter.format(entry.listenedDate)}</span>
             </div>

@@ -71,6 +71,46 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-21 — Tidy the review page's comments and byline
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "clean this up", with a screenshot of
+  `/review/[id]`.
+- **Status:** Complete. Checked in a headless Chrome screenshot of the live
+  review (signed out, so the comment box and Delete review weren't shown).
+
+**What changed**
+
+- **"Add comment" heading is now PT Serif Caption.** It's an `h3`, which the
+  global `h1`/`h2` serif rule doesn't cover, so it rendered in Roboto directly
+  under the serif "Comments".
+- **Commenter names are serif too, and line up with the comment.** Names
+  aren't user-written prose, so they take the site default. Their top padding
+  now matches the bubble's (10px + 1px border), so the name sits on the same
+  line as the comment's first line instead of above it.
+- **"Review by phil" had a doubled space.** The `byWho` flex gap meant for the
+  avatar also landed between "by" and the name. The text and link are now one
+  span.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `src/components/comments.module.css` | Modified — serif `.addHeading` and `.author`, name aligned with the bubble |
+| `src/app/review/[id]/page.tsx` | Modified — wrap "Review by" + name in one span |
+
+**Why**
+
+Each was an inconsistency with rules already in CLAUDE.md (serif everywhere
+except reviews) or a spacing bug, so no new design values were introduced.
+Comment text stays Roboto, the same as reviews.
+
+**Follow-ups**
+
+- None. The wide gap between a commenter's name and the comment comes from the
+  three-column row (56px / 140px / rest), which mirrors the Figma, so it was
+  left alone.
+
 ### 2026-11-18 — Revoke public EXECUTE on the profile-deletion trigger function
 
 - **Branch:** `main`
