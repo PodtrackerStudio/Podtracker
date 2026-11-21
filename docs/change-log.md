@@ -134,6 +134,16 @@ rejected. This is the part that saves the most time later.
 - **Profile links must be web addresses.** `externalLink` accepts `youtube.com`
   or `http(s)://…` and refuses any other scheme (`javascript:`, `data:`…)
   when saved. No account had a link set, so nothing stored was affected.
+- **New functions are no longer executable by anon/authenticated by
+  default.** `pg_default_acl` showed `postgres` (which runs every migration
+  and owns all 22 tables) already withholding tables and sequences, but still
+  granting EXECUTE on new functions to anon and authenticated. Migration
+  `20261121000000_revoke_default_function_execute` revokes that, with
+  `FOR ROLE postgres` explicit. **Applied to production** with `prisma migrate
+  deploy` and confirmed in `pg_default_acl`; the Supabase advisors afterwards
+  show only the intended "RLS enabled, no policy" notices. PUBLIC's grant and
+  `supabase_admin`'s defaults can't be changed from here (see the migration's
+  comments), so the per-migration revoke rule in CLAUDE.md still applies.
 
 **Files touched**
 
@@ -151,6 +161,7 @@ rejected. This is the part that saves the most time later.
 | `src/app/api/feedback/route.ts`, `src/app/api/donate/route.ts` | Modified — durable per-address limit |
 | `src/app/api/podcast/[id]/episodes/route.ts` | Modified — per-address limit |
 | `src/lib/username.ts` | Added — username character and reserved-name rules |
+| `prisma/migrations/20261121000000_revoke_default_function_execute/` | Added — revoke default function EXECUTE from anon/authenticated |
 | `src/app/api/account/route.ts` | Modified — username rules, case-insensitive uniqueness, web-only profile links |
 
 **Why**
