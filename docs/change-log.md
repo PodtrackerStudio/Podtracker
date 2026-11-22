@@ -71,6 +71,86 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-22 — Top rated episodes, built for real
+
+- **Branch:** `main`
+- **Requested by:** Sasha — "For every show that has at least 2 episodes rated,
+  do a top episodes list, and build it next to the all episodes."
+- **Status:** Complete and verified.
+
+**What was actually there**
+
+The page existed at `/podcast/[id]/top-rated` and had done for months. It was a
+mock: `TopRatedClient` generated episodes from random topic, subject and guest
+lists starting at a hardcoded counter of 476, dated them from a fixed cursor,
+and **linked every single row to episode 1109 of a different show**. Nobody had
+noticed, because the link to it on the podcast page was gated behind
+`HAS_COMMUNITY_DATA` — so it had never rendered for anyone, ever.
+
+Finding that took longer than it should have. The route showed up in the build
+output and the folder held a client component, both of which read as "already
+built".
+
+**What it is now**
+
+| File | Change |
+| --- | --- |
+| `src/lib/topRatedEpisodes.ts` | Added — `getTopRatedEpisodes`, `countRatedEpisodes` |
+| `top-rated/page.tsx` | Rewritten as a server component |
+| `top-rated/TopRatedClient.tsx` | **Deleted** — the mock, and nothing interactive remained |
+| `episodeListing.module.css` | Added `.episodeTier` and its five colours |
+| `podcast/[id]/page.tsx` | Link gated on this show's rated-episode count |
+
+**The ranking, and why each tiebreak exists**
+
+1. **Average score**, high to low.
+2. **Number of scored ratings** — two episodes both averaging 4.0 are not
+   equally established if one has nine ratings and the other has one.
+3. **Newest first**, so the order is stable rather than arbitrary.
+
+Episodes where everyone pressed **Didn't finish** have no average and sort
+last. They are not failures, they are unrated — and the row shows its rating
+count with no verdict beside it, rather than inventing one.
+
+**Decisions worth knowing**
+
+- **Gated on its own data, not `HAS_COMMUNITY_DATA`** — the policy CLAUDE.md
+  already records. Two rated episodes is the floor: one is not a ranking, it is
+  a list of length one calling itself the best.
+- **`countRatedEpisodes` is a separate query** from the list. The podcast page
+  needs the number to decide whether to offer the link, and loading every
+  ranked episode on a page that may not show it would be absurd.
+- **A row with no stored guid renders unlinked** rather than pointing somewhere
+  wrong. That is exactly what the mock did on every row.
+- **Nothing new was designed.** `.episodeRank` and `.listHeaderSimple` were
+  already in `episodeListing.module.css`, waiting for this page. The only
+  addition is the verdict, coloured from the documented tier variables with the
+  `--tier` indirection copied from `.ratingTag`.
+
+**Verified**
+
+21 assertions against a real Postgres: ordering `B > A > C > D > E` across
+every tiebreak, unrated episodes excluded, another show's episodes excluded,
+all-didn't-finish sorting last with no verdict, averages correct, hrefs built
+from guids rather than database ids, the gate counting 5 / 1 / 0 / 0, and empty
+lists rather than throws for unknown ids.
+
+Rendered and screenshotted: five rows, verdict colours measured as
+`rgb(255,64,217)`, `rgb(40,186,96)` and `rgb(255,0,0)` — `--highly-recommend`,
+`--recommend` and `--dont` exactly. No horizontal overflow at 1280 or 390.
+`tsc` and `eslint` clean.
+
+**Follow-ups**
+
+- **No paging.** Capped at 100, which is far more than any show has rated
+  today. The episode list beside it pages; this does not, and will need to if a
+  show ever gets past a hundred rated episodes.
+- **Ranking ignores how recently something was rated.** An episode rated highly
+  twice in 2024 outranks one rated highly twice last week. Fine now; worth
+  revisiting if ratings ever get numerous enough for freshness to matter.
+
+---
+
 ### 2026-11-21 — Trim STRIPE_SECRET_KEY; a pasted newline broke donations
 
 - **Branch:** `main`

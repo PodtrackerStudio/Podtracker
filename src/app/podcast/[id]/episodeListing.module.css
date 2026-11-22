@@ -135,3 +135,49 @@
 .loadMoreBtn:hover {
   text-decoration: underline;
 }
+
+/* ── TIER BADGE (top-rated list) ──
+   Added 2026-11-21 with the real ranked episodes. The rest of this file was
+   already shared by the episode list and the ranking; only the verdict is new.
+
+   `.rating-label` in globals.css supplies the face (Londrina Solid), the same
+   way the profile's ratings tab and the podcast page's average do. Colours are
+   the documented tier variables and nothing else — the `--tier` indirection is
+   copied from `.ratingTag` in home.module.css so the pattern matches. */
+.episodeTier {
+  --tier: var(--text);
+  flex-shrink: 0;
+  margin-left: 12px;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--tier);
+  /* Right-aligned and held to a width so the column of verdicts lines up
+     rather than ragging against the episode titles beside it. */
+  width: 132px;
+  text-align: right;
+}
+.episodeTier.highly {
+  --tier: var(--highly-recommend);
+}
+.episodeTier.recommend {
+  --tier: var(--recommend);
+}
+.episodeTier.ok {
+  --tier: var(--ok);
+}
+.episodeTier.dont {
+  --tier: var(--dont);
+}
+.episodeTier.didnt {
+  --tier: var(--didnt-finish);
+}
+
+/* On a phone the verdict cannot have its own column — the title needs the
+   width. It drops under the date instead, left-aligned with it. */
+@media (max-width: 560px) {
+  .episodeTier {
+    width: auto;
+    margin-left: 0;
+    font-size: 13px;
+  }
+}

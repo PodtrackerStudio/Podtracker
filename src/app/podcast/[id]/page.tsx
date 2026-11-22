@@ -14,6 +14,7 @@ import { staticSiteOrigin } from "@/lib/siteUrl";
 import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { getPodcastRatingSummary } from "@/lib/ratingSummary";
+import { countRatedEpisodes } from "@/lib/topRatedEpisodes";
 import { aggregateRatingSchema } from "@/lib/ratingScale";
 import { tierFromScore } from "@/lib/ratingTier";
 import { getViewerPodcastState } from "@/lib/viewerState";
@@ -118,11 +119,16 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
   //   has rated shows nothing rather than an empty frame.
   // - What THIS viewer has already done, so the controls show their real state
   //   instead of resetting to Follow / unrated on every refresh.
-  const [podcast, stats, ratings, viewerState] = await Promise.all([
+  // - How many of its episodes anyone has rated, which decides whether the
+  //   "Top rated episodes" link is offered. A count, not the list: the page
+  //   needs the number, and loading every ranked episode on a page that may
+  //   not even show the link would be absurd.
+  const [podcast, stats, ratings, viewerState, ratedEpisodeCount] = await Promise.all([
     getPodcastDetail(id),
     getPodcastCommunityStats(id),
     getPodcastRatingSummary(id),
     getViewerPodcastState(id),
+    countRatedEpisodes(id),
   ]);
   if (!podcast) notFound();
   const recentEpisodes = podcast.recentEpisodes;
@@ -326,8 +332,16 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
               <Link href={`/podcast/${podcast.id}/episodes`} className={styles.btnEpisodeNav}>
                 Full episode list
               </Link>
-              {/* Ranking episodes needs ratings, which need users. */}
-              {HAS_COMMUNITY_DATA && (
+              {/* Gated on this show's own ratings, not on HAS_COMMUNITY_DATA
+                  (Sasha, 2026-11-21: "for every show that has at least 2
+                  episodes rated"). Two is the floor because one rated episode
+                  is not a ranking — it is a list of length one calling itself
+                  the best.
+
+                  Until now this sat behind the global flag and so never
+                  rendered for anybody, which is why the page it points at had
+                  gone unnoticed as a mock for months. */}
+              {ratedEpisodeCount >= 2 && (
                 <Link href={`/podcast/${podcast.id}/top-rated`} className={styles.btnEpisodeNav}>
                   Top rated episodes
                 </Link>
