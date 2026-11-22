@@ -1,4 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { track } from "@vercel/analytics/server";
+import { recordSignupSource } from "@/lib/visits";
 import { db } from "@/lib/db";
 import { authErrorMessage } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -30,7 +32,7 @@ import { PENDING_CONFIRMATION_COOKIE, rememberPendingConfirmation } from "@/lib/
  * hold. Checking first makes the bad state unreachable in the common case.
  */
 export async function POST(request: Request) {
-  const { email, username, password, agreedToTerms } = (await request.json().catch(() => null)) ?? {};
+  const { email, username, password, agreedToTerms, visitId } = (await request.json().catch(() => null)) ?? {};
 
   if (
     typeof email !== "string" || typeof username !== "string" || typeof password !== "string" ||
@@ -200,6 +202,11 @@ export async function POST(request: Request) {
       }
       throw error;
     }
+
+    // For the signup funnel and the duplicate-account check (src/lib/funnel.ts),
+    // and as a Vercel custom event. Neither can fail the signup.
+    await recordSignupSource(data.user.id, visitId, request);
+    after(() => track("Signup Completed", {}, { request }).catch(() => {}));
 
     const response = NextResponse.json({
       id: data.user.id,

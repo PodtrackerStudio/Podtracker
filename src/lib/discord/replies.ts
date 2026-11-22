@@ -1,7 +1,10 @@
 import { renderAnalyticsCard } from "./analyticsCard";
 import { AnalyticsError, PERIOD_LABEL, parsePeriod, report } from "./vercelAnalytics";
+import { funnelReport } from "./funnelReply";
 
 /**
+ * Replies for the bot's commands. `/funnel` is in `funnelReply.ts`.
+ *
  * What `/analytics` answers with: one summary line, one image of the
  * dashboard, and one "Open in Vercel" link button.
  */
@@ -39,8 +42,16 @@ function summaryLine(data: Awaited<ReturnType<typeof report>>): string {
 }
 
 export async function replyFor(command: string, options: Record<string, unknown>): Promise<Reply> {
+  if (command === "funnel") {
+    try {
+      return textReply(await funnelReport(options.period));
+    } catch (error) {
+      console.error("[discord] /funnel failed:", error);
+      return textReply("⚠️ Something went wrong reading the funnel. The details are in the Vercel logs.");
+    }
+  }
   if (command !== "analytics") {
-    return textReply(`\`/${command}\` has been retired. Use \`/analytics\`.`);
+    return textReply(`\`/${command}\` has been retired. Use \`/analytics\` or \`/funnel\`.`);
   }
 
   try {

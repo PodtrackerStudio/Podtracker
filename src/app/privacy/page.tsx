@@ -100,7 +100,7 @@ export const metadata: Metadata = {
  * The date below must be bumped whenever this changes materially.
  */
 
-const LAST_UPDATED = "14 November 2026";
+const LAST_UPDATED = "21 November 2026";
 
 export default function PrivacyPage() {
   return (
@@ -122,6 +122,10 @@ export default function PrivacyPage() {
             </li>
             <li>You can delete your account, and everything in it, at any time.</li>
             <li>There are no ads on Podtracker, and no advertising trackers.</li>
+            <li>
+              We measure how long visits last and how many people leave after one page, using a
+              temporary ID your browser deletes when you close the tab.
+            </li>
           </ul>
           <p>
             This summary is here so you actually know what you&apos;re agreeing to. The full policy
@@ -391,6 +395,21 @@ export default function PrivacyPage() {
             this is derived from your IP address rather than a device setting, there is no location
             permission for you to turn off; a VPN will change what we see.
           </li>
+          <li>
+            {/* Added 2026-11-21 with src/lib/visits.ts. Keep this matching what
+                that file and VisitTracker.tsx actually record. */}
+            <em>Visit Data.</em> While you browse, your browser keeps a random visit ID in its
+            session storage, which it deletes when you close the tab. With it we record which page
+            you arrived on, how many pages you viewed, when the visit started and ended, the website
+            that linked you here (its name only), and whether you were signed in. Nothing connects
+            one visit to the next.
+          </li>
+          <li>
+            <em>Signup Data.</em> When you create an account, we store two coded values made from
+            your IP address and browser type with a secret key. They cannot be turned back into your
+            IP address. We only compare them with the same values from other new accounts, to spot
+            one person creating several accounts.
+          </li>
         </ul>
 
         <h2 id="infouse">2. How do we process your information?</h2>
@@ -434,8 +453,13 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>To keep the site working and safe.</strong> We use log and usage data to run
-            the site, fix faults, and prevent abuse such as spam, fake reviews or attempts to
-            manipulate a rating.
+            the site, fix faults, and prevent abuse such as spam, fake reviews, attempts to
+            manipulate a rating, or one person creating several accounts.
+          </li>
+          <li>
+            <strong>To understand how the site is used.</strong> We use visit data to count how many
+            visits leave after a single page, how long visits last, and how many visitors go on to
+            create an account. We look at these as totals, not at individual people.
           </li>
           <li>
             <strong>To contact you about your account.</strong> We send email to confirm your
@@ -640,7 +664,10 @@ export default function PrivacyPage() {
           <strong>
             <em>In Short:</em>
           </strong>{" "}
-          <em>We use one cookie, to keep you signed in. Nothing else.</em>
+          <em>
+            We use one cookie, to keep you signed in, and one temporary visit ID that your browser
+            deletes when you close the tab. Nothing else.
+          </em>
         </p>
         <p>
           {/* "(like web beacons and pixels)" removed 2026-11-12: it listed
@@ -673,10 +700,16 @@ export default function PrivacyPage() {
             the query string from every <code>/auth/</code> URL before it is recorded, so one-time
             login links from your email are never sent to it.
           </li>
+          <li>
+            <strong>A visit ID</strong>, kept in your browser&apos;s session storage rather than a
+            cookie, and deleted by your browser when you close the tab. It lets us tell how long a
+            visit lasted and how many pages it took in. It is never shared, and it does not identify
+            you on your next visit. Blocking it changes nothing about how the site works.
+          </li>
         </ul>
         <p>
           That is the whole list. There are no advertising, retargeting, or cross-site tracking
-          technologies on Podtracker. If we ever add anything beyond the two above, this section
+          technologies on Podtracker. If we ever add anything beyond the three above, this section
           changes first.
         </p>
 
@@ -740,6 +773,11 @@ export default function PrivacyPage() {
           <strong>The general rule:</strong> we keep your personal information for as long as you
           have an account. Delete your account and your profile, ratings, reviews, lists and diary
           entries are removed from the site immediately.
+        </p>
+        <p>
+          <strong>Visit data</strong> is kept for six months and then deleted, whether or not you
+          have an account. The coded signup values described in section 1 are deleted with your
+          account.
         </p>
         <p>There are two exceptions, and we would rather state them than leave them implied:</p>
         <ul>

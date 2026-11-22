@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { checkPassword, MIN_PASSWORD_LENGTH, PASSWORD_HINT } from "@/lib/passwordPolicy";
 import styles from "./auth.module.css";
+import { currentVisitId } from "@/components/VisitTracker";
 
 // Long enough to read three short paragraphs and notice the resend button,
 // short enough that nobody sits wondering whether the page has finished.
@@ -69,7 +70,14 @@ export function SignupForm() {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), username: username.trim(), password, agreedToTerms: agreed }),
+      body: JSON.stringify({
+        email: email.trim(),
+        username: username.trim(),
+        password,
+        agreedToTerms: agreed,
+        // Ties the account to the visit it came from, for the signup funnel.
+        visitId: currentVisitId(),
+      }),
     });
 
     if (!res.ok) {

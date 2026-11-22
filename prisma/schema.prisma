@@ -76,18 +76,21 @@ model User {
   notificationsCaused Notification[] @relation("notificationActor")
   feedback            Feedback[]
 
+  // Site analytics — see src/lib/visits.ts. The visit is kept (unlinked) if
+  // the account goes; the signup source goes with the account.
+  signupVisits Visit[]
+  signupSource SignupSource?
+
   @@index([username])
 }
 
 /**
  * A message sent through the feedback form at /contact.
- *
  * **Stored as well as delivered.** The form's primary delivery is a Discord
  * webhook, because that is somewhere Sasha already is. A row here is the
  * durable copy: the privacy policy tells people to contact us to exercise
  * their rights, so a channel that can silently drop a message is a compliance
  * problem, not just an annoyance.
- *
  * `name` and `email` are optional and are whatever the sender typed — they are
  * not verified and must never be treated as identity. `userId` is the only
  * trustworthy attribution, read from the session server-side, and it is null
@@ -457,4 +460,38 @@ model RateLimit {
   count        Int       @default(0)
   windowStart  DateTime  @default(now())
   blockedUntil DateTime?
+}
+
+/// One visit: a browser tab's time on the site, measured by the tab itself
+/// with a random id in sessionStorage, which the browser deletes when the tab
+/// closes. Nothing links two visits together. Feeds bounce rate, time before
+/// leaving, and the signup funnel — see src/lib/visits.ts and src/lib/funnel.ts.
+model Visit {
+  id         String   @id // minted in the browser, a UUID
+  startedAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  pageViews  Int      @default(1)
+  entryPath  String
+  referrer   String? // hostname only, and only when it is another site
+  signedIn   Boolean  @default(false) // had a login cookie on its first page
+  sawSignup  Boolean  @default(false) // opened /signup at some point
+  userId     String? // the account created during this visit, if any
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([startedAt])
+}
+
+/// How an account was created, kept to spot one person making several. Only
+/// keyed hashes (HMAC) are stored, never the address or browser string, so the
+/// values can be compared with each other and with nothing else.
+model SignupSource {
+  userId      String   @id
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  visitId     String?
+  networkHash String? // HMAC of the IP address
+  deviceHash  String? // HMAC of IP address + user agent
+  createdAt   DateTime @default(now())
+
+  @@index([networkHash])
+  @@index([deviceHash])
 }

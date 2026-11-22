@@ -9,7 +9,25 @@ Vercel Web Analytics dashboard, plus an **Open in Vercel** button:
 
 `period` is the last 24 hours, 7 days (the default) or 30 days. The numbers are
 production traffic only. Bounce rate is not shown, because Vercel's API does
-not provide it.
+not provide it — `/funnel` does.
+
+## `/funnel` (added 2026-11-21)
+
+A text reply, with the same `period` choice, built from the site's own visit
+measurement (`src/lib/visits.ts`, `src/lib/funnel.ts`), not Vercel's:
+
+- **Visits**, with Vercel's unique-visitor count beside it for comparison
+- **Bounce rate** — visits that saw a single page
+- **Time before leaving** — median and average, and a spread from `<10s` to `10m+`
+- **The signup funnel** for visitors who weren't signed in: visited → opened
+  signup → created an account → confirmed their email (read from Supabase's
+  `auth.users`)
+- **Each new account**, marked ✅ if it looks like a new person or ⚠️ with the
+  reason if it matches an existing one: same browser and network, made in the
+  same visit, the same email inbox spelled differently (Gmail dots, `+tags`),
+  or the same network (which shared wifi also produces)
+
+Registering it is the usual `npm run discord:register` after a deploy.
 
 The image is drawn by `src/lib/discord/analyticsCard.tsx` with `next/og`
 (Satori), in Geist, which is bundled in `src/lib/discord/fonts` under the SIL

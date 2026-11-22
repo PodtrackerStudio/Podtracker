@@ -218,3 +218,13 @@ export async function report(period: Period): Promise<Report> {
     ) as Report["breakdowns"],
   };
 }
+
+/**
+ * Vercel's unique-visitor count for the period, for `/funnel` to show beside
+ * our own visit count. Whole UTC days, like `report`'s visitor total.
+ */
+export async function vercelVisitors(period: Period): Promise<number> {
+  const now = Date.now();
+  const totals = await query<Partial<Totals>>("count", window(now - PERIOD_MS[period], now, DAY_MS));
+  return Number(totals.visitors ?? 0);
+}

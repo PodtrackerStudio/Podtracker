@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { track } from "@vercel/analytics/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
@@ -99,6 +100,12 @@ export async function POST(request: Request) {
         return NextResponse.redirect(`${origin}/login?confirm=done`, { status: 303 });
       }
     }
+  }
+
+  // The last step of the signup funnel, as a Vercel custom event. Our own
+  // funnel reads confirmation from Supabase directly (src/lib/funnel.ts).
+  if (type === "signup" || type === "email") {
+    after(() => track("Email Confirmed", {}, { request }).catch(() => {}));
   }
 
   // 303 so the browser follows with a GET rather than re-POSTing to the

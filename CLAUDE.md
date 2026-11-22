@@ -200,6 +200,24 @@ nav, or any page listed here.
   cached response has `x-nextjs-cache: HIT` and `cache-control: s-maxage=300`;
   a signed-in one has `cache-control: private, no-store`.
 
+## Visit analytics (since 2026-11-21)
+
+Bounce rate, time on site and the signup funnel are measured **by the site
+itself**, because Vercel's analytics API has neither bounce nor visit length.
+`VisitTracker.tsx` keeps a random visit id in **sessionStorage** (deleted when
+the tab closes — no cookie, nothing links visits) and posts page views and
+"tab left" to `/api/visit`, which writes the `Visit` table. Signup records keyed
+hashes of IP and IP+browser in `SignupSource` for the duplicate-account check.
+The Discord bot's `/funnel` reads both (`src/lib/funnel.ts`).
+
+- **The privacy page describes exactly this** (Visit Data, Signup Data, the
+  cookie inventory, six-month retention). Change what is recorded and the page
+  changes in the same commit.
+- `/api/visit` ignores everything except production (`VERCEL_ENV`), because
+  local servers share the production database. `TRACK_VISITS_LOCALLY=1` to test.
+- The hash key is `ANALYTICS_HASH_SECRET`, falling back to the service-role
+  key. Changing it makes old and new hashes incomparable, nothing worse.
+
 ## Security rules that are easy to break
 
 - **Every migration that creates a table must end with

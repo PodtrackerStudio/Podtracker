@@ -2,6 +2,7 @@
 
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { VisitTracker } from "./VisitTracker";
 
 /**
  * Vercel Web Analytics, with secrets stripped from the URLs it records.
@@ -37,6 +38,8 @@ export function SiteAnalytics() {
     <>
       <Analytics beforeSend={stripSecrets} />
       <SpeedInsights beforeSend={stripSecrets} />
+      {/* Bounce rate and time on site, which Vercel's API doesn't offer. */}
+      <VisitTracker />
     </>
   );
 }

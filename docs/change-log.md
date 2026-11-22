@@ -150,6 +150,82 @@ Rendered and screenshotted: five rows, verdict colours measured as
   revisiting if ratings ever get numerous enough for freshness to matter.
 
 ---
+### 2026-11-21 — Signup funnel, bounce rate and time on site, in Vercel and Discord
+
+- **Branch:** `main`
+- **Requested by:** Phillip — "a custom funnel either to vercel and then also so
+  the discord bot has access … whether the users signing up are unique users and
+  how many seconds into the site they leave and track their bounce rate". He
+  chose, when asked: both meanings of "unique" (a funnel and a duplicate-account
+  check), a tab-only visit id with the privacy page updated, and a new `/funnel`
+  command.
+- **Status:** Complete. The migration is **applied to production**. Tested
+  against the production database with a local `next start`
+  (`TRACK_VISITS_LOCALLY=1`): curl'd visits and a headless-Chrome page load were
+  recorded correctly, bots and malformed ids were ignored, and the report
+  rendered. All test rows were then deleted (table left empty).
+
+**What changed**
+
+- **Visits are measured by the site.** Vercel's analytics API has no bounce
+  rate or visit length, so `VisitTracker` keeps a random id in sessionStorage
+  and reports each page view and each time the tab is hidden or closed to
+  `/api/visit`, which writes the new `Visit` table: entry path, page count,
+  first/last activity, referring hostname, signed-in or not, and whether
+  `/signup` was opened. 30 idle minutes start a new visit. The route answers
+  204 always, ignores bots, is rate-limited in memory, only records on the
+  production deployment, and sweeps rows older than 180 days.
+- **Signups are checked for repeat people.** The signup route now stores HMACs
+  of the IP and of IP+user agent (`SignupSource`) and ties the account to its
+  visit. `/funnel` flags an account that shares a browser and network, a visit,
+  an inbox (Gmail dots and `+tags` normalised at report time, nothing stored),
+  or a network (labelled as possibly shared wifi) with another account.
+- **`/funnel` in Discord**: visits (with Vercel's unique visitors beside them),
+  bounce rate, median and average time before leaving with a spread, the
+  funnel visited → opened signup → created account → confirmed email (from
+  `auth.users`), and each new account marked unique or flagged with the reason.
+- **Vercel custom events**: `Signup Completed` (signup route) and `Email
+  Confirmed` (confirm route), sent server-side, for building a funnel in the
+  Vercel dashboard. Vercel only records custom events on a Pro plan; the team's
+  plan couldn't be read from here.
+- **Privacy page** updated, `LAST_UPDATED` moved to 21 November 2026: a summary
+  line, "Visit Data" and "Signup Data" in §1, a purpose in §2, the visit id in
+  the §5 inventory ("one cookie … and one temporary visit ID"), and six-month
+  retention in §7.
+
+**Files touched**
+
+| File | Change |
+| --- | --- |
+| `prisma/schema.prisma`, `prisma/migrations/20261121010000_add_visit_analytics/` | Added — `Visit`, `SignupSource`, RLS on both |
+| `src/lib/visits.ts` | Added — bot filter, signup hashes, email canonicalising |
+| `src/app/api/visit/route.ts` | Added — records views and leaves |
+| `src/components/VisitTracker.tsx`, `SiteAnalytics.tsx` | Added / Modified — the browser side |
+| `src/app/signup/SignupForm.tsx`, `src/app/api/auth/signup/route.ts` | Modified — send/record the visit and signup source; Vercel event |
+| `src/app/api/auth/confirm/route.ts` | Modified — Vercel `Email Confirmed` event |
+| `src/lib/funnel.ts`, `src/lib/discord/funnelReply.ts` | Added — the report and its Discord text |
+| `src/lib/discord/replies.ts`, `commands.json`, `vercelAnalytics.ts` | Modified — `/funnel` command, Vercel visitor count |
+| `src/app/privacy/page.tsx` | Modified — visit and signup data disclosed |
+| `CLAUDE.md`, `docs/discord-bot.md` | Modified — how it works and what must stay true |
+
+**Why**
+
+Sasha and Phillip want to know whether signups are new people and how visits
+end. Vercel answers neither, and a funnel only means something once each step
+can be tied to the same visit.
+
+**Follow-ups**
+
+- **Sasha should read the privacy page changes** — legal copy, written without
+  a frame or his review.
+- Numbers start from this deploy; the duplicate check's network/browser signals
+  only cover accounts created from now on (email aliases cover everyone).
+- A visit whose "tab left" beacon never arrives (some mobile browsers when the
+  app is killed) counts as ending at its last page view, so times are slightly
+  conservative.
+- Optional: set `ANALYTICS_HASH_SECRET` in Vercel to stop depending on the
+  service-role key; changing it later only breaks comparison across the change.
+
 
 ### 2026-11-21 — Trim STRIPE_SECRET_KEY; a pasted newline broke donations
 
