@@ -164,21 +164,22 @@ every route reads and forwards it, the page supplies it to all four buttons —
 plus `tsc`, `eslint` and a production build. The 10 `pickEpisodeByKey`
 assertions still hold.
 
-**Still not verified against Apple**, for the same reason as before:
-`itunes.apple.com` is unreachable from a cloud session. Whether Apple's search
-returns the Great Northern War episode for its own title is the one thing that
-cannot be checked here — though it is a far stronger term than the show's name.
+**Confirmed working on the live site**, 2026-11-23. Sasha added the Great
+Northern War episode to Next Listening and it saved. That is the end-to-end
+proof no cloud session could produce: `itunes.apple.com` is unreachable from
+one, so the recovery itself could only ever be verified in production.
+
+**Status: fixed.** Every write path — rate, log, review, add-to-list, next
+listening and list creation — now reaches any episode Apple lists, not only the
+ones still inside a feed's published window. The fix is general; The Rest Is
+History was just the first show anybody tried it on.
 
 **Follow-ups**
 
-- **Have Sasha retry the exact episode** once deployed. Still the only real
-  test available.
-- **If it fails a third time**, the assumption to question is that Apple's
-  episode search can find it at all. The next diagnostic is the server log:
-  `[ensureEpisode] Apple recovery search failed` means the request broke, and
-  its absence means the search ran and matched nothing — at which point the
-  guid in the URL may simply not be the guid Apple holds, and no search term
-  will help.
+- **No test covers this and none can be written here.** The only verification
+  available was a person clicking the button on production. If the recovery
+  ever regresses, the symptom will be the original one — pages that render and
+  buttons that 404 — and nothing automated will catch it.
 - The claim in `recoverEpisodeFromSearch`'s comment was wrong for months and
   nobody noticed, because the page looked fine. Worth remembering that a page
   rendering is not evidence that its buttons work.
