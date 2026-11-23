@@ -1,7 +1,38 @@
 import { db } from "./db";
-import { lookupPodcast, fetchPodcastFeed, FeedFetchError } from "./podcastApi";
+import {
+  lookupPodcast,
+  fetchPodcastFeed,
+  searchEpisodes,
+  FeedFetchError,
+  type ItunesEpisodeResult,
+  type FeedEpisode,
+} from "./podcastApi";
 import { getPodcastDetail } from "./podcastDetail";
 import { episodeKeyFromGuid, showScopedGuid } from "./episodeKey";
+
+/**
+ * Picks the candidate matching a route's episode key, or null.
+ *
+ * **The hash is the only thing that decides.** A candidate is accepted solely
+ * because `episodeKeyFromGuid(guid)` equals the key already in the URL, which
+ * is what makes recovering an episode from Apple's search safe: a wrong or
+ * hand-edited key finds nothing rather than the wrong episode. The show id
+ * only breaks a tie between candidates that already hash the same, exactly as
+ * `recoverEpisodeFromSearch` does for the page.
+ *
+ * Exported for its own sake: it is the whole correctness argument for the
+ * fallback below, and it is testable without a network.
+ */
+export function pickEpisodeByKey(
+  candidates: ItunesEpisodeResult[],
+  episodeKey: string,
+  showExternalId: string,
+): ItunesEpisodeResult | null {
+  if (!episodeKey) return null;
+  const matches = candidates.filter((c) => c.guid && episodeKeyFromGuid(c.guid) === episodeKey);
+  if (matches.length === 0) return null;
+  return matches.find((m) => String(m.showItunesId) === showExternalId) ?? matches[0];
+}
 
 /**
  * Materialises the `Podcast` / `Episode` rows a write needs.
@@ -79,6 +110,51 @@ export async function ensurePodcast(externalId: string): Promise<string> {
  * feed entirely. Callers must treat null as "cannot store this yet" rather than
  * inventing a row.
  */
+/** How many of a show's episodes to ask Apple for when the feed has dropped one. */
+const RECOVERY_SEARCH_LIMIT = 200;
+
+/**
+ * Finds an episode Apple still lists but the show's feed no longer carries,
+ * shaped as a `FeedEpisode` so the caller's storing logic is unchanged.
+ *
+ * **Never throws.** This is already the fallback; a failure here must leave
+ * the null the caller was about to return, not turn a 404 into a 500.
+ *
+ * Thinner than the feed version by necessity — Apple's search carries no
+ * description and no audio url. An empty description is honest; an invented
+ * one would not be, and the episode page's own recovery makes the same choice.
+ */
+async function recoverEpisodeForWrite(
+  podcast: { title?: string | null },
+  episodeKey: string,
+  showExternalId: string,
+): Promise<FeedEpisode | null> {
+  const term = podcast.title?.trim();
+  if (!term) return null;
+
+  try {
+    const found = pickEpisodeByKey(
+      await searchEpisodes(term, RECOVERY_SEARCH_LIMIT),
+      episodeKey,
+      showExternalId,
+    );
+    if (!found) return null;
+
+    return {
+      title: found.title,
+      publishedAt: found.releaseDate,
+      description: "",
+      audioUrl: null,
+      durationSeconds: found.durationSeconds,
+      coverUrl: found.artworkUrl ?? null,
+      guid: found.guid,
+    };
+  } catch (error) {
+    console.error("[ensureEpisode] Apple recovery search failed:", error);
+    return null;
+  }
+}
+
 export async function ensureEpisode(podcastExternalId: string, episodeKey: string): Promise<string | null> {
   // Deliberately NOT via getPodcastDetail: that slices to the four episodes the
   // "Recent episodes" strip shows, so logging or rating anything older would
@@ -102,9 +178,29 @@ export async function ensureEpisode(podcastExternalId: string, episodeKey: strin
     throw error;
   }
 
-  const match = feed.episodes.find((e) => episodeKeyFromGuid(e.guid) === episodeKey);
-  // Episode.publishedAt is required, and an episode with no date in its feed
-  // can't be stored honestly — better to refuse than invent one.
+  const fromFeed = feed.episodes.find((e) => episodeKeyFromGuid(e.guid) === episodeKey);
+
+  // ── The feed does not have it. Apple's catalogue often still does. ──
+  //
+  // **This is the gap that made the page lie.** `recoverEpisodeFromSearch`
+  // lets the *page* render an episode Apple knows about but the feed has
+  // dropped — plenty of shows publish only a recent window, and The Rest Is
+  // History's Great Northern War episodes are exactly that. Its own comment
+  // claims "everything needed to rate, review and list the episode is there".
+  // It was not: this function only ever looked in the feed, so the page
+  // rendered and then every rate, log and list-add answered "That episode
+  // could not be found in the show's feed". Reported 2026-11-23.
+  //
+  // The search term is the show's own title rather than the episode's,
+  // because no caller has the episode title to give — five API routes reach
+  // here and none of them carries one. That makes this a best effort: if the
+  // episode is not among Apple's results for its show, the answer is still
+  // null and the caller still 404s, exactly as before. It fixes the cases it
+  // can reach and breaks nothing it cannot.
+  const match = fromFeed ?? (await recoverEpisodeForWrite(podcast, episodeKey, podcastExternalId));
+
+  // Episode.publishedAt is required, and an episode with no date can't be
+  // stored honestly — better to refuse than invent one.
   if (!match?.publishedAt) return null;
 
   const podcastId = await ensurePodcast(podcastExternalId);

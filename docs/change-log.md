@@ -71,6 +71,80 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-23 — Episodes Apple has but the feed dropped could be viewed, never saved
+
+- **Branch:** `main`
+- **Requested by:** Sasha — adding a Rest Is History episode (the Great
+  Northern War) to Next Listening answered *"That episode could not be found in
+  the show's feed."* He noted it is on Apple Podcasts, which is the clue rather
+  than a counter-argument.
+- **Status:** Fixed as far as it can be verified here. **The real-world case is
+  untested** — see below.
+
+**The bug, and why the page lied about it**
+
+`recoverEpisodeFromSearch` lets the *episode page* render an episode Apple
+still lists but the show's own feed no longer carries. Plenty of shows publish
+only a recent window, and a 500-episode back catalogue like The Rest Is
+History's falls out of it. That recovery has existed for a while and its own
+comment claims:
+
+> Everything needed to rate, review and list the episode is there, which is the
+> point of the page.
+
+**That was not true.** `ensureEpisode` — which every write goes through —
+only ever searched the feed. So the page rendered perfectly and then *every*
+rate, log, list-add and next-listening answered a 404 about an episode the
+visitor could plainly see. Five API routes, all broken the same way, for any
+episode reached through the recovery path.
+
+**The fix**
+
+`ensureEpisode` now falls back to Apple's search when the feed misses, and
+stores what it finds. The search term is the **show's** title, because no
+caller has the episode's — five routes reach this function and none carries
+one. Shaped as a `FeedEpisode` so the storing logic below is untouched, with
+an empty description, because Apple's search has none and inventing one would
+be worse (the page's recovery makes the same choice).
+
+**Only the guid hash decides which candidate is accepted**, which is the whole
+safety argument: a candidate is taken solely because
+`episodeKeyFromGuid(guid)` equals the key already in the URL, so a wrong or
+hand-edited key finds nothing rather than the wrong episode. The show id only
+breaks a tie between candidates that already hash the same. That logic is
+`pickEpisodeByKey`, exported and pure so it can be tested without a network.
+
+**Verified**
+
+10 assertions on `pickEpisodeByKey`, including the three that matter: a
+same-show episode with a different guid is rejected, a hand-edited key finds
+nothing, and the `pt-show:` scoped prefix still hashes to the same route key.
+`tsc`, `eslint` and a production build clean.
+
+**Not verified, and this is the important part**
+
+`itunes.apple.com` is unreachable from a cloud session, so **the actual
+recovery was never exercised against Apple**. What is proven is that the
+fallback is wired in, is safe about what it accepts, and cannot throw. What is
+*not* proven is whether Apple returns the Great Northern War episode among 200
+results for "The Rest Is History". If it does not, the symptom is unchanged and
+the next step is to pass the episode's own title down from the page.
+
+**Follow-ups**
+
+- **Have Sasha retry the exact episode** once deployed. That is the only real
+  test available.
+- **If it still fails**, thread a title hint: the episode page already knows
+  the title and often has it in `?t=`. That means an optional third argument
+  here and a field through four components and five routes — deliberately not
+  done now, because the show-title search needs no client changes and may be
+  enough.
+- The claim in `recoverEpisodeFromSearch`'s comment was wrong for months and
+  nobody noticed, because the page looked fine. Worth remembering that a page
+  rendering is not evidence that its buttons work.
+
+---
+
 ### 2026-11-23 — "No ratings yet — be the first" on unrated shows and episodes
 
 - **Branch:** `main`
