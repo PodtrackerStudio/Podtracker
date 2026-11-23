@@ -71,6 +71,59 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-23 — `npm run check:visits`, for reading a 1-second median honestly
+
+- **Branch:** `main`
+- **Requested by:** Sasha — `/funnel` reported a **median visit of 1 second**
+  and an **84% bounce rate**, and he asked how to check what share of that is
+  bots.
+- **Status:** Complete and verified.
+
+**Bots are the wrong suspect, and the data cannot answer that question anyway**
+
+`Visit` stores no user agent, by design — so bots cannot be filtered from it.
+They also mostly never appear: `VisitTracker` is client-side JavaScript, so
+crawlers and link previewers that do not execute it never create a row. The
+recorded visits are already browsers.
+
+**The likely explanation is background tabs.** The leave event fires on
+`visibilitychange -> hidden`, which fires when somebody *switches tabs*, not
+only when they close the page. Hacker News readers middle-click ten links at
+once and read them later; each one records a visit about a second long. Given
+30 HN referrals and a Nov 20 spike, that is the shape to expect.
+
+**What the script reports, and the one table that matters**
+
+Fast leavers **broken down by referrer**. One referrer at a far higher
+sub-2-second share than the others means background tabs; evenly spread means
+the page really is losing people. Everything else is context:
+
+- Totals: visits, single-page share, sub-2-second share
+- Entry pages, with average duration and how many went deeper
+- **Signed-out visits lasting 10 seconds or more** — pages per visit, signup
+  opens and accounts created. That is the honest conversion denominator;
+  measuring signups against every visit counts people who never saw the page.
+
+Read-only, raw SQL through `pg` like the other check scripts, and prints no
+personal data — no ids, no paths beyond entry pages.
+
+**Verified** against a seeded Postgres reproducing the suspected pattern: 40
+HN visits of one second, 6 real ones, 10 direct. It reported HN at 87%
+sub-2-second against direct at 0% — exactly the signature that distinguishes
+the two explanations.
+
+**Follow-ups**
+
+- **The measurement itself is arguably wrong**, and this script only works
+  around it. A tab switch is not a departure, so a visitor who reads for five
+  minutes, switches away, and comes back has their visit cut at the switch.
+  Fixing that means treating `visibilitychange` as a pause rather than an end —
+  worth doing before anybody quotes a bounce rate to an outsider.
+- Nothing distinguishes a visit that bounced from one still open in a tab
+  somebody has not read yet. Both look identical in the table.
+
+---
+
 ### 2026-11-23 — Reviews now appear on the page of the thing they are about
 
 - **Branch:** `main`
