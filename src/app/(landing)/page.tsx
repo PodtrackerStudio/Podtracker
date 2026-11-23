@@ -112,6 +112,29 @@ export default async function LandingPage() {
         />
       </a>
 
+      {/* Startup Fame, under Fazier and deliberately smaller (Sasha,
+          2026-11-23: "add this very small and underneath fazier").
+
+          Unlike Fazier's snippet this one gives both dimensions, so they are
+          kept at their native 224x36 as attributes while the CSS shows it at
+          140px wide with `height: auto`. The browser takes the aspect ratio
+          from the attributes and reserves the right space before the image
+          arrives, so the footer does not jump as it loads. */}
+      <a
+        className={styles.launchBadgeSmall}
+        href="https://startupfa.me/s/podtracker?utm_source=www.podtracker.studio"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img loading="lazy" decoding="async"
+          src="https://startupfa.me/badges/featured-badge-small.webp"
+          width={224}
+          height={36}
+          alt="Podtracker — Featured on Startup Fame"
+        />
+      </a>
+
       <SiteFooter />
     </main>
   );

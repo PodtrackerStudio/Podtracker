@@ -71,6 +71,32 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-23 — Startup Fame badge under the Fazier one
+
+- **Branch:** `main`
+- **Requested by:** Sasha — "add this very small and underneath fazier", with
+  Startup Fame's snippet.
+- **Status:** Complete.
+
+Second launch badge at the foot of the landing page, below Fazier's and
+smaller. `.launchBadge`'s bottom margin shrank from 36px to 10px so the two
+read as one group rather than two separate things, and the 36px gap to the
+footer moved to the badge below it.
+
+**One difference from the Fazier badge worth copying next time.** Startup
+Fame's snippet gives both dimensions, so they are kept at their native
+`224x36` as attributes while the CSS displays it at 140px with `height: auto`.
+The browser derives the aspect ratio from the attributes and reserves the right
+space before the image loads, so the footer does not jump. Fazier's snippet
+gives only a width, so that one still shifts slightly as it arrives — worth
+fixing if it ever bothers anyone.
+
+Verified with both hosts stubbed, since neither is reachable from a session:
+180x39 above 140x23, correct order, aspect ratio preserved, no horizontal
+overflow at 1280 or 390. `tsc` and `eslint` clean.
+
+---
+
 ### 2026-11-22 — Top rated episodes, built for real
 
 - **Branch:** `main`

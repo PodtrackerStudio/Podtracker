@@ -136,10 +136,26 @@
 .launchBadge {
   display: block;
   width: max-content;
-  /* Clear of the ratings above it, closer to the footer below, so it reads as
-     belonging to the bottom of the page rather than to the ratings section. */
-  margin: 8px auto 36px;
+  /* Clear of the ratings above it. The gap to the footer now belongs to the
+     Startup Fame badge below, so only a small gap here — the two badges read
+     as one group rather than two separate things. */
+  margin: 8px auto 10px;
   line-height: 0;
+}
+
+/* Startup Fame, under Fazier and smaller, as asked. Its `img` carries the
+   native 224x36 so the browser can reserve the right space; the width here is
+   what it actually displays at, and `height: auto` keeps the ratio rather than
+   squashing it. */
+.launchBadgeSmall {
+  display: block;
+  width: max-content;
+  margin: 0 auto 36px;
+  line-height: 0;
+}
+.launchBadgeSmall img {
+  width: 140px;
+  height: auto;
 }
 .btnPrimary {
   display: inline-block;
