@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const writeLimit = guardWrite(user.id);
   if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
-  const { externalId, episodeKey } = await request.json().catch(() => ({}));
+  const { externalId, episodeKey, episodeTitle } = await request.json().catch(() => ({}));
   if (!externalId) return NextResponse.json({ error: "Missing externalId." }, { status: 400 });
 
   try {
@@ -30,7 +30,11 @@ export async function POST(request: Request) {
     let episodeId: string | null = null;
 
     if (episodeKey) {
-      episodeId = await ensureEpisode(String(externalId), String(episodeKey));
+      episodeId = await ensureEpisode(
+        String(externalId),
+        String(episodeKey),
+        typeof episodeTitle === "string" ? episodeTitle : undefined,
+      );
       if (!episodeId) {
         return NextResponse.json({ error: "That episode could not be found in the show's feed." }, { status: 404 });
       }

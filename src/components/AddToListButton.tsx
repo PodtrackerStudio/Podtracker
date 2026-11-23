@@ -32,11 +32,14 @@ export function AddToListButton({
   className,
   externalId,
   episodeKey,
+  episodeTitle,
 }: {
   className: string;
   externalId: string;
   /** Present on episode pages; absent adds the show itself. */
   episodeKey?: string;
+  /** Lets the server recover an episode the show's feed has dropped. See ensureEpisode. */
+  episodeTitle?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [lists, setLists] = useState<PickerList[] | null>(null);
@@ -94,7 +97,7 @@ export function AddToListButton({
       const res = await fetch("/api/lists/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ listId: list.id, externalId, episodeKey }),
+        body: JSON.stringify({ listId: list.id, externalId, episodeKey, episodeTitle }),
       });
       const data = await res.json().catch(() => null);
 

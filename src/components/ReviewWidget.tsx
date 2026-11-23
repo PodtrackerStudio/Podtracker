@@ -14,11 +14,14 @@ export function ReviewWidget({
   buttonClassName,
   externalId,
   episodeKey,
+  episodeTitle,
 }: {
   buttonClassName: string;
   externalId: string;
   /** Present on episode pages; absent logs the show itself. */
   episodeKey?: string;
+  /** Lets the server recover an episode the show's feed has dropped. See ensureEpisode. */
+  episodeTitle?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -30,7 +33,7 @@ export function ReviewWidget({
 
       {/* Keyed on `open` so each opening starts from today's date and an empty
           review, which is what remounting gives for free. */}
-      {open && <LogReviewPopup externalId={externalId} episodeKey={episodeKey} onClose={() => setOpen(false)} />}
+      {open && <LogReviewPopup externalId={externalId} episodeKey={episodeKey} episodeTitle={episodeTitle} onClose={() => setOpen(false)} />}
     </>
   );
 }

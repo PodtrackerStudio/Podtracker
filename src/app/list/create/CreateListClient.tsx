@@ -78,7 +78,9 @@ export function CreateListClient() {
           isRanked,
           // Order is the order they were added — that's what a ranked list
           // numbers and what "List order" sorts by on the list page.
-          items: items.map((i) => ({ externalId: i.externalId, episodeKey: i.episodeKey })),
+          // `title` doubles as the recovery search term server-side — see
+          // ensureEpisode. It is already held for display, so this costs nothing.
+          items: items.map((i) => ({ externalId: i.externalId, episodeKey: i.episodeKey, episodeTitle: i.title })),
         }),
       });
       const data = await res.json().catch(() => null);

@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   const writeLimit = guardWrite(user.id);
   if (!writeLimit.allowed) return tooManyRequests(writeLimit);
 
-  const { externalId, episodeKey, tier } = await request.json().catch(() => ({}));
+  const { externalId, episodeKey, episodeTitle, tier } = await request.json().catch(() => ({}));
 
   if (!externalId) return NextResponse.json({ error: "Missing externalId." }, { status: 400 });
   if (!tier || !TIERS.has(tier)) {
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
   try {
     // An episodeKey means the episode is being rated; without one it's the show.
     if (episodeKey) {
-      const episodeId = await ensureEpisode(String(externalId), String(episodeKey));
+      const episodeId = await ensureEpisode(String(externalId), String(episodeKey), typeof episodeTitle === "string" ? episodeTitle : undefined);
       if (!episodeId) {
         return NextResponse.json({ error: "That episode could not be found in the show's feed." }, { status: 404 });
       }

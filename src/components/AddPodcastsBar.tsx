@@ -143,7 +143,7 @@ export function AddPodcastsBar({
       // by its iTunes id alone. Both add endpoints take that same pair.
       const target =
         item.type === "episode"
-          ? { externalId: item.showExternalId, episodeKey: item.episodeKey }
+          ? { externalId: item.showExternalId, episodeKey: item.episodeKey, episodeTitle: item.title }
           : { externalId: item.id };
 
       const res = await fetch(endpoint, {

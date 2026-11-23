@@ -130,15 +130,55 @@ fallback is wired in, is safe about what it accepts, and cannot throw. What is
 results for "The Rest Is History". If it does not, the symptom is unchanged and
 the next step is to pass the episode's own title down from the page.
 
+**Second attempt: the show's title was not a good enough search term**
+
+Sasha retried and got the same error. Apple returns at most 200 results, and
+The Rest Is History's back catalogue is far larger, so searching the *show's*
+name never reached the episode. Predicted as the likely failure in the first
+attempt, and that is what happened.
+
+So the episode's own title is now threaded from the page to `ensureEpisode`,
+which was the fix deliberately skipped the first time. It touches ten files and
+every change is one to three lines:
+
+| Where | What |
+| --- | --- |
+| Episode page | `episodeTitle={episode.title}` on all four action buttons |
+| `RatingWidget`, `ReviewWidget`, `AddToListButton`, `NextListeningButton`, `LogReviewPopup` | Optional prop, included in the request body |
+| `/api/log`, `/api/rate`, `/api/next-listening`, `/api/lists/items`, `/api/lists` | Read it and pass it on |
+| `CreateListClient`, `AddPodcastsBar` | Send the title they already hold for display |
+| `ensureEpisode` | Optional third argument, preferred over the show's title |
+
+**The title is a search term and nothing else.** It is never stored and never
+trusted: what gets stored is whatever Apple returns, and a candidate is
+accepted solely because its guid hashes to the key already in the route. A
+wrong or hand-crafted title cannot attach the wrong episode to anything — at
+worst it finds nothing and the caller 404s as before. Routes pass it through
+only when it is genuinely a string, rather than `String()`-coercing an object
+into `"[object Object]"` and searching for that.
+
+**Verified**
+
+The plumbing was audited end to end — every component carries it in its body,
+every route reads and forwards it, the page supplies it to all four buttons —
+plus `tsc`, `eslint` and a production build. The 10 `pickEpisodeByKey`
+assertions still hold.
+
+**Still not verified against Apple**, for the same reason as before:
+`itunes.apple.com` is unreachable from a cloud session. Whether Apple's search
+returns the Great Northern War episode for its own title is the one thing that
+cannot be checked here — though it is a far stronger term than the show's name.
+
 **Follow-ups**
 
-- **Have Sasha retry the exact episode** once deployed. That is the only real
+- **Have Sasha retry the exact episode** once deployed. Still the only real
   test available.
-- **If it still fails**, thread a title hint: the episode page already knows
-  the title and often has it in `?t=`. That means an optional third argument
-  here and a field through four components and five routes — deliberately not
-  done now, because the show-title search needs no client changes and may be
-  enough.
+- **If it fails a third time**, the assumption to question is that Apple's
+  episode search can find it at all. The next diagnostic is the server log:
+  `[ensureEpisode] Apple recovery search failed` means the request broke, and
+  its absence means the search ran and matched nothing — at which point the
+  guid in the URL may simply not be the guid Apple holds, and no search term
+  will help.
 - The claim in `recoverEpisodeFromSearch`'s comment was wrong for months and
   nobody noticed, because the page looked fine. Worth remembering that a page
   rendering is not evidence that its buttons work.

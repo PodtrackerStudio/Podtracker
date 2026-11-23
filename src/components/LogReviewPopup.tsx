@@ -62,12 +62,15 @@ function buildCalendarDays(year: number, month: number) {
 export function LogReviewPopup({
   externalId,
   episodeKey,
+  episodeTitle,
   onClose,
   onSaved,
 }: {
   externalId: string;
   /** Present for an episode; absent logs the show itself. */
   episodeKey?: string;
+  /** Lets the server recover an episode the show's feed has dropped. See ensureEpisode. */
+  episodeTitle?: string;
   onClose: () => void;
   /** Runs after a successful save, before the popup is dismissed by the caller. */
   onSaved?: () => void;
@@ -127,6 +130,7 @@ export function LogReviewPopup({
         body: JSON.stringify({
           externalId,
           episodeKey,
+          episodeTitle,
           // /api/log writes the LogEntry snapshot and upserts the current
           // rating in one transaction, so no separate /api/rate call.
           tier,

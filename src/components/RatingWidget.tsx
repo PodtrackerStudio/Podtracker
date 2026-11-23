@@ -32,12 +32,15 @@ export function RatingWidget({
   styles,
   externalId,
   episodeKey,
+  episodeTitle,
   initialTier = null,
 }: {
   styles: Record<string, string>;
   externalId: string;
   /** Present on episode pages; absent means the show itself is being rated. */
   episodeKey?: string;
+  /** Lets the server recover an episode the show's feed has dropped. See ensureEpisode. */
+  episodeTitle?: string;
   initialTier?: TierKey | null;
 }) {
   const [open, setOpen] = useState(false);
@@ -64,7 +67,7 @@ export function RatingWidget({
       const res = await fetch("/api/rate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ externalId, episodeKey, tier: byKey(pending).api }),
+        body: JSON.stringify({ externalId, episodeKey, episodeTitle, tier: byKey(pending).api }),
       });
       if (!res.ok) {
         // Put the old rating back rather than leave the button showing one the

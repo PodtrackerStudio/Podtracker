@@ -63,7 +63,12 @@ export async function GET() {
   });
 }
 
-type IncomingItem = { externalId?: string; episodeKey?: string | null };
+type IncomingItem = {
+  externalId?: string;
+  episodeKey?: string | null;
+  /** Search term only, for recovering an episode the feed dropped. See ensureEpisode. */
+  episodeTitle?: string | null;
+};
 
 /**
  * Create a list from the Create List page.
@@ -110,7 +115,7 @@ export async function POST(request: Request) {
       if (!item?.externalId) continue;
 
       if (item.episodeKey) {
-        const episodeId = await ensureEpisode(String(item.externalId), String(item.episodeKey));
+        const episodeId = await ensureEpisode(String(item.externalId), String(item.episodeKey), typeof item.episodeTitle === "string" ? item.episodeTitle : undefined);
         // Apple only seems to index episodes its feed still carries, so this is
         // rare — but a show that truncates its feed between the search and the
         // submit would land here. failedIndex lets the form name the title

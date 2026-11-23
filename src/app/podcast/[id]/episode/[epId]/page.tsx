@@ -286,13 +286,22 @@ export default async function EpisodePage({
             </div>
 
             <div className={styles.actionRow}>
-              <RatingWidget styles={styles} externalId={id} episodeKey={epId} initialTier={viewerState.tier} />
-              <ReviewWidget buttonClassName={styles.btnLog} externalId={id} episodeKey={epId} />
-              <AddToListButton className={styles.btnAddList} externalId={id} episodeKey={epId} />
+              {/* `episodeTitle` is how a write reaches an episode the show's
+                  feed has dropped but Apple still lists. The server searches
+                  Apple for it and accepts a result only if its guid hashes to
+                  the key already in the route, so the title is a search term
+                  and never an assertion about what this episode is. Without
+                  it, every one of these four buttons 404s on such an episode
+                  while the page around them renders fine — which is exactly
+                  what happened to The Rest Is History's back catalogue. */}
+              <RatingWidget styles={styles} externalId={id} episodeKey={epId} episodeTitle={episode.title} initialTier={viewerState.tier} />
+              <ReviewWidget buttonClassName={styles.btnLog} externalId={id} episodeKey={epId} episodeTitle={episode.title} />
+              <AddToListButton className={styles.btnAddList} externalId={id} episodeKey={epId} episodeTitle={episode.title} />
               <NextListeningButton
                 className={styles.btnAddList}
                 externalId={id}
                 episodeKey={epId}
+                episodeTitle={episode.title}
                 initialAdded={viewerState.inNextListening}
               />
             </div>

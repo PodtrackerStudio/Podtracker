@@ -15,12 +15,15 @@ export function NextListeningButton({
   className,
   externalId,
   episodeKey,
+  episodeTitle,
   initialAdded = false,
 }: {
   className: string;
   externalId: string;
   /** Present on episode pages; absent adds the show itself. */
   episodeKey?: string;
+  /** Lets the server recover an episode the show's feed has dropped. See ensureEpisode. */
+  episodeTitle?: string;
   initialAdded?: boolean;
 }) {
   const [added, setAdded] = useState(initialAdded);
@@ -35,7 +38,7 @@ export function NextListeningButton({
       const res = await fetch("/api/next-listening", {
         method: next ? "POST" : "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ externalId, episodeKey }),
+        body: JSON.stringify({ externalId, episodeKey, episodeTitle }),
       });
       if (!res.ok) setAdded(!next);
     } catch {

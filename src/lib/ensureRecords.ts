@@ -128,8 +128,15 @@ async function recoverEpisodeForWrite(
   podcast: { title?: string | null },
   episodeKey: string,
   showExternalId: string,
+  episodeTitle?: string,
 ): Promise<FeedEpisode | null> {
-  const term = podcast.title?.trim();
+  // **The episode's own title when the caller has it, the show's otherwise.**
+  // Searching a show's name is a weak instrument: Apple returns at most 200
+  // results, and a back catalogue like The Rest Is History's is far larger, so
+  // the episode simply is not among them. That is exactly how this failed on
+  // 2026-11-23 after the first attempt at the fix. The episode's own title
+  // finds it directly.
+  const term = episodeTitle?.trim() || podcast.title?.trim();
   if (!term) return null;
 
   try {
@@ -155,7 +162,20 @@ async function recoverEpisodeForWrite(
   }
 }
 
-export async function ensureEpisode(podcastExternalId: string, episodeKey: string): Promise<string | null> {
+export async function ensureEpisode(
+  podcastExternalId: string,
+  episodeKey: string,
+  /**
+   * The episode's title, when the caller knows it.
+   *
+   * Only ever a **search term** for the recovery below — never stored, never
+   * trusted. What gets stored is whatever Apple returns, and a candidate is
+   * accepted solely because its guid hashes to `episodeKey`. So a wrong or
+   * hand-crafted title cannot attach the wrong episode to anything; at worst
+   * it finds nothing and the caller 404s as before.
+   */
+  episodeTitle?: string,
+): Promise<string | null> {
   // Deliberately NOT via getPodcastDetail: that slices to the four episodes the
   // "Recent episodes" strip shows, so logging or rating anything older would
   // silently fail. The feed is fetched whole and searched by key.
@@ -197,7 +217,8 @@ export async function ensureEpisode(podcastExternalId: string, episodeKey: strin
   // episode is not among Apple's results for its show, the answer is still
   // null and the caller still 404s, exactly as before. It fixes the cases it
   // can reach and breaks nothing it cannot.
-  const match = fromFeed ?? (await recoverEpisodeForWrite(podcast, episodeKey, podcastExternalId));
+  const match =
+    fromFeed ?? (await recoverEpisodeForWrite(podcast, episodeKey, podcastExternalId, episodeTitle));
 
   // Episode.publishedAt is required, and an episode with no date can't be
   // stored honestly — better to refuse than invent one.
