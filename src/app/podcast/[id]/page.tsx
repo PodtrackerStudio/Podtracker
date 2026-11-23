@@ -15,6 +15,8 @@ import { getPodcastDetail } from "@/lib/podcastDetail";
 import { getPodcastCommunityStats, formatCount } from "@/lib/podcastStats";
 import { getPodcastRatingSummary } from "@/lib/ratingSummary";
 import { countRatedEpisodes } from "@/lib/topRatedEpisodes";
+import { getPodcastReviews } from "@/lib/subjectReviews";
+import { usernameToPath } from "@/lib/routeParams";
 import { aggregateRatingSchema } from "@/lib/ratingScale";
 import { tierFromScore } from "@/lib/ratingTier";
 import { getViewerPodcastState } from "@/lib/viewerState";
@@ -31,12 +33,6 @@ const friendsActivity = [
   { id: "fa2", avatar: "/default-avatar.webp", tier: "recommend", tierLabel: "Recommend", hasReview: true },
   { id: "fa3", avatar: "/default-avatar.webp", tier: "ok", tierLabel: "OK", hasReview: true },
   { id: "fa4", avatar: "/default-avatar.webp", tier: "highly", tierLabel: "Highly Recommend", hasReview: false },
-];
-
-const reviews = [
-  { id: "r1", avatar: "/default-avatar.webp", name: "JohnJam", tier: "recommend", tierLabel: "Recommend", date: "June 16, 2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. The conversations go deep without losing accessibility — a rare thing in the self-improvement space…" },
-  { id: "r2", avatar: "/default-avatar.webp", name: "Phillip Neiman", tier: "highly", tierLabel: "Highly Recommend", date: "June 10, 2026", text: "Easily one of the most consistently high-quality long-form podcasts out there. Chris has a genuine gift for drawing out the best in his guests — every episode feels like a real conversation, not an interview…" },
-  { id: "r3", avatar: "/default-avatar.webp", name: "Peter Prokhorov", tier: "ok", tierLabel: "OK", date: "June 5, 2026", text: "Good podcast overall but some episodes feel like they drag on longer than necessary. Best consumed one or two episodes a week rather than binging…" },
 ];
 
 const lists = [
@@ -123,12 +119,13 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
   //   "Top rated episodes" link is offered. A count, not the list: the page
   //   needs the number, and loading every ranked episode on a page that may
   //   not even show the link would be absurd.
-  const [podcast, stats, ratings, viewerState, ratedEpisodeCount] = await Promise.all([
+  const [podcast, stats, ratings, viewerState, ratedEpisodeCount, reviews] = await Promise.all([
     getPodcastDetail(id),
     getPodcastCommunityStats(id),
     getPodcastRatingSummary(id),
     getViewerPodcastState(id),
     countRatedEpisodes(id),
+    getPodcastReviews(id),
   ]);
   if (!podcast) notFound();
   const recentEpisodes = podcast.recentEpisodes;
@@ -385,31 +382,48 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
 
         {HAS_COMMUNITY_DATA && (
           <>
-        <hr className="divider" />
+        {/* Real reviews of this show, gated on there being any rather than on
+            HAS_COMMUNITY_DATA — the pattern CLAUDE.md records for retiring
+            that flag section by section. Two reviews show two reviews.
 
-        <section>
-          <h2 className={styles.sectionTitle}>Popular reviews</h2>
-          <div className={styles.reviewsList}>
-            {reviews.map((r) => (
-              <div className={styles.reviewCard} key={r.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img loading="lazy" decoding="async" className={styles.reviewerAvatar} src={r.avatar} alt="" />
-                <div>
-                  <div className={styles.reviewerName}>{r.name}</div>
-                  <span className={`${styles.ratingTag} ${styles[r.tier]}`}>{r.tierLabel}</span>
-                  <p className={styles.reviewText}>{r.text}</p>
-                  <Link href="#" className={styles.moreLink}>
-                    MORE
-                  </Link>
-                </div>
-                <div className={styles.reviewDate}>{r.date}</div>
+            This replaced a hardcoded array of three invented people whose
+            review text nobody wrote. The flag being false is the only reason
+            that never shipped. */}
+        {reviews.length > 0 && (
+          <>
+            <hr className="divider" />
+
+            <section>
+              <h2 className={styles.sectionTitle}>
+                {reviews.length === 1 ? "Review" : "Popular reviews"}
+              </h2>
+              <div className={styles.reviewsList}>
+                {reviews.map((r) => (
+                  <div className={styles.reviewCard} key={r.id}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img loading="lazy" decoding="async" className={styles.reviewerAvatar} src={r.authorAvatarUrl} alt="" />
+                    <div>
+                      <Link href={`/user/${usernameToPath(r.authorUsername)}`} className={styles.reviewerName}>
+                        {r.authorName}
+                      </Link>
+                      {/* Absent when the author has since cleared their rating:
+                          a review can exist without one. */}
+                      {r.tierClass && r.tierLabel && (
+                        <span className={`${styles.ratingTag} ${styles[r.tierClass]}`}>{r.tierLabel}</span>
+                      )}
+                      <p className={styles.reviewText}>{r.text}</p>
+                      {/* Was href="#". Goes to the review itself now. */}
+                      <Link href={r.href} className={styles.moreLink}>
+                        MORE
+                      </Link>
+                    </div>
+                    <div className={styles.reviewDate}>{r.dateLabel}</div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className={styles.seeMoreRow}>
-            <button className={styles.btnSeeMore}>See all reviews</button>
-          </div>
-        </section>
+            </section>
+          </>
+        )}
 
         <hr className="divider" />
 

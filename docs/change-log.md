@@ -71,6 +71,74 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-23 — Reviews now appear on the page of the thing they are about
+
+- **Branch:** `main`
+- **Requested by:** Sasha — "you do push every written review into the popular
+  review section correct? because right now thats very important." The answer
+  was no, in a way worth recording.
+- **Status:** Complete and verified.
+
+**Where reviews actually appeared, before this**
+
+Three places: the home feed's 8 newest, the author's own profile tab, and the
+review's permalink. **Not** the page of the show or episode being reviewed —
+which is where somebody deciding what to listen to would look, and the whole
+argument of the site.
+
+The "Popular reviews" section on both pages existed and was **hardcoded
+fiction**: JohnJam, Phillip Neiman, Peter Prokhorov and Vito Corleone, with
+review text nobody wrote, sitting behind `HAS_COMMUNITY_DATA`. The flag being
+false is the only reason those four never shipped — flipping it to "see how it
+looks" would have published them, exactly as CLAUDE.md warns.
+
+**What it does now**
+
+`src/lib/subjectReviews.ts` — `getPodcastReviews` and `getEpisodeReviews`, both
+gated on their own data (`reviews.length > 0`), which is the documented way
+`HAS_COMMUNITY_DATA` is being retired section by section rather than flipped.
+Two reviews show two reviews, and the heading reads "Review" rather than
+"Popular reviews" when there is only one.
+
+| Decision | Why |
+| --- | --- |
+| A show's reviews exclude its episodes' | "Episode 412 dragged" is not a verdict on the series |
+| Ordered by likes, then recency | Same as the home feed. With no likes a like-ranked list *is* a recency list, which is honest; inventing a score would not be |
+| The badge is the author's **current** rating | Not `LogEntry.tier`, which is a snapshot of what they thought then. Matches `/review/[id]` and the profile tab |
+| No badge when they have no rating | A review can exist without one |
+| MORE links to the review | It was `href="#"` |
+| The name links to the author | It was plain text |
+| Never throws | A show page renders fine without its reviews, so a database blip costs the section, not the page |
+| "See all reviews" button removed | It went nowhere, and with a 3-review cap there is nothing more to see yet |
+
+`lists` on both pages is still placeholder and still gated — not touched here.
+
+**Verified**
+
+17 assertions against a real Postgres: bare logs excluded, another show's
+reviews excluded, an episode's review not counted as the show's, like-ordering,
+the current-rating badge, absent badge when unrated, hrefs pointing at the
+review rather than `#`, episode lookup by hashed guid, and empty lists rather
+than throws for unknown or empty ids. `tsc`, `eslint` and a production build
+clean, and no invented reviewer names remain anywhere in `src/`.
+
+Two test-harness bugs were fixed rather than the code: ESM imports are hoisted,
+so setting `process.env.DATABASE_URL` inside the test file ran *after*
+`src/lib/db.ts` had already loaded without it — the env has to be on the
+command line. And `LogEntry.listenedDate` is required.
+
+**Follow-ups**
+
+- **Capped at 3 per page, with no "see all".** Fine at this size; a show with
+  twenty reviews will need paging and a real link.
+- **Not seen rendered**, for the usual reason — `itunes.apple.com` is
+  unreachable from a cloud session, so the show and episode pages cannot be
+  loaded here at all. The query is proven; the markup is not.
+- The home feed still takes only the **8 newest**. Every review is visible
+  today because there are fewer than eight; the ninth pushes the oldest off.
+
+---
+
 ### 2026-11-23 — Episodes Apple has but the feed dropped could be viewed, never saved
 
 - **Branch:** `main`

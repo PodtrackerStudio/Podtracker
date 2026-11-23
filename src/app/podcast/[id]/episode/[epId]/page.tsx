@@ -18,16 +18,12 @@ import { tierFromScore } from "@/lib/ratingTier";
 import { getEpisodeDetail, recoverEpisodeFromSearch, type EpisodeDetail } from "@/lib/episodeDetail";
 import styles from "./episode.module.css";
 import { artworkAt } from "@/lib/artwork";
+import { getEpisodeReviews } from "@/lib/subjectReviews";
+import { usernameToPath } from "@/lib/routeParams";
 
 // The mock `community` block that used to sit here — a 3.8 average over 591
 // invented ratings — is gone as of 2026-10-03. Both numbers come from
 // `getEpisodeRatingSummaryByKey` now, which reads EpisodeRating.
-
-const reviews = [
-  { id: "r1", avatar: "/default-avatar.webp", name: "JohnJam", tier: "recommend", tierLabel: "Recommend", date: "6/24/2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. Ezra Klein brought a lot of nuance to the political discussion that you rarely hear…" },
-  { id: "r2", avatar: "/default-avatar.webp", name: "Vito Corleone", tier: "ok", tierLabel: "OK", date: "7/1/2026", text: "Excellent podcast, features many interesting guests and appearances. Chris is highly talented and really interesting to listen to. This particular episode felt a little long in the middle section but picked up toward the end…" },
-  { id: "r3", avatar: "/default-avatar.webp", name: "Phillip Neiman", tier: "highly", tierLabel: "Highly Recommend", date: "6/28/2026", text: "One of the best political episodes I've heard all year. Ezra Klein is a rare guest who can go deep without losing the thread. Chris pushed back at exactly the right moments…" },
-];
 
 const lists = [
   { id: "l1", avatar: "/default-avatar.webp", title: "Modern Wisdom (all episodes)", author: "Daniel Ocean", more: 42, gallery: ["/placeholder-cover.svg", "/placeholder-cover.svg", "/placeholder-cover.svg"] },
@@ -135,6 +131,9 @@ export default async function EpisodePage({
     // What THIS viewer has already done, so the Rate mic and Next listening
     // show their real state instead of resetting to blank on every load.
     getViewerEpisodeState(id, epId),
+    // Reviews of this episode. Like the two above it, this needs no feed, so
+    // it starts before the slow part rather than after it.
+    getEpisodeReviews(id, epId),
   ]);
   side.catch(() => {});
 
@@ -157,7 +156,7 @@ export default async function EpisodePage({
 
   // Real ratings as of 2026-10-03, replacing the mock block that sat behind
   // HAS_COMMUNITY_DATA. Gated on having any, not on the global switch.
-  const [ratings, viewerState] = await side;
+  const [ratings, viewerState, reviews] = await side;
   // Resolved once — the mic, the label and their colour all need it.
   const averageTier = ratings.average !== null ? tierFromScore(ratings.average) : null;
 
@@ -328,33 +327,44 @@ export default async function EpisodePage({
           </div>
         </section>
 
+        {/* Real reviews of this episode, gated on there being any rather than
+            on HAS_COMMUNITY_DATA — see the show page. Replaced three invented
+            people whose review text nobody wrote. */}
+        {reviews.length > 0 && (
+          <>
+            <hr className="divider" />
+
+            <section>
+              <h2 className={styles.sectionTitle}>
+                {reviews.length === 1 ? "Review" : "Popular reviews"}
+              </h2>
+              <div className={styles.reviewsList}>
+                {reviews.map((r) => (
+                  <div className={styles.reviewCard} key={r.id}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img loading="lazy" decoding="async" className={styles.reviewerAvatar} src={r.authorAvatarUrl} alt="" />
+                    <div>
+                      <Link href={`/user/${usernameToPath(r.authorUsername)}`} className={styles.reviewerName}>
+                        {r.authorName}
+                      </Link>
+                      {r.tierClass && r.tierLabel && (
+                        <span className={`${styles.ratingTag} ${styles[r.tierClass]}`}>{r.tierLabel}</span>
+                      )}
+                      <p className={styles.reviewText}>{r.text}</p>
+                      <Link href={r.href} className={styles.moreLink}>
+                        MORE
+                      </Link>
+                    </div>
+                    <div className={styles.reviewDate}>{r.dateLabel}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
+
         {HAS_COMMUNITY_DATA && (
           <>
-        <hr className="divider" />
-
-        <section>
-          <h2 className={styles.sectionTitle}>Popular reviews</h2>
-          <div className={styles.reviewsList}>
-            {reviews.map((r) => (
-              <div className={styles.reviewCard} key={r.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img loading="lazy" decoding="async" className={styles.reviewerAvatar} src={r.avatar} alt="" />
-                <div>
-                  <div className={styles.reviewerName}>{r.name}</div>
-                  <span className={`${styles.ratingTag} ${styles[r.tier]}`}>{r.tierLabel}</span>
-                  <p className={styles.reviewText}>{r.text}</p>
-                  <Link href="#" className={styles.moreLink}>
-                    MORE
-                  </Link>
-                </div>
-                <div className={styles.reviewDate}>{r.date}</div>
-              </div>
-            ))}
-          </div>
-          <div className={styles.seeMoreRow}>
-            <button className={styles.btnSeeMore}>See More</button>
-          </div>
-        </section>
 
         <hr className="divider" />
 
