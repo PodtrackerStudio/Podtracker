@@ -905,3 +905,22 @@
     transform: scaleX(0);
   }
 }
+
+/* "No ratings yet — be the first." Sits where the average and distribution go
+   on anything nobody has rated (Sasha, 2026-11-23).
+
+   Deliberately quiet: muted text at body size, no box, no colour, no button.
+   It is a note in an empty space, not a call to action competing with the Rate
+   control a few lines below it — that control is the thing it points at.
+   Centred under the cover, where the average would have been. */
+.noRatingsYet {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.noRatingsYet strong {
+  font-weight: 700;
+  color: var(--text);
+}

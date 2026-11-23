@@ -252,6 +252,17 @@ export default async function EpisodePage({
                 </div>
               </>
             )}
+
+            {/* Same addition as the show page (Sasha, 2026-11-23): blank space
+                reads as an absence, and on a site this young an unrated
+                episode is what most visitors meet first. The Rate control
+                below already works; this only says so. Replaced by the real
+                average the moment one person rates it. */}
+            {ratings.total === 0 && (
+              <p className={styles.noRatingsYet}>
+                No ratings yet — <strong>be the first.</strong>
+              </p>
+            )}
           </div>
 
           <div>

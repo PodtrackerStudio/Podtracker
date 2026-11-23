@@ -244,6 +244,23 @@ export default async function PodcastPage({ params }: { params: Promise<{ id: st
                 </div>
               </>
             )}
+
+            {/* Nobody has rated this show yet (Sasha, 2026-11-23).
+
+                Until now this space was simply blank — deliberately, since an
+                empty distribution would be a scaffold with nothing in it. But
+                blank reads as an absence rather than an opportunity, and on a
+                site this young it is what most visitors will meet first. The
+                Rate control below already works; this only says so.
+
+                One sentence, no new colour or component. It is not a section
+                heading and must not grow into one — the moment a single person
+                rates the show, the real average replaces it. */}
+            {ratings.total === 0 && (
+              <p className={styles.noRatingsYet}>
+                No ratings yet — <strong>be the first.</strong>
+              </p>
+            )}
           </div>
 
           <div className={styles.podcastRight}>

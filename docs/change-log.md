@@ -71,6 +71,66 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-23 — "No ratings yet — be the first" on unrated shows and episodes
+
+- **Branch:** `main`
+- **Requested by:** Sasha — the space where ratings go was blank on anything
+  nobody had rated, which is what most visitors will meet on a site this young.
+  "yeah add it for both".
+- **Status:** Complete. **Not seen rendered** — see below.
+
+**What changed**
+
+One sentence where the average and distribution would otherwise be, on both
+`podcast/[id]` and `podcast/[id]/episode/[epId]`, shown only when
+`ratings.total === 0`. The exact complement of the existing
+`ratings.total > 0` condition, so one or the other always renders and never
+both.
+
+| File | Change |
+| --- | --- |
+| `podcast/[id]/page.tsx` | The note |
+| `podcast/[id]/episode/[epId]/page.tsx` | The same |
+| `podcast.module.css`, `episode.module.css` | `.noRatingsYet` |
+
+**Why, given "short, not fake"**
+
+The blank space was deliberate — an empty distribution is a scaffold with
+nothing in it. That reasoning still holds and nothing scaffold-like was added.
+What changed is the judgement that **blank reads as an absence rather than an
+opportunity**: the Rate control a few lines below already works on an unrated
+show, and nothing told anybody so.
+
+Kept deliberately quiet — muted text at 14px, no box, no colour, no button. It
+is a note in an empty space, not a second call to action competing with the
+control it points at. It must not grow into a section heading.
+
+**Not verified visually, and worth being plain about it**
+
+`itunes.apple.com` is not reachable from a cloud session, so `getPodcastDetail`
+fails and the podcast page never reaches the ratings block. The page could not
+be rendered here at all.
+
+What *was* checked: `tsc` and `eslint` clean, a production build passing, and
+the compiled CSS confirmed to contain
+
+    noRatingsYet{text-align:center;color:var(--text-muted);margin:18px 0 0;font-size:14px;line-height:1.5}
+
+in both modules. The condition is the exact complement of one already in the
+file, so the logic is correct by construction — but **nobody has looked at it**,
+and it should be glanced at on the deployed site before it matters.
+
+**Follow-ups**
+
+- **Look at it on a real unrated show** once deployed. It is one line of text
+  and low risk, but the spacing under the cover is unseen.
+- `itunes.apple.com` is allowed on the **Podtracker** environment but not the
+  **Default** one this session runs on, and a running session cannot move
+  between them. Worth adding to the Default, or starting repo sessions on the
+  Podtracker environment — it would have made this verifiable.
+
+---
+
 ### 2026-11-23 — Startup Fame badge under the Fazier one
 
 - **Branch:** `main`
