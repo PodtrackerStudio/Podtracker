@@ -71,6 +71,85 @@ rejected. This is the part that saves the most time later.
 
 ## Entries
 
+### 2026-11-27 — Rating while signed out no longer dead-ends at "Not logged in."
+
+- **Branch:** `main`
+- **Requested by:** Sasha, asking how to get visitors to make a profile. The
+  answer turned out to be a funnel bug rather than a persuasion problem.
+- **Status:** Complete. Typecheck, lint and `next build` pass; the stash logic
+  has unit coverage. **The live flow is unverified** — see below.
+
+**What was happening**
+
+`RatingWidget` renders its Rate button unconditionally, with no signed-in
+guard. So a signed-out visitor could open the popup, pick a tier, submit — and
+`/api/rate` answered 401, which the widget displayed as the bare words **"Not
+logged in."** before putting the old rating back. No link, no offer of an
+account, choice discarded.
+
+That is the worst place on the site to lose somebody: they had already decided
+and already clicked. Some share of the 119 recorded visits may have hit it, and
+nothing records that they did.
+
+**What it does now**
+
+A 401 is treated as somebody who wants an account rather than an error to
+report. The popup offers *"Create an account to save your **Highly Recommend**
+rating"* with Create account / Log in, and the account becomes the thing that
+preserves their work instead of a toll gate in front of it.
+
+- `src/lib/pendingRating.ts` (new) — the stash, in **`localStorage`, not
+  `sessionStorage`**: signup normally needs an email confirmation, and a mail
+  client opens the link in a *new tab*, which gets empty session storage.
+  `VisitTracker` can use session storage because losing a visit id costs
+  nothing; losing this would defeat the point.
+- `src/components/PendingRatingApplier.tsx` (new) — mounted on `/home`, which
+  every route into a session lands on (signup, login, and
+  `/api/auth/confirm`, which redirects there). Saves the rating, then
+  `router.replace`s to the page they picked it on, so they arrive back where
+  they were with the rating showing.
+- `RatingWidget` stashes **only when the offer is taken**, not when the 401
+  arrives, so closing the popup leaves nothing behind for a later signup to
+  apply to a tier somebody thought better of.
+
+**Deliberate choices**
+
+- **One hour expiry.** A rating appearing on a profile days later, with no
+  memory of choosing it, is worse than losing it.
+- **`returnPath` must be a single-slash path**, or it falls back to `/home` —
+  it is handed to the router, and `//evil.example` is a URL, not a path.
+- **On a server refusal the stash is dropped, on a network failure it is kept.**
+  A 404 for an episode the feed dropped will never start working, and silently
+  re-posting a write on every visit to `/home` is worse than losing one rating.
+- Every storage access is wrapped; private windows and blocked site data throw.
+- **The prompt is not from a Figma frame** — there is none for this. Built from
+  the documented tokens and the shape of `.btnPrimary`, nothing invented. Worth
+  a look and an adjustment if it is wrong.
+
+`src/app/privacy/page.tsx` gains a fourth item in the §5 storage inventory and
+the count changes from three to four, per the standing rule that the page
+changes in the same commit as what it describes.
+
+**Verified, and not**
+
+Unit-tested through a fake storage: the round trip for show and episode
+ratings, the hour boundary either side, four hostile `returnPath` values,
+malformed JSON, a stash with no tier, and a storage that throws.
+
+**Not verified: the live flow.** Show pages need `itunes.apple.com`, which this
+container cannot reach, so the prompt has never been rendered and the
+signup round trip has never been run. Check by hand: sign out, pick a tier on
+any show, take the offer, and confirm the rating is there afterwards.
+
+**Still dead-ending**
+
+Only the rating path is fixed. `FollowButton`, `ReviewWidget`,
+`NextListeningButton` and `LikeButton` still have no signed-out path at all —
+only `AddToListButton` so much as mentions login. Follow is the obvious next
+one, since follows are what fill `/home`.
+
+---
+
 ### 2026-11-23 — `npm run check:visits`, for reading a 1-second median honestly
 
 - **Branch:** `main`

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { MicIcon } from "./icons";
+import { stashPendingRating } from "@/lib/pendingRating";
 
 /**
  * The five tiers, in the order the landing page's "Ratings explained" lists
@@ -48,11 +50,32 @@ export function RatingWidget({
   const [pending, setPending] = useState<TierKey | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set when /api/rate answers 401. Not an error to report: somebody who wants
+  // an account, which is what the prompt at the foot of the popup offers.
+  const [needsAccount, setNeedsAccount] = useState(false);
 
   function openPopup() {
     setPending(rating);
     setError(null);
+    setNeedsAccount(false);
     setOpen(true);
+  }
+
+  /**
+   * Taking the offer of an account. The rating is stashed here rather than when
+   * the 401 arrives, so that closing the popup instead leaves nothing behind
+   * for a later signup to apply to a tier somebody thought better of.
+   */
+  function keepForSignup() {
+    if (!pending) return;
+    stashPendingRating({
+      externalId,
+      episodeKey,
+      episodeTitle,
+      tier: byKey(pending).api,
+      label: byKey(pending).label,
+      returnPath: window.location.pathname,
+    });
   }
 
   async function submit() {
@@ -73,6 +96,14 @@ export function RatingWidget({
         // Put the old rating back rather than leave the button showing one the
         // database never accepted.
         setRating(previous);
+        // A signed-out visitor who has just picked a tier is the most engaged
+        // person on the page. Answering that with the raw "Not logged in." and
+        // discarding the rating, as this did until 2026-11-27, was the worst
+        // place on the site to lose somebody.
+        if (res.status === 401) {
+          setNeedsAccount(true);
+          return;
+        }
         const data = await res.json().catch(() => null);
         setError(data?.error ?? "Could not save that rating.");
         return;
@@ -154,16 +185,55 @@ export function RatingWidget({
               </button>
             ))}
             <div style={{ width: "100%", borderTop: "1px solid #ccc", margin: "8px 0" }} />
-            <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 4 }}>
-              <button
-                onClick={submit}
-                disabled={saving}
-                style={{ background: "#06b6d4", color: "#fff", border: "none", borderRadius: 5, padding: "7px 24px", fontSize: 14, fontFamily: "inherit", fontWeight: 600, cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1 }}
-              >
-                {saving ? "Saving…" : "Rate"}
-              </button>
-              {error && <span style={{ color: "#dc2626", fontSize: 13 }}>{error}</span>}
-            </div>
+            {needsAccount ? (
+              /* Not from a Figma frame — there is none for this. Built from the
+                 documented tokens and the shape of `.btnPrimary` in
+                 auth.module.css rather than anything invented. */
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginTop: 4 }}>
+                <span style={{ fontSize: 14, textAlign: "center", maxWidth: 250, lineHeight: 1.45 }}>
+                  Create an account to save your{" "}
+                  <strong style={{ color: pending ? `var(${byKey(pending).colorVar})` : undefined }}>
+                    {pending ? byKey(pending).label : "chosen"}
+                  </strong>{" "}
+                  rating.
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <Link
+                    href="/signup"
+                    onClick={keepForSignup}
+                    style={{
+                      background: "var(--btn-primary-blue)",
+                      color: "var(--on-accent)",
+                      borderRadius: "var(--radius-pill)",
+                      padding: "9px 22px",
+                      fontSize: 14,
+                      fontWeight: 500,
+                      textDecoration: "none",
+                      boxShadow: "var(--shadow-sm)",
+                    }}
+                  >
+                    Create account
+                  </Link>
+                  <Link href="/login" onClick={keepForSignup} style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                    Log in
+                  </Link>
+                </div>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", maxWidth: 230 }}>
+                  We&apos;ll bring you back here and save it.
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 4 }}>
+                <button
+                  onClick={submit}
+                  disabled={saving}
+                  style={{ background: "#06b6d4", color: "#fff", border: "none", borderRadius: 5, padding: "7px 24px", fontSize: 14, fontFamily: "inherit", fontWeight: 600, cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1 }}
+                >
+                  {saving ? "Saving…" : "Rate"}
+                </button>
+                {error && <span style={{ color: "#dc2626", fontSize: 13 }}>{error}</span>}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { PendingRatingApplier } from "@/components/PendingRatingApplier";
 import { getCurrentUser } from "@/lib/auth";
 import { HomeFeed } from "./HomeFeed";
 
@@ -47,6 +48,9 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* Saves a rating picked before signing up, then returns them to the page
+          they picked it on. Renders nothing. */}
+      <PendingRatingApplier />
       <SiteNav active="home" />
       <HomeFeed user={user} />
       <SiteFooter />

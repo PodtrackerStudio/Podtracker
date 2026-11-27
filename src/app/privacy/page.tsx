@@ -665,8 +665,8 @@ export default function PrivacyPage() {
             <em>In Short:</em>
           </strong>{" "}
           <em>
-            We use one cookie, to keep you signed in, and one temporary visit ID that your browser
-            deletes when you close the tab. Nothing else.
+            We use one cookie, to keep you signed in, and two short-lived items your own browser
+            holds: a visit ID, and a rating you picked before making an account. Nothing else.
           </em>
         </p>
         <p>
@@ -706,10 +706,19 @@ export default function PrivacyPage() {
             visit lasted and how many pages it took in. It is never shared, and it does not identify
             you on your next visit. Blocking it changes nothing about how the site works.
           </li>
+          <li>
+            <strong>A rating you picked before making an account</strong>, kept in your
+            browser&apos;s local storage for one hour. If you rate something while signed out, we
+            hold it there so that creating an account does not throw it away — when you arrive back,
+            it is saved to your new account and deleted from your browser. It is written only if you
+            then choose to create an account or log in, it does not leave your browser before that,
+            and it is discarded unread after an hour. Blocking it means a rating picked before
+            signing up is simply forgotten.
+          </li>
         </ul>
         <p>
           That is the whole list. There are no advertising, retargeting, or cross-site tracking
-          technologies on Podtracker. If we ever add anything beyond the three above, this section
+          technologies on Podtracker. If we ever add anything beyond the four above, this section
           changes first.
         </p>
 
